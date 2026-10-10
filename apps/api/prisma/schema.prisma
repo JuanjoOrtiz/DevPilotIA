@@ -1,0 +1,106 @@
+// Modelo de datos de DevPilot AI. La descripción de cada entidad está en docs/architecture.md.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/infrastructure/database/generated"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GenerationType {
+  feature
+  bug
+}
+
+enum GenerationStatus {
+  generating
+  completed
+  failed
+}
+
+enum Complexity {
+  S
+  M
+  L
+  XL
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  projects      Project[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  // Se guarda el hash, nunca el token.
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Project {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String
+  description String   @default("")
+  techStack   String[] @map("tech_stack")
+  conventions String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generations Generation[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Generation {
+  id                String           @id @default(uuid()) @db.Uuid
+  projectId         String           @map("project_id") @db.Uuid
+  type              GenerationType
+  inputText         String           @map("input_text")
+  additionalContext String?          @map("additional_context")
+  status            GenerationStatus @default(generating)
+  errorCode         String?          @map("error_code")
+  aiSpec            Json?            @map("ai_spec")
+  editedSpec        Json?            @map("edited_spec")
+  // title y complexity se copian fuera del JSON para listar y agregar sin leerlo.
+  title             String?
+  complexity        Complexity?
+  model             String?
+  attempts          Int              @default(0)
+  durationMs        Int?             @map("duration_ms")
+  inputTokens       Int?             @map("input_tokens")
+  outputTokens      Int?             @map("output_tokens")
+  // Generación de ejemplo de una cuenta nueva: no cuenta para los límites de uso.
+  isSample          Boolean          @default(false) @map("is_sample")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
+  editedAt          DateTime?        @map("edited_at") @db.Timestamptz(3)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("generations")
+}

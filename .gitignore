@@ -1,0 +1,22 @@
+# Dependencias y builds
+node_modules/
+dist/
+coverage/
+storybook-static/
+*.tsbuildinfo
+
+# Cliente de Prisma: se genera con `npm run db:generate`
+apps/api/src/infrastructure/database/generated/
+
+# Variables de entorno: solo se versiona el ejemplo
+.env
+.env.*
+!.env.example
+
+# Herramientas y sistema
+.vercel/
+*.log
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

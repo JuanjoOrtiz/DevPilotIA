@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "DevPilot AI",
+    "tagline": "De una tarea en lenguaje natural a una especificación lista para implementar."
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "serverStatus": {
+    "title": "Estado del servidor",
+    "checking": "Comprobando",
+    "checkingHint": "Contactando con la API…",
+    "waking": "Despertando el servidor",
+    "wakingHint": "El servidor se suspende tras 15 minutos sin uso. La primera petición puede tardar cerca de un minuto; no hace falta recargar la página.",
+    "up": "Operativo",
+    "upHint": "La API y la base de datos responden.",
+    "degraded": "Base de datos no disponible",
+    "degradedHint": "La API responde, pero no llega a la base de datos.",
+    "unreachable": "Sin conexión",
+    "unreachableHint": "No se pudo contactar con la API. Inténtalo de nuevo en unos minutos.",
+    "retry": "Reintentar",
+    "version": "Versión {{version}}"
+  }
+}
