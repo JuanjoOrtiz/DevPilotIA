@@ -1,0 +1,36 @@
+/* Tokens de diseño, tomados de los mockups. Los componentes usan estas variables,
+   nunca colores ni tamaños escritos a mano. */
+:root {
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+  --color-ground: #f3f5f8;
+  --color-surface: #ffffff;
+  --color-navy: #0f1b2d;
+  --color-navy-raised: #162339;
+  --color-navy-border: #2a3b57;
+  --color-accent: #1d4ed8;
+  --color-accent-hover: #1e3a8a;
+
+  --color-text: #0f1722;
+  --color-text-muted: #4a5565;
+  --color-text-subtle: #5b6676;
+  --color-text-on-navy: #ffffff;
+  --color-text-on-navy-muted: #c9d3e0;
+
+  --color-border: #d8dee6;
+  --color-border-strong: #b9c2ce;
+
+  --color-neutral-bg: #e9edf2;
+  --color-neutral-text: #364152;
+  --color-success-bg: #bfe8da;
+  --color-success-text: #0b5d4b;
+  --color-warning-bg: #fbf0d5;
+  --color-warning-text: #5c3a00;
+  --color-danger-bg: #fbe4e2;
+  --color-danger-text: #a11b1b;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --control-height: 44px;
+}

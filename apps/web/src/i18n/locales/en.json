@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "DevPilot AI",
+    "tagline": "From a task in plain language to a specification ready to implement."
+  },
+  "language": {
+    "label": "Language"
+  },
+  "serverStatus": {
+    "title": "Server status",
+    "checking": "Checking",
+    "checkingHint": "Contacting the API…",
+    "waking": "Waking the server",
+    "wakingHint": "The server sleeps after 15 minutes without use. The first request can take about a minute; there is no need to reload the page.",
+    "up": "Operational",
+    "upHint": "The API and the database are responding.",
+    "degraded": "Database unavailable",
+    "degradedHint": "The API responds, but it cannot reach the database.",
+    "unreachable": "No connection",
+    "unreachableHint": "The API could not be reached. Try again in a few minutes.",
+    "retry": "Retry",
+    "version": "Version {{version}}"
+  }
+}

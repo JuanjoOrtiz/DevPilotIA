@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src", "prisma.config.ts", "vitest.config.ts", "vitest.integration.config.ts"]
+}
