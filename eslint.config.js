@@ -73,7 +73,8 @@ export default tseslint.config(
     rules: forbidImports({
       folders: ['infrastructure'],
       packages: ['@prisma/*', 'pg', '@google/*'],
-      reason: 'presentation no depende de infrastructure; la composición va en main.ts (RNF-01).',
+      reason:
+        'presentation no depende de infrastructure; la composición va en composition.ts (RNF-01).',
     }),
   },
 

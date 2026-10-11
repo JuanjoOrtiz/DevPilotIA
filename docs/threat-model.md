@@ -4,7 +4,7 @@ Modelo breve de DevPilot AI, redactado el 10 de octubre de 2026, antes de la pri
 
 ## Alcance
 
-Entran la aplicación web, la API, la base de datos, la integración con el LLM y el pipeline de CI/CD. Quedan fuera la seguridad interna de los proveedores (Vercel, Render, Supabase, Google, GitHub, Sentry) y los equipos de los usuarios.
+Entran la aplicación web, la API, la base de datos, la integración con el LLM y el pipeline de CI/CD. Quedan fuera la seguridad interna de los proveedores (Vercel, Supabase, Google, GitHub, Sentry) y los equipos de los usuarios.
 
 ## Activos
 
@@ -33,7 +33,7 @@ Entran la aplicación web, la API, la base de datos, la integración con el LLM 
 ```mermaid
 flowchart LR
   B[Navegador] -- HTTPS --> W[Frontend en Vercel]
-  W -- reenvía /api --> A[API en Render]
+  W -- reenvía /api --> A[API en Vercel]
   A -- TLS --> D[(PostgreSQL en Supabase)]
   A -- HTTPS + clave --> L[Gemini API]
   A -- eventos sin datos personales --> S[Sentry]
@@ -74,26 +74,27 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 | T-24 | Un script inyectado roba el access token del almacenamiento del navegador | El access token vive solo en memoria y el refresh token en una cookie httpOnly | RF-AUT-03, SEG-05 |
 | T-25 | La API de datos automática de Supabase expone las tablas sin pasar por la API de DevPilot | La API de datos se desactiva en el proyecto de Supabase; solo se usa su PostgreSQL | SEG-02 |
 | T-26 | Una caché intermedia guarda y sirve a otro usuario una respuesta de la API | Todas las respuestas de la API llevan `Cache-Control: no-store` | SEG-02 |
-| T-27 | Alguien llama a la API de Render directamente, sin pasar por Vercel, para falsear su IP | La API solo confía en `X-Forwarded-For` del proxy; pendiente de configurar con el límite de intentos | SEG-07, SEG-09 |
+| T-27 | Alguien llama a la URL propia de la API, sin pasar por el frontend, para falsear su IP | La API solo confía en la IP que añade la plataforma, nunca en la que envía el cliente; pendiente de configurar y comprobar con el límite de intentos | SEG-07, SEG-09 |
+| T-28 | Un despliegue de vista previa ejecuta código sin revisar contra la base de datos de producción | `DATABASE_URL` existe solo en el entorno de producción de Vercel; las vistas previas de la API arrancan sin base de datos y no sirven peticiones | SEG-02, RNF-05 |
 
 ## Riesgos aceptados
 
 - **Contenido enviado a Gemini.** En la capa gratuita, Google puede usar el contenido para mejorar sus productos. Se acepta y se avisa junto al formulario de que no se pegue código ni datos confidenciales (RF-GEN-08).
 - **Registro abierto, sin verificación de email ni recuperación de contraseña.** Quedan fuera del MVP; se pueden crear cuentas con emails ajenos o inventados y una contraseña olvidada no se recupera. El tope global diario acota el daño sobre la cuota del LLM.
-- **Disponibilidad limitada.** Render suspende la API tras 15 minutos sin tráfico y Supabase pausa la base de datos tras una semana sin actividad; reactivarla es manual. No hay protección frente a ataques de denegación de servicio más allá de los límites de uso.
+- **Disponibilidad limitada.** Supabase pausa la base de datos tras una semana sin actividad y reactivarla es manual; Vercel puede pausar un proyecto que supere los límites del plan Hobby. No hay protección frente a ataques de denegación de servicio más allá de los límites de uso.
 - **Certificado de la base de datos sin verificar, por ahora.** La conexión con Supabase va cifrada (`sslmode=require`), pero no comprueba el certificado del servidor. Pasar a `sslmode=verify-full` con el certificado raíz de Supabase queda para el cierre de seguridad del día 18.
 - **Sin copias de seguridad.** El plan gratuito de Supabase no las incluye.
 - **Sin análisis dinámico ni escaneo de la imagen Docker.** Son de nivel prescindible.
 
 ## Decisión tomada: mismo origen
 
-El frontend (Vercel) y la API (Render) viven en dominios distintos. Una cookie de refresh con `SameSite=Strict` o `Lax` no viajaría entre ellos, y con `SameSite=None` dependería de que el navegador admita cookies de terceros.
+El frontend y la API son dos proyectos de Vercel y viven en dominios distintos. Una cookie de refresh con `SameSite=Strict` o `Lax` no viajaría entre ellos, y con `SameSite=None` dependería de que el navegador admita cookies de terceros.
 
-Se elige servir la API bajo el mismo origen que el frontend: Vercel reenvía `/api/*` a Render. Así la cookie puede ser `SameSite=Strict`, la API no necesita CORS y el navegador nunca ve el dominio de Render. El detalle está en [architecture.md](architecture.md).
+Se elige servir la API bajo el mismo origen que el frontend: el proyecto del frontend reenvía `/api/*` al de la API. Así la cookie puede ser `SameSite=Strict`, la API no necesita CORS y el navegador nunca ve el dominio de la API. El detalle está en [architecture.md](architecture.md).
 
 La alternativa descartada era mantener dos dominios con `SameSite=None; Secure` y una defensa adicional frente a CSRF en `/auth/refresh` y `/auth/logout`.
 
-Queda por comprobar en el primer despliegue cómo se comporta el reenvío de Vercel mientras Render despierta.
+Queda por comprobar en el primer despliegue que el reenvío entre los dos proyectos conserva la cookie y deja a la API conocer la IP del visitante.
 
 ## Revisión
 

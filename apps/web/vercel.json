@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://cambia-esto-por-tu-servicio-de-render.invalid/api/:path*"
+      "destination": "https://cambia-esto-por-la-url-de-la-api.invalid/api/:path*"
     },
     {
       "source": "/(.*)",

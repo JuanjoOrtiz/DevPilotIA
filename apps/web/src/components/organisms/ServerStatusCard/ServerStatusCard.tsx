@@ -13,7 +13,7 @@ interface ServerStatusCardProps {
 
 const TONE_BY_STATE: Record<ServerState, StatusTone> = {
   checking: 'neutral',
-  waking: 'warning',
+  retrying: 'warning',
   up: 'success',
   degraded: 'danger',
   unreachable: 'danger',
@@ -22,7 +22,7 @@ const TONE_BY_STATE: Record<ServerState, StatusTone> = {
 /** Tarjeta con el estado de la API y de la base de datos. No pide datos: los recibe. */
 export function ServerStatusCard({ state, version, onRetry }: ServerStatusCardProps) {
   const { t } = useTranslation();
-  const waiting = state === 'checking' || state === 'waking';
+  const waiting = state === 'checking' || state === 'retrying';
 
   return (
     <section className={styles.card} aria-labelledby="server-status-title">

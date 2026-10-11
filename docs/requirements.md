@@ -1,6 +1,6 @@
 # Requisitos
 
-Requisitos de DevPilot AI con su identificador, cerrados el 9 de octubre de 2026 y revisados el 10 de octubre. La arquitectura está en [architecture.md](architecture.md), el contrato de IA en [ai-contract.md](ai-contract.md) y el modelo de amenazas en [threat-model.md](threat-model.md).
+Requisitos de DevPilot AI con su identificador, cerrados el 9 de octubre de 2026 y revisados el 10 y el 11 de octubre. La arquitectura está en [architecture.md](architecture.md), el contrato de IA en [ai-contract.md](ai-contract.md) y el modelo de amenazas en [threat-model.md](threat-model.md).
 
 ## Alcance del MVP
 
@@ -107,7 +107,7 @@ La interfaz se entrega en español e inglés, con selector de idioma. No hay cue
 | RNF-05 | Secretos | La clave del LLM y los secretos JWT solo existen como variables de entorno del servidor; nunca llegan al navegador ni al repositorio |
 | RNF-06 | Autorización | Toda consulta de proyectos y generaciones filtra por el usuario en sesión |
 | RNF-07 | Validación | Todas las entradas de la API se validan con Zod antes de llegar a un caso de uso |
-| RNF-08 | Rendimiento | Con el servidor despierto, los endpoints sin IA responden en menos de 500 ms; una generación termina o falla en 45 s como máximo |
+| RNF-08 | Rendimiento | Sin contar un arranque en frío, los endpoints sin IA responden en menos de 500 ms; una generación termina o falla en 45 s como máximo |
 | RNF-09 | Experiencia de uso | Cada vista con datos tiene estados de carga, vacío y error; la interfaz es usable desde 360 px de ancho |
 | RNF-10 | Accesibilidad | Formularios con etiquetas asociadas, navegación completa por teclado, contraste AA y alternativa textual para cada gráfica |
 | RNF-11 | Pruebas | Tests unitarios de todos los casos de uso con repositorios en memoria y `FakeLLMProvider`; tests de integración de los endpoints de autenticación y generación; cobertura mínima del 70 % en `domain` y `application` |
@@ -180,18 +180,18 @@ GitHub Actions valida cada pull request y despliega a producción solo desde `ma
 | Workflow | Se dispara con | Qué hace |
 | --- | --- | --- |
 | `ci.yml` | Cada pull request y cada push a `main` | Lint y formato, incluida la regla de dependencias entre capas; comprobación de tipos; tests de la API con PostgreSQL en un contenedor de servicio; tests del frontend; build del frontend y de la imagen Docker de la API. El día 17 se añaden el build de Storybook, la validación de la especificación OpenAPI y la auditoría de dependencias |
-| `deploy.yml` | CI en verde sobre `main` | En este orden: migraciones de Prisma contra Supabase, despliegue de la API en Render, despliegue del frontend en Vercel, registro de la versión y subida de source maps a Sentry, publicación de Storybook, y comprobación de `/health` y de la página de inicio |
+| `deploy.yml` | CI en verde sobre `main` | En este orden: migraciones de Prisma contra Supabase, despliegue de la API y del frontend en Vercel, registro de la versión y subida de source maps a Sentry, publicación de Storybook, y comprobación de `/health` y de la página de inicio |
 | `release.yml` | Una etiqueta `v*` | Crea la release de GitHub con sus notas; la entrega es `v1.0.0` |
 
 Reglas del pipeline:
 
-- **Un solo camino a producción.** Cuando exista `deploy.yml`, los despliegues automáticos de Render y Vercel sobre `main` se desactivan; despliega el workflow, con el deploy hook de Render y la CLI de Vercel. Hasta entonces, Vercel y Render despliegan por su cuenta desde `main`.
+- **Un solo camino a producción.** Cuando exista `deploy.yml`, los despliegues automáticos de Vercel sobre `main` se desactivan; despliega el workflow, con la CLI de Vercel. Hasta entonces, Vercel despliega por su cuenta desde `main`.
 - **Rama protegida.** `main` exige el CI en verde y no admite push directo.
 - **Sin llamadas al LLM.** Los tests usan `FakeLLMProvider`; la clave de Gemini no se guarda en GitHub.
-- **Secretos.** La URL de la base de datos, el deploy hook de Render y los tokens de Vercel y Sentry están en GitHub Actions Secrets, nunca en el repositorio.
+- **Secretos.** La URL de la base de datos y los tokens de Vercel y Sentry están en GitHub Actions Secrets, nunca en el repositorio.
 - **Migraciones primero.** Cada migración es compatible con la versión anterior de la API, porque la base de datos cambia antes que el código.
 - **Rapidez.** Caché de dependencias y cancelación de ejecuciones obsoletas de la misma rama; el CI termina en menos de 5 minutos.
-- **Despliegue fallido.** Si la comprobación final falla, el workflow queda en rojo y se vuelve a la versión anterior desde el panel de Render o de Vercel.
+- **Despliegue fallido.** Si la comprobación final falla, el workflow queda en rojo y se vuelve a la versión anterior desde el panel de Vercel.
 
 ## Entregables
 
@@ -199,7 +199,7 @@ Siete piezas; el proyecto está terminado cuando las siete cumplen su criterio.
 
 | Entregable | Contenido | Criterio de aceptación |
 | --- | --- | --- |
-| Aplicación desplegada | Frontend en Vercel, API en Render, base de datos en Supabase | URL pública con HTTPS; el recorrido completo funciona con una cuenta recién registrada: registrarse, ver el proyecto de ejemplo, crear proyecto, generar, editar, exportar y ver el dashboard |
+| Aplicación desplegada | Frontend y API en Vercel, base de datos en Supabase | URL pública con HTTPS; el recorrido completo funciona con una cuenta recién registrada: registrarse, ver el proyecto de ejemplo, crear proyecto, generar, editar, exportar y ver el dashboard |
 | Repositorio | Monorepo con `apps/web`, `apps/api` y `packages/shared`; Conventional Commits; `main` protegida y cambios por pull request; `.gitignore`, licencia y ningún secreto en el historial | CI en verde en la rama principal y etiqueta `v1.0.0` en el commit entregado |
 | Docker | Dockerfile de la API, Dockerfile del frontend y `docker-compose.yml` con API, PostgreSQL y web | `docker compose up` deja la aplicación funcionando en local con migraciones y datos de demostración aplicados |
 | README técnico | En la raíz, en inglés (`README.md`) y en español (`README.es.md`), enlazados entre sí: descripción y enlaces a la aplicación desplegada, a Swagger UI y a Storybook, capturas, diagrama de arquitectura y regla de dependencias, estructura de carpetas, decisiones técnicas, modelo de amenazas, contrato de IA, variables de entorno, ejecución en local, tests, despliegue y limitaciones conocidas | Una persona ajena al proyecto lo levanta en local siguiendo solo el README; las dos versiones dicen lo mismo |
@@ -222,7 +222,7 @@ Lo imprescindible basta para entregar un TFM completo; lo demás suma nota y por
 Son 23 requisitos funcionales imprescindibles, 11 importantes y 3 prescindibles. Tres reglas ordenan el trabajo:
 
 - **Orden estricto.** No se empieza nada importante hasta que lo imprescindible esté desplegado y probado.
-- **Despliegue sencillo al principio.** Hasta que exista `deploy.yml`, Vercel y Render despliegan por su cuenta desde `main`.
+- **Despliegue sencillo al principio.** Hasta que exista `deploy.yml`, Vercel despliega por su cuenta desde `main`.
 - **Traducciones preparadas.** Los textos van a ficheros de traducción desde el primer día; solo la traducción al inglés es importante.
 
 ## Plan de trabajo

@@ -110,8 +110,10 @@ describe('security headers', () => {
   it('forbids caching API responses, errors included', async () => {
     const health = await request(healthyApp()).get('/api/v1/health');
     const missing = await request(healthyApp()).get('/api/v1/does-not-exist');
+    const outsideTheApi = await request(healthyApp()).get('/');
 
     expect(health.headers['cache-control']).toBe('no-store');
     expect(missing.headers['cache-control']).toBe('no-store');
+    expect(outsideTheApi.headers['cache-control']).toBe('no-store');
   });
 });
