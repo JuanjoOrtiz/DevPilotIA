@@ -1,9 +1,9 @@
 import type { RegisterRequest } from '@devpilot/shared';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ROUTES } from '../../../features/auth/routes';
+import { ROUTES } from '../../../routes';
 import { useSession } from '../../../features/auth/SessionContext';
-import { toSubmitFailure } from '../../../features/auth/submitFailure';
+import { toSubmitFailure } from '../../../features/forms/submitFailure';
 import { useLanguageSwitch } from '../../../hooks/useLanguageSwitch';
 import { LanguageSwitch } from '../../molecules/LanguageSwitch/LanguageSwitch';
 import { ProductPitch } from '../../organisms/ProductPitch/ProductPitch';

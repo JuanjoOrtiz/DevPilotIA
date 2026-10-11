@@ -1,5 +1,5 @@
 import { ERROR_CODES, FIELD_ERRORS, type FieldError } from '@devpilot/shared';
-import type { ApiErrorCode } from '../services/apiClient';
+import { ApiError, type ApiErrorCode } from '../services/apiClient';
 
 /** Motivos de error de un campo que tienen texto propio. */
 type FieldMessage = FieldError | 'EMAIL_ALREADY_REGISTERED' | 'INVALID';
@@ -19,4 +19,14 @@ export function fieldMessageKey(reason: string | undefined): `validation.${Field
 /** Clave de traducción para un error de la API, a partir de su código (RNF-14). */
 export function errorMessageKey(code: string): `errors.${ApiErrorCode}` {
   return `errors.${ERROR_MESSAGES.includes(code) ? (code as ApiErrorCode) : 'INTERNAL_ERROR'}`;
+}
+
+/** Clave de traducción para lo que ha fallado al pedir datos: casi siempre, un error de la API. */
+export function queryErrorKey(error: unknown): `errors.${ApiErrorCode}` {
+  return errorMessageKey(error instanceof ApiError ? error.code : 'INTERNAL_ERROR');
+}
+
+/** El recurso no existe o es de otra persona: la API no distingue un caso del otro. */
+export function isNotFound(error: unknown): boolean {
+  return error instanceof ApiError && error.code === 'NOT_FOUND';
 }

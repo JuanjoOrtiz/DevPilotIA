@@ -1,0 +1,23 @@
+.area {
+  display: block;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-text);
+  resize: vertical;
+}
+
+.area::placeholder {
+  color: var(--color-text-subtle);
+}
+
+/* El borde gana un píxel: el relleno pierde uno para que el texto no se mueva. */
+.invalid {
+  padding: 9px 11px;
+  border: 2px solid var(--color-danger-border);
+}

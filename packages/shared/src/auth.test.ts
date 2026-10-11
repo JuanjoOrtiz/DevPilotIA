@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FIELD_ERRORS, loginRequestSchema, registerRequestSchema, utf8ByteLength } from './auth.js';
+import { loginRequestSchema, registerRequestSchema, utf8ByteLength } from './auth.js';
+import { FIELD_ERRORS } from './validation.js';
 
 const valid = { name: 'Lucía Ferrer', email: 'lucia@example.com', password: 'correct horse' };
 

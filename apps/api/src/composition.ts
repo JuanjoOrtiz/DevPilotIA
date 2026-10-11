@@ -4,14 +4,22 @@
 import type { Express } from 'express';
 import { SessionIssuer } from './application/services/SessionIssuer.js';
 import { CheckHealth } from './application/use-cases/CheckHealth.js';
+import { CreateProject } from './application/use-cases/CreateProject.js';
+import { DeleteProject } from './application/use-cases/DeleteProject.js';
 import { GetCurrentUser } from './application/use-cases/GetCurrentUser.js';
+import { GetProject } from './application/use-cases/GetProject.js';
+import { ListProjectGenerations } from './application/use-cases/ListProjectGenerations.js';
+import { ListProjects } from './application/use-cases/ListProjects.js';
 import { LoginUser } from './application/use-cases/LoginUser.js';
 import { LogoutUser } from './application/use-cases/LogoutUser.js';
 import { RefreshSession } from './application/use-cases/RefreshSession.js';
 import { RegisterUser } from './application/use-cases/RegisterUser.js';
+import { UpdateProject } from './application/use-cases/UpdateProject.js';
 import type { PasswordHasher } from './domain/providers/PasswordHasher.js';
 import type { Env } from './infrastructure/config/env.js';
 import { PrismaDatabaseHealthProbe } from './infrastructure/database/PrismaDatabaseHealthProbe.js';
+import { PrismaGenerationRepository } from './infrastructure/database/PrismaGenerationRepository.js';
+import { PrismaProjectRepository } from './infrastructure/database/PrismaProjectRepository.js';
 import { PrismaRefreshTokenRepository } from './infrastructure/database/PrismaRefreshTokenRepository.js';
 import { PrismaUserRepository } from './infrastructure/database/PrismaUserRepository.js';
 import {
@@ -42,6 +50,8 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
   const clock = new SystemClock();
   const users = new PrismaUserRepository(prisma);
   const refreshTokens = new PrismaRefreshTokenRepository(prisma);
+  const projects = new PrismaProjectRepository(prisma);
+  const generations = new PrismaGenerationRepository(prisma);
   const hasher = options.passwordHasher ?? new BcryptPasswordHasher();
   const tokens = new JoseTokenService(
     { accessSecret: env.JWT_ACCESS_SECRET, refreshSecret: env.JWT_REFRESH_SECRET },
@@ -57,6 +67,14 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
       refreshSession: new RefreshSession({ users, refreshTokens, tokens, sessions, clock }),
       logoutUser: new LogoutUser(refreshTokens, tokens, clock),
       getCurrentUser: new GetCurrentUser(users),
+    },
+    projects: {
+      listProjects: new ListProjects(projects),
+      createProject: new CreateProject(projects),
+      getProject: new GetProject(projects),
+      updateProject: new UpdateProject(projects),
+      deleteProject: new DeleteProject(projects),
+      listProjectGenerations: new ListProjectGenerations(projects, generations),
     },
     tokens,
     // En local se trabaja por HTTP y una cookie Secure no llegaría a guardarse.

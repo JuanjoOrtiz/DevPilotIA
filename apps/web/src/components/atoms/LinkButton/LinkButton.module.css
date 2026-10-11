@@ -1,0 +1,13 @@
+/* Sobre los estilos de Button: sin subrayado y sin el color de enlace de global.css. */
+.primary,
+.secondary {
+  text-decoration: none;
+}
+
+.primary:hover {
+  color: var(--color-text-on-navy);
+}
+
+.secondary:hover {
+  color: var(--color-text);
+}

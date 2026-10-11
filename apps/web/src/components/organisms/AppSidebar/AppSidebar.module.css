@@ -79,6 +79,12 @@
     padding: 4px 0;
   }
 
+  /* Las secciones, en una fila que se desplaza si no caben. */
+  .links {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
   .account {
     margin-top: 0;
     padding: 0;

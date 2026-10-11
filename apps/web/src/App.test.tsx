@@ -3,17 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from './i18n';
 import { ApiError } from './services/apiClient';
 import * as authService from './services/authService';
-import { fetchHealth } from './services/healthService';
+import * as projectService from './services/projectService';
+import { portal } from './test/fixtures';
 import { lucia, renderApp } from './test/renderApp';
 
 vi.mock('./services/authService');
-vi.mock('./services/healthService');
+vi.mock('./services/projectService');
 
 const auth = vi.mocked(authService);
 
 beforeEach(async () => {
   await i18n.changeLanguage('es');
-  vi.mocked(fetchHealth).mockResolvedValue({ status: 'ok', database: 'up', version: 'abc123' });
+  vi.mocked(projectService.listProjects).mockResolvedValue([portal]);
   auth.restoreSession.mockResolvedValue(null);
   auth.logout.mockResolvedValue(undefined);
 });
@@ -24,7 +25,7 @@ afterEach(() => {
 });
 
 const loginHeading = () => screen.findByRole('heading', { name: 'Iniciar sesión' });
-const homeHeading = () => screen.findByRole('heading', { name: 'Hola, Lucía Ferrer' });
+const homeHeading = () => screen.findByRole('heading', { name: 'Proyectos', level: 1 });
 
 // RF-AUT-05: sin sesión se redirige al login.
 describe('routes without a session', () => {
@@ -32,7 +33,8 @@ describe('routes without a session', () => {
     renderApp('/');
 
     expect(await loginHeading()).toBeTruthy();
-    expect(screen.queryByText(/Hola,/)).toBeNull();
+    expect(screen.queryByText('Portal de clientes')).toBeNull();
+    expect(projectService.listProjects).not.toHaveBeenCalled();
   });
 
   it('sends any unknown address to the login page too', async () => {
@@ -133,7 +135,8 @@ describe('routes with a session', () => {
     renderApp('/');
 
     expect(await homeHeading()).toBeTruthy();
-    expect(await screen.findByText('Operativo')).toBeTruthy();
+    expect(await screen.findByRole('link', { name: 'Portal de clientes' })).toBeTruthy();
+    expect(screen.getByText('Lucía Ferrer')).toBeTruthy();
     expect(auth.login).not.toHaveBeenCalled();
   });
 
@@ -169,18 +172,35 @@ describe('routes with a session', () => {
     auth.restoreSession.mockResolvedValue({ ...lucia, name });
     const { container } = renderApp('/');
 
-    expect(await screen.findByRole('heading', { name: `Hola, ${name}` })).toBeTruthy();
+    expect(await screen.findByText(name)).toBeTruthy();
     expect(container.querySelector('img')).toBeNull();
   });
 
+  it('sends an address that does not exist to the projects', async () => {
+    renderApp('/dashboard/unknown');
+
+    expect(await homeHeading()).toBeTruthy();
+  });
+
+  it('marks the current section in the navigation', async () => {
+    renderApp('/');
+    await homeHeading();
+
+    const link = screen.getByRole('link', { name: 'Proyectos' });
+
+    expect(link.getAttribute('aria-current')).toBe('page');
+  });
+
+  // RNF-14
   it('switches the interface to English', async () => {
     const { user } = renderApp('/');
     await homeHeading();
 
     await user.click(screen.getByRole('button', { name: 'EN' }));
 
-    expect(await screen.findByRole('heading', { name: 'Hello, Lucía Ferrer' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Projects', level: 1 })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    expect(screen.getByText('Last activity: Oct 10, 2026')).toBeTruthy();
     await waitFor(() => expect(document.documentElement.lang).toBe('en'));
   });
 });
