@@ -5,13 +5,25 @@
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--color-text-on-navy-muted);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
-.pressed {
+.onNavy {
+  color: var(--color-text-on-navy-muted);
+}
+
+.onNavy.pressed {
   background: var(--color-navy-border);
   color: var(--color-text-on-navy);
+}
+
+.onLight {
+  color: var(--color-text-muted);
+}
+
+.onLight.pressed {
+  background: var(--color-surface);
+  color: var(--color-text);
 }

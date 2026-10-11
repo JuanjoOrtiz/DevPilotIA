@@ -69,8 +69,15 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
 
 1. En Vercel, «Add New» y «Project»; importa el repositorio y llámalo, por ejemplo, `devpilot-api`.
 2. En «Root Directory» elige `apps/api`. No cambies los comandos de instalación ni de compilación.
-3. En «Environment Variables» añade `DATABASE_URL` con la cadena de Supabase y pulsa «Deploy».
-4. Cuando termine, entra en «Settings» y «Environment Variables», edita `DATABASE_URL` y déjala solo en el entorno «Production». Así las vistas previas de los pull requests no pueden tocar la base de datos real (amenaza T-28).
+3. En «Environment Variables» añade estas tres y pulsa «Deploy»:
+
+   | Variable | Valor |
+   | --- | --- |
+   | `DATABASE_URL` | La cadena de Supabase |
+   | `JWT_ACCESS_SECRET` | El resultado de `openssl rand -base64 48` |
+   | `JWT_REFRESH_SECRET` | Otro resultado distinto de `openssl rand -base64 48` |
+
+4. Cuando termine, entra en «Settings» y «Environment Variables», edita las tres y déjalas solo en el entorno «Production». Así las vistas previas de los pull requests no pueden tocar la base de datos real ni firmar sesiones válidas (amenaza T-28).
 5. Anota la URL de producción del proyecto, del tipo `https://devpilot-api.vercel.app`, y comprueba que responde:
 
    ```bash
@@ -78,7 +85,9 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
    # {"status":"ok","database":"up","version":"<commit>"}
    ```
 
-Si responde con un error 500, abre «Logs» en el proyecto: la API dice qué variable falta o es inválida, nunca su valor. En producción rechaza las credenciales de ejemplo y una `DATABASE_URL` sin `sslmode`.
+Si responde con un error 500, abre «Logs» en el proyecto: la API dice qué variable falta o es inválida, nunca su valor. En producción rechaza las credenciales y los secretos de ejemplo, una `DATABASE_URL` sin `sslmode` y dos secretos JWT iguales o de menos de 32 bytes.
+
+Cambiar un secreto JWT cierra todas las sesiones abiertas: los tokens ya emitidos dejan de valer.
 
 Si los registros muestran errores de «max clients», el pooler en modo sesión se ha quedado sin conexiones. La salida es usar en Vercel la cadena del «Transaction pooler» (puerto 6543), que Supabase recomienda para funciones, y dejar la del modo sesión para las migraciones. No se ha probado todavía con este proyecto.
 

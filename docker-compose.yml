@@ -37,10 +37,12 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     environment:
-      # development: en producción la API rechaza estas credenciales de ejemplo.
+      # development: en producción la API rechaza estas credenciales y secretos de ejemplo.
       NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgresql://devpilot:devpilot@db:5432/devpilot
+      JWT_ACCESS_SECRET: example-access-secret-change-me-0123456789
+      JWT_REFRESH_SECRET: example-refresh-secret-change-me-012345678
     ports:
       - '3000:3000'
     depends_on:

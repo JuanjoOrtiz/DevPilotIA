@@ -15,8 +15,8 @@ Este fichero resume las reglas que no se negocian. El detalle está en `docs/`; 
 ## Stack
 
 - **Monorepo** con npm workspaces: `apps/web`, `apps/api`, `packages/shared`. Node 22, TypeScript 6 en modo estricto, ESLint y Prettier.
-- **Frontend**: React + TypeScript + Vite, Atomic Design, TanStack Query, React Hook Form + Zod, Recharts, react-i18next.
-- **Backend**: Node.js + TypeScript + Express, Clean Architecture, Prisma + PostgreSQL.
+- **Frontend**: React + TypeScript + Vite, Atomic Design, React Router, TanStack Query, React Hook Form + Zod, Recharts, react-i18next.
+- **Backend**: Node.js + TypeScript + Express, Clean Architecture, Prisma + PostgreSQL; bcryptjs para las contraseñas y jose para los JWT.
 - **LLM**: Gemini API (capa gratuita, modelo Flash) detrás de la interfaz `LLMProvider`.
 - **Pruebas**: Vitest, Supertest, React Testing Library.
 - **Despliegue**: Vercel (web y API, en dos proyectos) y Supabase (PostgreSQL). Docker para el entorno local y el CI. Sin AWS y a coste cero.
@@ -65,7 +65,8 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 - Átomos y moléculas son presentacionales: sin llamadas a la API, sin estado global, sin TanStack Query.
 - El acceso a datos vive en `features/`, `services/` y `hooks/`. Las páginas componen plantillas y organismos y conectan los datos.
 - Cada componente vive en su carpeta, con su CSS Module y su test. Los estilos usan las variables de `src/styles/tokens.css`, nunca colores escritos a mano.
-- Las llamadas a la API pasan por `services/apiClient.ts`, con rutas relativas bajo `/api/v1`.
+- Las llamadas a la API pasan por `apiRequest` de `services/apiClient.ts`, con rutas relativas bajo `/api/v1`: añade el access token, valida la respuesta con su esquema y renueva la sesión si ha caducado.
+- Los motivos de error de un campo son códigos de `packages/shared` (`FIELD_ERRORS`); su texto está en `validation.*` de los ficheros de traducción.
 - Ningún texto visible va escrito dentro de un componente: todo sale de los ficheros de traducción (`es` primero; `en` es de nivel «importante»).
 - Cada vista con datos tiene estados de carga, vacío y error. La interfaz funciona desde 360 px de ancho.
 - Los mensajes de error se traducen en el frontend a partir del `code` que devuelve la API.
@@ -73,7 +74,7 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 
 ## Reglas de seguridad por defecto
 
-- **Denegar por defecto**: la autenticación es global y las rutas públicas son una lista explícita. Una ruta nueva nace protegida.
+- **Denegar por defecto**: la autenticación es global y las rutas públicas son una lista explícita, `PUBLIC_ROUTES` en `presentation/http/app.ts`. Una ruta nueva nace protegida; el id del usuario se lee con `authenticatedUserId(res)`.
 - **Aislamiento por usuario**: toda consulta de proyectos y generaciones filtra por el usuario en sesión. Un recurso ajeno responde 404, nunca 403.
 - **Secretos**: solo en variables de entorno del servidor. Nada de claves en el repositorio, en el frontend ni en los logs. `.env.example` lleva todas las variables sin valores reales.
 - **Arranque seguro**: la API no arranca si falta una variable o si, en producción, detecta valores de ejemplo o secretos débiles.
@@ -82,7 +83,8 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 - **Swagger UI** viene desactivada y se activa con una variable de entorno.
 - **Sin cuenta demo**: el acceso es por registro. Cada cuenta nueva recibe un proyecto de ejemplo creado desde un fichero del repositorio, sin llamar al LLM.
 - **Seed**: en local crea un usuario de ejemplo; en producción nunca crea usuarios, solo carga datos en una cuenta existente.
-- **Access token** solo en memoria en el navegador, nunca en `localStorage`; el refresh token va en cookie httpOnly.
+- **Access token** solo en memoria en el navegador (`services/apiClient.ts`), nunca en `localStorage`; el refresh token va en cookie httpOnly.
+- **Secretos JWT**: `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`, de 32 bytes o más y distintos. Los de `.env.example` empiezan por `example-` y no arrancan en producción.
 - Cada requisito SEG tiene su test. Si implementas uno, escribe el test indicado en `docs/requirements.md`.
 
 ## Reglas del LLM
@@ -97,6 +99,7 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 
 - Modo estricto en todo el monorepo, sin `any` explícitos.
 - Los tests van junto al código: `*.test.ts` no necesita base de datos; `*.int.test.ts` se ejecuta contra PostgreSQL.
+- Los dobles en memoria de la API (repositorios, reloj, hasher y tokens) viven en `apps/api/src/test-support` y no se compilan. Los tests nunca leen secretos del entorno: usan `testEnv()`.
 - Cada bloque llega con sus tests: unitarios de todos los casos de uso con repositorios en memoria y `FakeLLMProvider`; de integración para los endpoints de autenticación y generación.
 - Cobertura mínima del 70 % en `domain` y `application`.
 

@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "DevPilot AI",
-    "tagline": "De una tarea en lenguaje natural a una especificación lista para implementar."
+    "tagline": "De una tarea en lenguaje natural a una especificación lista para implementar.",
+    "loading": "Cargando…"
   },
   "language": {
     "label": "Idioma"
@@ -20,5 +21,99 @@
     "unreachableHint": "No se pudo contactar con la API. Inténtalo de nuevo en unos minutos.",
     "retry": "Reintentar",
     "version": "Versión {{version}}"
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "subtitle": "Accede a tus proyectos y a tu historial de especificaciones.",
+      "submit": "Entrar",
+      "submitting": "Entrando…",
+      "noAccount": "¿No tienes cuenta?",
+      "createAccount": "Crear cuenta"
+    },
+    "register": {
+      "title": "Crear cuenta",
+      "subtitle": "Al registrarte, la sesión queda iniciada.",
+      "submit": "Crear cuenta",
+      "submitting": "Creando la cuenta…",
+      "haveAccount": "¿Ya tienes cuenta?",
+      "signIn": "Iniciar sesión"
+    },
+    "fields": {
+      "name": "Nombre",
+      "email": "Email",
+      "emailPlaceholder": "tu@email.com",
+      "password": "Contraseña",
+      "passwordHint": "8 caracteres o más."
+    },
+    "signOut": "Cerrar sesión",
+    "sessionExpired": "La sesión ha caducado. Vuelve a iniciar sesión.",
+    "pitch": {
+      "login": {
+        "eyebrow": "Asistente para desarrolladores",
+        "title": "De una tarea en lenguaje natural a una especificación lista para implementar.",
+        "description": "Describe una funcionalidad o un bug. La IA devuelve una especificación con seis secciones que puedes editar y exportar.",
+        "sections": {
+          "technical": "Descripción técnica",
+          "stories": "Historias de usuario y criterios de aceptación",
+          "tasks": "Tareas de frontend y backend",
+          "risks": "Riesgos y casos límite",
+          "tests": "Casos de prueba",
+          "complexity": "Estimación de complejidad"
+        }
+      },
+      "register": {
+        "eyebrow": "Cómo funciona",
+        "title": "Tres pasos entre la idea y el primer commit.",
+        "steps": {
+          "project": {
+            "title": "Crea un proyecto",
+            "description": "Indica su stack y sus convenciones. La IA los usa como contexto."
+          },
+          "describe": {
+            "title": "Describe la tarea o el bug",
+            "description": "En lenguaje natural, entre 20 y 4.000 caracteres."
+          },
+          "export": {
+            "title": "Edita y exporta la especificación",
+            "description": "Ajusta el resultado y llévatelo en Markdown o JSON."
+          }
+        }
+      }
+    }
+  },
+  "validation": {
+    "NAME_REQUIRED": "Escribe tu nombre.",
+    "NAME_TOO_LONG": "El nombre puede tener 80 caracteres como máximo.",
+    "EMAIL_INVALID": "Escribe un email válido.",
+    "EMAIL_ALREADY_REGISTERED": "Ya existe una cuenta con este email.",
+    "PASSWORD_REQUIRED": "Escribe tu contraseña.",
+    "PASSWORD_TOO_SHORT": "La contraseña debe tener 8 caracteres o más.",
+    "PASSWORD_TOO_LONG": "La contraseña es demasiado larga: 72 caracteres como máximo.",
+    "INVALID": "Este valor no es válido."
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Revisa los datos del formulario.",
+    "UNAUTHORIZED": "La sesión ha caducado. Vuelve a iniciar sesión.",
+    "INVALID_CREDENTIALS": "El email o la contraseña no son correctos.",
+    "EMAIL_ALREADY_REGISTERED": "Ya existe una cuenta con este email.",
+    "NOT_FOUND": "No hemos encontrado lo que buscas.",
+    "USER_QUOTA_EXCEEDED": "Has alcanzado tu límite de generaciones de hoy.",
+    "GLOBAL_QUOTA_EXCEEDED": "El servicio ha alcanzado su límite de generaciones de hoy.",
+    "LLM_RATE_LIMITED": "El modelo está recibiendo demasiadas peticiones. Inténtalo de nuevo en unos minutos.",
+    "LLM_TIMEOUT": "El modelo ha tardado demasiado en responder. Inténtalo de nuevo.",
+    "LLM_INVALID_RESPONSE": "El modelo ha devuelto una respuesta que no se puede usar. Inténtalo de nuevo.",
+    "LLM_CONTENT_BLOCKED": "El modelo ha bloqueado este contenido. Revisa el texto y vuelve a intentarlo.",
+    "LLM_UNAVAILABLE": "El modelo no está disponible en este momento. Inténtalo de nuevo más tarde.",
+    "INTERNAL_ERROR": "Algo ha fallado en el servidor. Inténtalo de nuevo.",
+    "NETWORK_ERROR": "No se pudo contactar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+    "UNEXPECTED_RESPONSE": "El servidor ha respondido algo inesperado. Inténtalo de nuevo en unos minutos."
+  },
+  "nav": {
+    "main": "Principal"
+  },
+  "home": {
+    "greeting": "Hola, {{name}}",
+    "intro": "Tu cuenta está lista. Aquí aparecerán tus proyectos y tus especificaciones."
   }
 }
