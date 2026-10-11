@@ -69,8 +69,15 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
 
 1. En Vercel, «Add New» y «Project»; importa el repositorio y llámalo, por ejemplo, `devpilot-api`.
 2. En «Root Directory» elige `apps/api`. No cambies los comandos de instalación ni de compilación.
-3. En «Environment Variables» añade `DATABASE_URL` con la cadena de Supabase y pulsa «Deploy».
-4. Cuando termine, entra en «Settings» y «Environment Variables», edita `DATABASE_URL` y déjala solo en el entorno «Production». Así las vistas previas de los pull requests no pueden tocar la base de datos real (amenaza T-28).
+3. En «Environment Variables» añade estas tres y pulsa «Deploy»:
+
+   | Variable | Valor |
+   | --- | --- |
+   | `DATABASE_URL` | La cadena de Supabase |
+   | `JWT_ACCESS_SECRET` | El resultado de `openssl rand -base64 48` |
+   | `JWT_REFRESH_SECRET` | Otro resultado distinto de `openssl rand -base64 48` |
+
+4. Cuando termine, entra en «Settings» y «Environment Variables», edita las tres y déjalas solo en el entorno «Production». Así las vistas previas de los pull requests no pueden tocar la base de datos real ni firmar sesiones válidas (amenaza T-28).
 5. Anota la URL de producción del proyecto, del tipo `https://devpilot-api.vercel.app`, y comprueba que responde:
 
    ```bash
@@ -78,13 +85,15 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
    # {"status":"ok","database":"up","version":"<commit>"}
    ```
 
-Si responde con un error 500, abre «Logs» en el proyecto: la API dice qué variable falta o es inválida, nunca su valor. En producción rechaza las credenciales de ejemplo y una `DATABASE_URL` sin `sslmode`.
+Si responde con un error 500, abre «Logs» en el proyecto: la API dice qué variable falta o es inválida, nunca su valor. En producción rechaza las credenciales y los secretos de ejemplo, una `DATABASE_URL` sin `sslmode` y dos secretos JWT iguales o de menos de 32 bytes.
+
+Cambiar un secreto JWT cierra todas las sesiones abiertas: los tokens ya emitidos dejan de valer.
 
 Si los registros muestran errores de «max clients», el pooler en modo sesión se ha quedado sin conexiones. La salida es usar en Vercel la cadena del «Transaction pooler» (puerto 6543), que Supabase recomienda para funciones, y dejar la del modo sesión para las migraciones. No se ha probado todavía con este proyecto.
 
 ## 3. Frontend en Vercel
 
-1. En `apps/web/vercel.json`, sustituye el destino de la primera regla por la URL de la API y súbelo a `main` con un pull request:
+1. En `apps/web/vercel.json`, sustituye el destino de la primera regla por la URL de la API y llévalo a `main` por el camino habitual, con un pull request a `develop` y otro de `develop` a `main`:
 
    ```json
    { "source": "/api/:path*", "destination": "https://TU-PROYECTO-API.vercel.app/api/:path*" }
@@ -93,20 +102,25 @@ Si los registros muestran errores de «max clients», el pooler en modo sesión 
 2. En Vercel, importa otra vez el mismo repositorio como un proyecto nuevo, por ejemplo `devpilot-web`, y fija «Root Directory» en `apps/web`. El framework es Vite, con sus valores por defecto. No necesita variables de entorno.
 3. Abre la URL del proyecto. La página de inicio debe mostrar «Operativo».
 
-A partir de aquí, Vercel despliega los dos proyectos con cada cambio en `main` y crea una vista previa de cada pull request. La vista previa del frontend habla con la API de producción; la de la API no tiene base de datos.
+A partir de aquí, Vercel despliega los dos proyectos con cada cambio en `main` y crea una vista previa de cada pull request y de la rama `develop`. La vista previa del frontend habla con la API de producción; la de la API no tiene base de datos.
 
-## 4. Proteger la rama `main`
+## 4. Proteger `main` y `develop`
 
-En GitHub, en «Settings», «Rules» y «Rulesets», crea un «branch ruleset» activo sobre la rama por defecto, sin nadie en la lista de excepciones:
+El repositorio tiene dos ramas permanentes: `develop`, donde se integra el trabajo, y `main`, que es lo que está desplegado.
 
+En GitHub, en «Settings», «Rules» y «Rulesets», crea un «branch ruleset» activo, sin nadie en la lista de excepciones. En «Target branches» incluye la rama por defecto y, con «Include by pattern», `develop`:
+
+- Impedir el borrado y el push forzado, que vienen marcados por defecto. Así `develop` no se borra al fusionarla en `main`.
 - Exigir pull request antes de fusionar, con cero aprobaciones obligatorias: con una sola persona no habría quien aprobase.
 - Exigir que pasen las comprobaciones «Lint, tipos, tests y build» e «Imagen Docker de la API». Se buscan con ese nombre, sin el prefijo «CI /».
 
 Si se renombra un job de `ci.yml`, hay que actualizar la regla.
 
+El pull request de `develop` a `main` se fusiona siempre con «Create a merge commit». Con «Squash and merge» las dos ramas dejan de compartir historia y el siguiente pull request muestra conflictos y commits repetidos.
+
 ## Cambios en la base de datos
 
-Mientras no exista `deploy.yml`, las migraciones se aplican a mano y **antes** de fusionar el código que las necesita:
+Mientras no exista `deploy.yml`, las migraciones se aplican a mano y **antes** de pasar a `main` el código que las necesita:
 
 ```bash
 npm run db:migrate                                    # en local: crea la migración y la aplica

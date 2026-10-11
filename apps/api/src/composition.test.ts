@@ -1,10 +1,14 @@
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 import { compose } from './composition.js';
-import { loadEnv } from './infrastructure/config/env.js';
+import { testEnv } from './test-support/testEnv.js';
 
 // Puerto 9: nadie escucha, la conexión se rechaza al momento. No hace falta base de datos.
-const env = loadEnv({ DATABASE_URL: 'postgresql://nobody:nothing@127.0.0.1:9/none' });
+const env = testEnv({
+  DATABASE_URL: 'postgresql://nobody:nothing@127.0.0.1:9/none',
+  NODE_ENV: 'development',
+  APP_VERSION: 'dev',
+});
 
 describe('compose', () => {
   const { app, database } = compose(env, { databasePool: { max: 2, idleTimeoutMillis: 1000 } });

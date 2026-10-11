@@ -5,7 +5,9 @@ import { DomainError } from '../../domain/errors/DomainError.js';
 const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
   VALIDATION_ERROR: 400,
   UNAUTHORIZED: 401,
+  INVALID_CREDENTIALS: 401,
   NOT_FOUND: 404,
+  EMAIL_ALREADY_REGISTERED: 409,
   USER_QUOTA_EXCEEDED: 429,
   GLOBAL_QUOTA_EXCEEDED: 429,
 };

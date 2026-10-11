@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "DevPilot AI",
-    "tagline": "From a task in plain language to a specification ready to implement."
+    "tagline": "From a task in plain language to a specification ready to implement.",
+    "loading": "Loading…"
   },
   "language": {
     "label": "Language"
@@ -20,5 +21,99 @@
     "unreachableHint": "The API could not be reached. Try again in a few minutes.",
     "retry": "Retry",
     "version": "Version {{version}}"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Access your projects and your specification history.",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Once you register, you are signed in.",
+      "submit": "Create account",
+      "submitting": "Creating the account…",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "emailPlaceholder": "you@email.com",
+      "password": "Password",
+      "passwordHint": "8 characters or more."
+    },
+    "signOut": "Sign out",
+    "sessionExpired": "Your session has expired. Sign in again.",
+    "pitch": {
+      "login": {
+        "eyebrow": "Assistant for developers",
+        "title": "From a task in plain language to a specification ready to implement.",
+        "description": "Describe a feature or a bug. The AI returns a specification with six sections that you can edit and export.",
+        "sections": {
+          "technical": "Technical description",
+          "stories": "User stories and acceptance criteria",
+          "tasks": "Frontend and backend tasks",
+          "risks": "Risks and edge cases",
+          "tests": "Test cases",
+          "complexity": "Complexity estimate"
+        }
+      },
+      "register": {
+        "eyebrow": "How it works",
+        "title": "Three steps between the idea and the first commit.",
+        "steps": {
+          "project": {
+            "title": "Create a project",
+            "description": "State its stack and its conventions. The AI uses them as context."
+          },
+          "describe": {
+            "title": "Describe the task or the bug",
+            "description": "In plain language, between 20 and 4,000 characters."
+          },
+          "export": {
+            "title": "Edit and export the specification",
+            "description": "Adjust the result and take it away as Markdown or JSON."
+          }
+        }
+      }
+    }
+  },
+  "validation": {
+    "NAME_REQUIRED": "Enter your name.",
+    "NAME_TOO_LONG": "The name can be up to 80 characters long.",
+    "EMAIL_INVALID": "Enter a valid email.",
+    "EMAIL_ALREADY_REGISTERED": "An account with this email already exists.",
+    "PASSWORD_REQUIRED": "Enter your password.",
+    "PASSWORD_TOO_SHORT": "The password must be 8 characters or longer.",
+    "PASSWORD_TOO_LONG": "The password is too long: 72 characters at most.",
+    "INVALID": "This value is not valid."
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Check the form data.",
+    "UNAUTHORIZED": "Your session has expired. Sign in again.",
+    "INVALID_CREDENTIALS": "The email or the password is not correct.",
+    "EMAIL_ALREADY_REGISTERED": "An account with this email already exists.",
+    "NOT_FOUND": "We could not find what you are looking for.",
+    "USER_QUOTA_EXCEEDED": "You have reached your generation limit for today.",
+    "GLOBAL_QUOTA_EXCEEDED": "The service has reached its generation limit for today.",
+    "LLM_RATE_LIMITED": "The model is receiving too many requests. Try again in a few minutes.",
+    "LLM_TIMEOUT": "The model took too long to respond. Try again.",
+    "LLM_INVALID_RESPONSE": "The model returned a response that cannot be used. Try again.",
+    "LLM_CONTENT_BLOCKED": "The model blocked this content. Review the text and try again.",
+    "LLM_UNAVAILABLE": "The model is not available right now. Try again later.",
+    "INTERNAL_ERROR": "Something went wrong on the server. Try again.",
+    "NETWORK_ERROR": "The server could not be reached. Check your connection and try again.",
+    "UNEXPECTED_RESPONSE": "The server answered something unexpected. Try again in a few minutes."
+  },
+  "nav": {
+    "main": "Main"
+  },
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "intro": "Your account is ready. Your projects and your specifications will appear here."
   }
 }

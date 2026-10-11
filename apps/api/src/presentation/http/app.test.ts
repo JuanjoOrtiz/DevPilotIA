@@ -1,15 +1,15 @@
 import { apiErrorSchema, healthResponseSchema } from '@devpilot/shared';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CheckHealth } from '../../application/use-cases/CheckHealth.js';
 import { DomainError } from '../../domain/errors/DomainError.js';
-import { createApp } from './app.js';
+import { lucia } from '../../test-support/authFixture.js';
+import { createTestApp } from '../../test-support/testApp.js';
 
 function appWithDatabase(isReachable: () => Promise<boolean>) {
-  return createApp({ checkHealth: new CheckHealth({ isReachable }, 'test') });
+  return createTestApp({ databaseReachable: isReachable }).app;
 }
 
-const healthyApp = () => appWithDatabase(() => Promise.resolve(true));
+const healthyApp = () => createTestApp().app;
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -39,10 +39,18 @@ describe('GET /api/v1/health', () => {
 
 describe('error handling', () => {
   it('answers an unknown route with the shared error format', async () => {
-    const response = await request(healthyApp()).get('/api/v1/does-not-exist');
+    const { app, auth } = createTestApp();
+    const session = await auth.registerUser.execute(lucia);
 
-    expect(response.status).toBe(404);
-    expect(apiErrorSchema.parse(response.body).error.code).toBe('NOT_FOUND');
+    const insideTheApi = await request(app)
+      .get('/api/v1/does-not-exist')
+      .set('Authorization', `Bearer ${session.accessToken}`);
+    const outsideTheApi = await request(app).get('/does-not-exist');
+
+    expect(insideTheApi.status).toBe(404);
+    expect(apiErrorSchema.parse(insideTheApi.body).error.code).toBe('NOT_FOUND');
+    expect(outsideTheApi.status).toBe(404);
+    expect(apiErrorSchema.parse(outsideTheApi.body).error.code).toBe('NOT_FOUND');
   });
 
   it('maps a domain error to its status and code', async () => {

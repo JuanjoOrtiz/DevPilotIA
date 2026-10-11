@@ -75,7 +75,7 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 | T-25 | La API de datos automática de Supabase expone las tablas sin pasar por la API de DevPilot | La API de datos se desactiva en el proyecto de Supabase; solo se usa su PostgreSQL | SEG-02 |
 | T-26 | Una caché intermedia guarda y sirve a otro usuario una respuesta de la API | Todas las respuestas de la API llevan `Cache-Control: no-store` | SEG-02 |
 | T-27 | Alguien llama a la URL propia de la API, sin pasar por el frontend, para falsear su IP | La API solo confía en la IP que añade la plataforma, nunca en la que envía el cliente; pendiente de configurar y comprobar con el límite de intentos | SEG-07, SEG-09 |
-| T-28 | Un despliegue de vista previa ejecuta código sin revisar contra la base de datos de producción | `DATABASE_URL` existe solo en el entorno de producción de Vercel; las vistas previas de la API arrancan sin base de datos y no sirven peticiones | SEG-02, RNF-05 |
+| T-28 | Un despliegue de vista previa ejecuta código sin revisar contra la base de datos de producción | `DATABASE_URL` y los secretos JWT existen solo en el entorno de producción de Vercel; las vistas previas de la API no llegan a arrancar | SEG-02, RNF-05 |
 
 ## Riesgos aceptados
 

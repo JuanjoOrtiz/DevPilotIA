@@ -2,7 +2,7 @@
 
 DevPilot AI convierte una tarea o un bug descrito en lenguaje natural en una especificación técnica lista para implementar.
 
-> En construcción: de momento el repositorio contiene el esqueleto del proyecto. La documentación completa llegará con la entrega.
+> En construcción: de momento están el esqueleto del proyecto y la autenticación. La documentación completa llegará con la entrega.
 
 ## Puesta en marcha
 
@@ -12,7 +12,7 @@ Con Docker, todo en un comando:
 docker compose up --build
 ```
 
-Abre <http://localhost:8080>. La página de inicio muestra el estado de la API y de la base de datos.
+Abre <http://localhost:8080> y crea una cuenta. Tras entrar, la página de inicio muestra el estado de la API y de la base de datos.
 
 Para desarrollar sin Docker hace falta Node 22 y un PostgreSQL, que puede ser el del propio Compose:
 

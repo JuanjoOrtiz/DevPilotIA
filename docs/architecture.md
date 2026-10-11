@@ -24,6 +24,7 @@ flowchart LR
 | --- | --- | --- |
 | Frontend | React + TypeScript + Vite, Atomic Design | Requisito del proyecto |
 | Estado asíncrono | TanStack Query | Caché, reintentos y estados de carga y error |
+| Rutas | React Router | Todo lo que no es login o registro exige sesión |
 | Formularios | React Hook Form + Zod | Los mismos esquemas validan en cliente y en servidor |
 | Gráficas | Recharts | Barras, líneas y donut del dashboard |
 | Idiomas | react-i18next, español e inglés | Ningún texto escrito dentro de los componentes |
@@ -31,7 +32,7 @@ flowchart LR
 | Persistencia | PostgreSQL con Prisma | Misma base en local y en producción; migraciones y seed versionados |
 | Base de datos en producción | Supabase, plan Free | 500 MB por proyecto y 2 proyectos activos; el proyecto se pausa tras 1 semana sin actividad; sin copias de seguridad |
 | LLM | Gemini API, capa gratuita, modelo Flash | Salida estructurada nativa; límites por minuto y por día |
-| Autenticación | JWT propio: access token corto + refresh token | Sin dependencia de terceros |
+| Autenticación | JWT propio: access token corto + refresh token; bcryptjs para las contraseñas y jose para los JWT | Sin servicios de terceros |
 | Hosting del frontend | Vercel | Reenvía `/api` a la API: frontend y API comparten origen |
 | Hosting de la API | Vercel, plan Hobby: Express como función, en Fráncfort | Sin estado en memoria entre peticiones; 300 s como máximo por petición; solo uso no comercial |
 | Entorno local | Docker Compose: API + PostgreSQL + web | Un solo comando levanta todo; el CI construye además la imagen de la API |
@@ -78,15 +79,18 @@ apps/api/src/
 │   └── errors/              # errores de dominio con su código
 ├── application/
 │   ├── use-cases/           # un caso de uso por fichero
+│   ├── services/            # lógica que comparten varios casos de uso, como abrir una sesión
 │   └── dto/
 ├── infrastructure/
 │   ├── config/              # variables de entorno validadas al arrancar
 │   ├── database/            # Prisma: cliente generado, repositorios, seed y datos de ejemplo
+│   ├── security/            # bcrypt, JWT y reloj del sistema
 │   └── ai/                  # GeminiProvider, FakeLLMProvider
 ├── presentation/
 │   ├── http/                # app Express, rutas, middlewares, OpenAPI
 │   ├── controllers/
 │   └── validators/
+├── test-support/            # dobles en memoria para los tests; no se compila
 ├── composition.ts           # composición: une implementaciones y casos de uso
 ├── main.ts                  # arranque como servidor: desarrollo y Docker
 └── index.ts                 # arranque como función: Vercel
@@ -138,7 +142,10 @@ apps/web/src/
 ├── services/                # cliente HTTP y llamadas a la API
 ├── hooks/
 ├── i18n/                    # configuración y ficheros es / en
-└── types/
+├── styles/                  # tokens de diseño y estilos globales
+├── test/                    # utilidades de los tests
+├── types/
+└── App.tsx                  # rutas de la aplicación
 ```
 
 Reglas (RNF-02):
@@ -204,9 +211,16 @@ Todos los errores comparten formato:
 
 - No hay cuenta de demostración: el acceso es siempre con una cuenta registrada.
 - Access token de 15 minutos, guardado solo en la memoria del navegador, nunca en `localStorage`; al recargar la página se recupera con `/auth/refresh`.
-- Refresh token de 7 días en cookie httpOnly, Secure y SameSite.
-- El refresh token rota en cada uso; reutilizar uno ya usado revoca todas las sesiones del usuario.
+- Refresh token de 7 días en la cookie `devpilot_refresh`: httpOnly, `SameSite=Strict`, `Secure` en producción y con ruta `/api/v1/auth`, así que el navegador solo la envía a los endpoints de autenticación.
+- El refresh token rota en cada uso; reutilizar uno ya usado revoca todas las sesiones del usuario. En la base de datos se guarda su hash SHA-256, nunca el token.
 - La cookie viaja porque frontend y API comparten origen: ver «Mismo origen» más abajo.
+- Los dos tokens son JWT firmados con HS256, cada uno con su secreto (`JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`) y con su tipo en `aud`: uno nunca vale como el otro. La API no arranca con secretos de menos de 32 bytes, iguales entre sí o, en producción, de ejemplo.
+- Las contraseñas se guardan con bcrypt de coste 12. El registro las limita a 72 bytes, que es lo que bcrypt tiene en cuenta.
+- El login responde igual, y tarda lo mismo, con una contraseña incorrecta que con un email sin cuenta.
+
+**Autenticación por defecto.** Un único middleware protege todo `/api/v1`. Las rutas públicas son la lista `PUBLIC_ROUTES` de `presentation/http/app.ts`: health, registro, login y refresh. Cualquier otra ruta responde 401 sin access token, exista o no (SEG-15).
+
+**Renovación sin carreras.** Como cada refresh token vale una sola vez, el frontend nunca lanza dos renovaciones a la vez: dentro de una pestaña comparten una misma petición y, entre pestañas, se turnan con un bloqueo del navegador (Web Locks). Sin eso, la API tomaría la segunda por un robo y cerraría todas las sesiones.
 
 ## Mismo origen
 

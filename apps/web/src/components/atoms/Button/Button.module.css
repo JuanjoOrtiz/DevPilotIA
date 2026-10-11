@@ -31,3 +31,7 @@
   background: var(--color-surface);
   color: var(--color-text);
 }
+
+.fullWidth {
+  width: 100%;
+}

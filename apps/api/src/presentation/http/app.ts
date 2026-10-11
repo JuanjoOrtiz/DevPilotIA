@@ -1,19 +1,38 @@
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { CheckHealth } from '../../application/use-cases/CheckHealth.js';
+import type { TokenService } from '../../domain/providers/TokenService.js';
+import { createAuthController, type AuthUseCases } from '../controllers/authController.js';
 import { createHealthController } from '../controllers/healthController.js';
+import { createAuthentication, type PublicRoute } from './authentication.js';
+import type { CookieSettings } from './cookies.js';
 import { errorHandler, notFoundHandler } from './errorHandler.js';
 
-/** Casos de uso que necesita la capa HTTP. composition.ts los construye y los inyecta. */
+/** Lo que necesita la capa HTTP. composition.ts lo construye y lo inyecta. */
 export interface AppDependencies {
   checkHealth: CheckHealth;
+  auth: AuthUseCases;
+  tokens: TokenService;
+  cookies: CookieSettings;
 }
 
 export const API_PREFIX = '/api/v1';
 const MAX_BODY_SIZE = '100kb';
 
+/**
+ * SEG-15: las únicas rutas que no piden access token. Cualquier otra, exista o no,
+ * responde 401 sin él; añadir una ruta pública es añadir una línea aquí.
+ */
+export const PUBLIC_ROUTES: readonly PublicRoute[] = [
+  { method: 'GET', path: '/health' },
+  { method: 'POST', path: '/auth/register' },
+  { method: 'POST', path: '/auth/login' },
+  { method: 'POST', path: '/auth/refresh' },
+];
+
 export function createApp(dependencies: AppDependencies): Express {
   const app = express();
+  const auth = createAuthController(dependencies.auth, dependencies.cookies);
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -25,7 +44,15 @@ export function createApp(dependencies: AppDependencies): Express {
   app.use(express.json({ limit: MAX_BODY_SIZE }));
 
   const v1 = express.Router();
+  v1.use(createAuthentication(dependencies.tokens, PUBLIC_ROUTES));
+
   v1.get('/health', createHealthController(dependencies.checkHealth));
+  v1.post('/auth/register', auth.register);
+  v1.post('/auth/login', auth.login);
+  v1.post('/auth/refresh', auth.refresh);
+  v1.post('/auth/logout', auth.logout);
+  v1.get('/auth/me', auth.me);
+
   app.use(API_PREFIX, v1);
 
   app.use(notFoundHandler);

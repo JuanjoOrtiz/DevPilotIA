@@ -20,7 +20,17 @@ function forbidImports({ folders, packages = [], reason }) {
   return { 'no-restricted-imports': ['error', { patterns }] };
 }
 
-const FRAMEWORKS = ['express', 'express/*', 'helmet', '@prisma/*', 'pg', '@google/*'];
+const FRAMEWORKS = [
+  'express',
+  'express/*',
+  'helmet',
+  '@prisma/*',
+  'pg',
+  '@google/*',
+  'bcryptjs',
+  'jose',
+  '@vercel/*',
+];
 const DATA_ACCESS = ['@tanstack/react-query'];
 
 export default tseslint.config(
