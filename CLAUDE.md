@@ -103,7 +103,9 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 ## Git
 
 - Conventional Commits, en inglés (`feat(api): add register use case`).
-- `main` está protegida: los cambios entran por pull request con el CI en verde. No hagas push directo a `main`.
+- Dos ramas permanentes y protegidas: `develop` integra el trabajo y `main` es lo que está en producción. Ninguna admite push directo.
+- El trabajo sale de `develop` en ramas `feature/…`, `fix/…` o `chore/…` y vuelve a `develop` por pull request con el CI en verde.
+- Al cerrar un bloque, `develop` pasa a `main` con un pull request fusionado con merge commit, nunca con squash. Ese merge es el despliegue.
 - Nunca subas `.env`, claves ni volcados de base de datos.
 - Código, identificadores y commits en inglés; documentación de `docs/` en español.
 

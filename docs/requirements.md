@@ -111,7 +111,7 @@ La interfaz se entrega en español e inglés, con selector de idioma. No hay cue
 | RNF-09 | Experiencia de uso | Cada vista con datos tiene estados de carga, vacío y error; la interfaz es usable desde 360 px de ancho |
 | RNF-10 | Accesibilidad | Formularios con etiquetas asociadas, navegación completa por teclado, contraste AA y alternativa textual para cada gráfica |
 | RNF-11 | Pruebas | Tests unitarios de todos los casos de uso con repositorios en memoria y `FakeLLMProvider`; tests de integración de los endpoints de autenticación y generación; cobertura mínima del 70 % en `domain` y `application` |
-| RNF-12 | Calidad e integración continua | ESLint y Prettier; GitHub Actions ejecuta el pipeline de «Pipeline de CI/CD» y ningún cambio llega a `main` sin el CI en verde |
+| RNF-12 | Calidad e integración continua | ESLint y Prettier; GitHub Actions ejecuta el pipeline de «Pipeline de CI/CD» y ningún cambio llega a `develop` ni a `main` sin el CI en verde |
 | RNF-13 | Coste | 0 € al mes con uso de demostración |
 | RNF-14 | Internacionalización | Interfaz completa en español e inglés: idioma inicial según el navegador, selector visible y preferencia recordada; los mensajes de error se traducen en el frontend a partir de su código; fechas y números siguen el formato del idioma activo |
 | RNF-15 | Monitorización de errores | Sentry captura los errores no controlados del frontend, con un error boundary de React, y de la API. Cada evento lleva entorno y versión; los source maps se suben en el build; un error nuevo en producción avisa por email. Los errores esperados (validación, 401, 404, límite de uso) no se envían. Sin DSN configurado, Sentry queda desactivado, como en local y en los tests |
@@ -140,7 +140,7 @@ La seguridad se decide en el diseño y viene activada de serie. El diseño aplic
 | Diseño | Modelo de amenazas antes de programar | `docs/threat-model.md`, enlazado desde el README |
 | Implementación | Validación en la frontera, reglas de lint de seguridad, análisis estático y detección de secretos (SEG-19) | Alertas de seguridad de GitHub sin incidencias altas abiertas |
 | Verificación | Un test por requisito de seguridad; auditoría de dependencias | Jobs de `ci.yml` |
-| Despliegue | Rama protegida, producción solo desde el pipeline, secretos en GitHub Actions | `deploy.yml` y protección de `main` |
+| Despliegue | Ramas protegidas, producción solo desde el pipeline, secretos en GitHub Actions | `deploy.yml` y protección de `develop` y `main` |
 | Operación | Monitorización de errores, registro de eventos de seguridad, Dependabot y canal para avisar de vulnerabilidades | Sentry, registros de la API y `SECURITY.md` |
 
 SEG-19 completa la fase de implementación: el repositorio tiene activos el análisis de código con CodeQL y la detección de secretos con bloqueo en el push, e incluye un `SECURITY.md`. Quedan como prescindibles el análisis dinámico sobre la aplicación desplegada y el escaneo de la imagen Docker.
@@ -175,18 +175,18 @@ De la lista [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-
 
 ## Pipeline de CI/CD
 
-GitHub Actions valida cada pull request y despliega a producción solo desde `main` y solo con el CI en verde.
+GitHub Actions valida cada pull request y despliega a producción solo desde `main` y solo con el CI en verde. El trabajo se integra en `develop` y pasa a `main` al cerrar cada bloque.
 
 | Workflow | Se dispara con | Qué hace |
 | --- | --- | --- |
-| `ci.yml` | Cada pull request y cada push a `main` | Lint y formato, incluida la regla de dependencias entre capas; comprobación de tipos; tests de la API con PostgreSQL en un contenedor de servicio; tests del frontend; build del frontend y de la imagen Docker de la API. El día 17 se añaden el build de Storybook, la validación de la especificación OpenAPI y la auditoría de dependencias |
+| `ci.yml` | Cada pull request y cada push a `develop` o a `main` | Lint y formato, incluida la regla de dependencias entre capas; comprobación de tipos; tests de la API con PostgreSQL en un contenedor de servicio; tests del frontend; build del frontend y de la imagen Docker de la API. El día 17 se añaden el build de Storybook, la validación de la especificación OpenAPI y la auditoría de dependencias |
 | `deploy.yml` | CI en verde sobre `main` | En este orden: migraciones de Prisma contra Supabase, despliegue de la API y del frontend en Vercel, registro de la versión y subida de source maps a Sentry, publicación de Storybook, y comprobación de `/health` y de la página de inicio |
 | `release.yml` | Una etiqueta `v*` | Crea la release de GitHub con sus notas; la entrega es `v1.0.0` |
 
 Reglas del pipeline:
 
 - **Un solo camino a producción.** Cuando exista `deploy.yml`, los despliegues automáticos de Vercel sobre `main` se desactivan; despliega el workflow, con la CLI de Vercel. Hasta entonces, Vercel despliega por su cuenta desde `main`.
-- **Rama protegida.** `main` exige el CI en verde y no admite push directo.
+- **Ramas protegidas.** `develop` y `main` exigen pull request con el CI en verde y no admiten push directo. Las ramas de trabajo (`feature/…`, `fix/…`, `chore/…`) salen de `develop` y vuelven a ella; `develop` pasa a `main` con un merge commit al cerrar cada bloque.
 - **Sin llamadas al LLM.** Los tests usan `FakeLLMProvider`; la clave de Gemini no se guarda en GitHub.
 - **Secretos.** La URL de la base de datos y los tokens de Vercel y Sentry están en GitHub Actions Secrets, nunca en el repositorio.
 - **Migraciones primero.** Cada migración es compatible con la versión anterior de la API, porque la base de datos cambia antes que el código.
@@ -200,7 +200,7 @@ Siete piezas; el proyecto está terminado cuando las siete cumplen su criterio.
 | Entregable | Contenido | Criterio de aceptación |
 | --- | --- | --- |
 | Aplicación desplegada | Frontend y API en Vercel, base de datos en Supabase | URL pública con HTTPS; el recorrido completo funciona con una cuenta recién registrada: registrarse, ver el proyecto de ejemplo, crear proyecto, generar, editar, exportar y ver el dashboard |
-| Repositorio | Monorepo con `apps/web`, `apps/api` y `packages/shared`; Conventional Commits; `main` protegida y cambios por pull request; `.gitignore`, licencia y ningún secreto en el historial | CI en verde en la rama principal y etiqueta `v1.0.0` en el commit entregado |
+| Repositorio | Monorepo con `apps/web`, `apps/api` y `packages/shared`; Conventional Commits; `develop` y `main` protegidas y cambios por pull request; `.gitignore`, licencia y ningún secreto en el historial | CI en verde en la rama principal y etiqueta `v1.0.0` en el commit entregado |
 | Docker | Dockerfile de la API, Dockerfile del frontend y `docker-compose.yml` con API, PostgreSQL y web | `docker compose up` deja la aplicación funcionando en local con migraciones y datos de demostración aplicados |
 | README técnico | En la raíz, en inglés (`README.md`) y en español (`README.es.md`), enlazados entre sí: descripción y enlaces a la aplicación desplegada, a Swagger UI y a Storybook, capturas, diagrama de arquitectura y regla de dependencias, estructura de carpetas, decisiones técnicas, modelo de amenazas, contrato de IA, variables de entorno, ejecución en local, tests, despliegue y limitaciones conocidas | Una persona ajena al proyecto lo levanta en local siguiendo solo el README; las dos versiones dicen lo mismo |
 | Datos de demostración | Script de seed repetible: 3 proyectos y unas 25 generaciones repartidas en 30 días, con distintos tipos, complejidades y estados, alguna editada y alguna fallida. En local crea un usuario de ejemplo; en producción se ejecuta una vez sobre la cuenta del autor y no crea usuarios. Cada cuenta nueva recibe además un proyecto de ejemplo (RF-PRO-06) | En local y en la cuenta del autor, el dashboard muestra las cuatro gráficas con datos nada más entrar; el seed no consume cuota del LLM porque las especificaciones van guardadas en el repositorio |

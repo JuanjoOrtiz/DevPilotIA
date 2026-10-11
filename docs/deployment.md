@@ -84,7 +84,7 @@ Si los registros muestran errores de «max clients», el pooler en modo sesión 
 
 ## 3. Frontend en Vercel
 
-1. En `apps/web/vercel.json`, sustituye el destino de la primera regla por la URL de la API y súbelo a `main` con un pull request:
+1. En `apps/web/vercel.json`, sustituye el destino de la primera regla por la URL de la API y llévalo a `main` por el camino habitual, con un pull request a `develop` y otro de `develop` a `main`:
 
    ```json
    { "source": "/api/:path*", "destination": "https://TU-PROYECTO-API.vercel.app/api/:path*" }
@@ -93,20 +93,25 @@ Si los registros muestran errores de «max clients», el pooler en modo sesión 
 2. En Vercel, importa otra vez el mismo repositorio como un proyecto nuevo, por ejemplo `devpilot-web`, y fija «Root Directory» en `apps/web`. El framework es Vite, con sus valores por defecto. No necesita variables de entorno.
 3. Abre la URL del proyecto. La página de inicio debe mostrar «Operativo».
 
-A partir de aquí, Vercel despliega los dos proyectos con cada cambio en `main` y crea una vista previa de cada pull request. La vista previa del frontend habla con la API de producción; la de la API no tiene base de datos.
+A partir de aquí, Vercel despliega los dos proyectos con cada cambio en `main` y crea una vista previa de cada pull request y de la rama `develop`. La vista previa del frontend habla con la API de producción; la de la API no tiene base de datos.
 
-## 4. Proteger la rama `main`
+## 4. Proteger `main` y `develop`
 
-En GitHub, en «Settings», «Rules» y «Rulesets», crea un «branch ruleset» activo sobre la rama por defecto, sin nadie en la lista de excepciones:
+El repositorio tiene dos ramas permanentes: `develop`, donde se integra el trabajo, y `main`, que es lo que está desplegado.
 
+En GitHub, en «Settings», «Rules» y «Rulesets», crea un «branch ruleset» activo, sin nadie en la lista de excepciones. En «Target branches» incluye la rama por defecto y, con «Include by pattern», `develop`:
+
+- Impedir el borrado y el push forzado, que vienen marcados por defecto. Así `develop` no se borra al fusionarla en `main`.
 - Exigir pull request antes de fusionar, con cero aprobaciones obligatorias: con una sola persona no habría quien aprobase.
 - Exigir que pasen las comprobaciones «Lint, tipos, tests y build» e «Imagen Docker de la API». Se buscan con ese nombre, sin el prefijo «CI /».
 
 Si se renombra un job de `ci.yml`, hay que actualizar la regla.
 
+El pull request de `develop` a `main` se fusiona siempre con «Create a merge commit». Con «Squash and merge» las dos ramas dejan de compartir historia y el siguiente pull request muestra conflictos y commits repetidos.
+
 ## Cambios en la base de datos
 
-Mientras no exista `deploy.yml`, las migraciones se aplican a mano y **antes** de fusionar el código que las necesita:
+Mientras no exista `deploy.yml`, las migraciones se aplican a mano y **antes** de pasar a `main` el código que las necesita:
 
 ```bash
 npm run db:migrate                                    # en local: crea la migración y la aplica
