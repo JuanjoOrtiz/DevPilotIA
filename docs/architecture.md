@@ -129,23 +129,25 @@ Dos reglas que impone ejecutarse como función:
 ```
 apps/web/src/
 ├── components/
-│   ├── atoms/               # Button, Input, Badge, Spinner…
-│   ├── molecules/           # FormField, SearchBar, StatCard…
-│   ├── organisms/           # LoginForm, ProjectList, SpecViewer…
-│   ├── templates/           # AuthLayout, AppLayout
-│   └── pages/               # una por ruta
+│   ├── atoms/               # Button, LinkButton, TextInput, Tag, StatusBadge, Icon…
+│   ├── molecules/           # FormField, TagInput, SearchField, ConfirmDialog, Pagination…
+│   ├── organisms/           # LoginForm, ProjectForm, ProjectBrowser, GenerationHistory…
+│   ├── templates/           # AuthLayout, AppLayout, FormPageLayout
+│   └── pages/               # una por ruta, más AppShell: lo común a las páginas con sesión
 ├── features/
-│   ├── auth/
-│   ├── projects/
-│   ├── ai-analysis/         # generación, historial, edición y exportación
+│   ├── auth/                # sesión y guardas de rutas
+│   ├── forms/               # cómo llega a un formulario lo que la API rechaza
+│   ├── projects/            # consultas y cambios de proyectos e historial (TanStack Query)
+│   ├── ai-analysis/         # generación, edición y exportación
 │   └── dashboard/
-├── services/                # cliente HTTP y llamadas a la API
+├── services/                # cliente HTTP, llamadas a la API y caché de datos
 ├── hooks/
-├── i18n/                    # configuración y ficheros es / en
+├── i18n/                    # configuración, ficheros es / en y formato de fechas
 ├── styles/                  # tokens de diseño y estilos globales
-├── test/                    # utilidades de los tests
+├── test/                    # utilidades y datos de los tests
 ├── types/
-└── App.tsx                  # rutas de la aplicación
+├── routes.ts                # las rutas, en un solo sitio
+└── App.tsx                  # qué página corresponde a cada ruta
 ```
 
 Reglas (RNF-02):
@@ -156,6 +158,12 @@ Reglas (RNF-02):
 - Storybook sigue la misma jerarquía.
 
 Las mismas reglas están en `eslint.config.js`, junto con la que prohíbe `dangerouslySetInnerHTML`. Cada componente vive en su carpeta con su CSS Module; los colores y tamaños salen de `styles/tokens.css`.
+
+**Datos del servidor.** Cada área de `features` tiene sus consultas y cambios de TanStack Query junto a sus claves de caché. Una página pide los datos y se los pasa a los organismos, que no saben de dónde vienen. Tras crear, editar o eliminar algo, la consulta afectada se vuelve a pedir: por eso un proyecto nuevo aparece en la lista sin recargar (RF-PRO-01). Al cambiar de sesión la caché se vacía entera.
+
+**Formularios.** Un campo se monta con `FormField`, que enlaza etiqueta, control, ayuda y error; el control puede ser una entrada, un área de texto o una lista de etiquetas. El formulario valida con el mismo esquema de `packages/shared` que la API, y lo que la API rechace después se muestra en su campo.
+
+**Estados.** Cada vista con datos resuelve los tres estados de RNF-09 con `LoadingPanel`, `EmptyState` y `ErrorPanel`.
 
 ## Modelo de datos
 
@@ -188,7 +196,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | GET | /projects/:id | Detalle de un proyecto |
 | PATCH | /projects/:id | Edita un proyecto |
 | DELETE | /projects/:id | Elimina un proyecto y sus generaciones |
-| GET | /projects/:id/generations | Historial paginado con filtros `type`, `status` y `q` |
+| GET | /projects/:id/generations | Historial paginado con `page` y `pageSize`, de más reciente a más antigua |
 | POST | /projects/:id/generations | Lanza una generación; responde 202 |
 | GET | /generations/:id | Estado y especificación de una generación |
 | PATCH | /generations/:id | Guarda la versión editada |
@@ -221,6 +229,17 @@ Todos los errores comparten formato:
 **Autenticación por defecto.** Un único middleware protege todo `/api/v1`. Las rutas públicas son la lista `PUBLIC_ROUTES` de `presentation/http/app.ts`: health, registro, login y refresh. Cualquier otra ruta responde 401 sin access token, exista o no (SEG-15).
 
 **Renovación sin carreras.** Como cada refresh token vale una sola vez, el frontend nunca lanza dos renovaciones a la vez: dentro de una pestaña comparten una misma petición y, entre pestañas, se turnan con un bloqueo del navegador (Web Locks). Sin eso, la API tomaría la segunda por un robo y cerraría todas las sesiones.
+
+## Proyectos e historial
+
+- **Aislamiento por usuario.** Los repositorios de proyectos y generaciones reciben siempre el id del usuario en sesión y lo llevan a la condición de la consulta, también al editar y al borrar. Un proyecto de otra persona se comporta como uno que no existe: 404, con la misma respuesta (SEG-01 y RNF-06). El dueño de un proyecto sale del access token, nunca del cuerpo de la petición.
+- **Ids de la URL.** Un id que no es un UUID responde 404 sin llegar a la base de datos.
+- **Última actividad.** Es lo más reciente entre la última generación del proyecto y su última edición. La lista de proyectos va ordenada por ella; la búsqueda por nombre se hace en el navegador, sobre la lista ya cargada.
+- **Historial.** Cada fila lleva lo necesario para la lista: título o, si aún no lo hay, el comienzo de lo que escribió el usuario. La especificación no se lee hasta abrir la generación. La página tiene 10 filas por defecto y 50 como máximo.
+- **Borrado.** Eliminar un proyecto elimina sus generaciones por la clave ajena (`ON DELETE CASCADE`), en la misma operación.
+- **Pantallas estrechas.** La tabla del historial mide el ancho de su contenedor: cuando no caben las cinco columnas, cada generación se pinta como una tarjeta, sin desplazamiento lateral.
+
+Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están implementados. Abrir una generación (RF-HIS-03) llega con el visor de la especificación.
 
 ## Mismo origen
 

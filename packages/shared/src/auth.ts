@@ -1,20 +1,5 @@
 import { z } from 'zod';
-
-/**
- * Motivos por los que un campo no es válido. La API los devuelve en `details.fields`
- * y el frontend los traduce: aquí no hay ningún texto para el usuario.
- */
-export const FIELD_ERRORS = [
-  'NAME_REQUIRED',
-  'NAME_TOO_LONG',
-  'EMAIL_INVALID',
-  'PASSWORD_REQUIRED',
-  'PASSWORD_TOO_SHORT',
-  'PASSWORD_TOO_LONG',
-] as const;
-export type FieldError = (typeof FIELD_ERRORS)[number];
-
-const fieldError = (code: FieldError): FieldError => code;
+import { fieldError } from './validation.js';
 
 export const NAME_MAX_LENGTH = 80;
 export const EMAIL_MAX_LENGTH = 254;
@@ -94,9 +79,3 @@ export type SessionResponse = z.infer<typeof sessionResponseSchema>;
 /** Respuesta de `GET /auth/me`. */
 export const currentUserResponseSchema = z.object({ user: userSchema });
 export type CurrentUserResponse = z.infer<typeof currentUserResponseSchema>;
-
-/** Forma de `details` en un `VALIDATION_ERROR` causado por el cuerpo de la petición. */
-export const fieldErrorsSchema = z.object({
-  fields: z.record(z.string(), z.array(z.string())),
-});
-export type FieldErrors = z.infer<typeof fieldErrorsSchema>;

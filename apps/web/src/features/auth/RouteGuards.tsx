@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { ROUTES } from './routes';
+import { ROUTES } from '../../routes';
 import { useSession } from './SessionContext';
 
 interface GuardProps {

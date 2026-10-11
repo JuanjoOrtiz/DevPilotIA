@@ -1,0 +1,4 @@
+/* Dentro de un botón o de una fila flexible, el icono nunca se encoge. */
+.icon {
+  flex: none;
+}

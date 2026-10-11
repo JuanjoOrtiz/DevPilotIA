@@ -12,7 +12,7 @@ Con Docker, todo en un comando:
 docker compose up --build
 ```
 
-Abre <http://localhost:8080> y crea una cuenta. Tras entrar, la página de inicio muestra el estado de la API y de la base de datos.
+Abre <http://localhost:8080> y crea una cuenta. Tras entrar verás tus proyectos: crea el primero para darle contexto a la IA.
 
 Para desarrollar sin Docker hace falta Node 22 y un PostgreSQL, que puede ser el del propio Compose:
 

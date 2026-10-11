@@ -1,7 +1,22 @@
 .header {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .title {
@@ -18,4 +33,10 @@
   font-size: 15px;
   line-height: 1.5;
   color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }

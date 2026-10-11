@@ -53,7 +53,7 @@ Capas en `apps/api/src`: `domain`, `application`, `infrastructure`, `presentatio
 - Los imports relativos llevan extensión `.js` (ESM de Node): `import { x } from './x.js'`.
 - El cliente de Prisma se genera en `src/infrastructure/database/generated/` y no se versiona; solo lo importa `infrastructure`.
 - La imagen que sirve la API no lleva la CLI de Prisma: las migraciones las aplica el servicio `migrate` de Docker Compose o el pipeline.
-- Toda entrada se valida con Zod antes de llegar a un caso de uso. Los esquemas compartidos viven en `packages/shared`, que solo contiene esquemas Zod y tipos y se puede importar desde cualquier capa.
+- Toda entrada se valida con Zod antes de llegar a un caso de uso: el cuerpo con `parseBody`, los parámetros de la URL con `parseQuery` y el id de un recurso con `parseResourceId`, que responde 404 si no es un UUID. Los esquemas compartidos viven en `packages/shared`, que solo contiene esquemas Zod y tipos y se puede importar desde cualquier capa.
 - La composición se hace solo en `apps/api/src/composition.ts`, el único fichero que importa de todas las capas. Hay dos arranques: `main.ts` como servidor (desarrollo y Docker) e `index.ts` como función (Vercel).
 - En producción la API es una función de Vercel: no guardes estado en memoria entre peticiones (límites, contadores, cachés) y registra con `waitUntil` cualquier trabajo que siga después de responder.
 - Todos los errores salen con el formato `{ "error": { "code", "message", "details" } }`.
@@ -64,6 +64,9 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 
 - Átomos y moléculas son presentacionales: sin llamadas a la API, sin estado global, sin TanStack Query.
 - El acceso a datos vive en `features/`, `services/` y `hooks/`. Las páginas componen plantillas y organismos y conectan los datos.
+- Los datos del servidor se piden con TanStack Query: las consultas, los cambios y sus claves de caché de cada área están en `features/<área>`. Después de un cambio se vuelve a pedir la consulta afectada.
+- Las rutas están en `src/routes.ts`; ningún componente escribe una ruta como texto.
+- Un campo de formulario se monta con `FormField`. Los estados de carga, vacío y error usan `LoadingPanel`, `EmptyState` y `ErrorPanel`.
 - Cada componente vive en su carpeta, con su CSS Module y su test. Los estilos usan las variables de `src/styles/tokens.css`, nunca colores escritos a mano.
 - Las llamadas a la API pasan por `apiRequest` de `services/apiClient.ts`, con rutas relativas bajo `/api/v1`: añade el access token, valida la respuesta con su esquema y renueva la sesión si ha caducado.
 - Los motivos de error de un campo son códigos de `packages/shared` (`FIELD_ERRORS`); su texto está en `validation.*` de los ficheros de traducción.
@@ -75,7 +78,7 @@ Componentes en `apps/web/src/components`: `atoms`, `molecules`, `organisms`, `te
 ## Reglas de seguridad por defecto
 
 - **Denegar por defecto**: la autenticación es global y las rutas públicas son una lista explícita, `PUBLIC_ROUTES` en `presentation/http/app.ts`. Una ruta nueva nace protegida; el id del usuario se lee con `authenticatedUserId(res)`.
-- **Aislamiento por usuario**: toda consulta de proyectos y generaciones filtra por el usuario en sesión. Un recurso ajeno responde 404, nunca 403.
+- **Aislamiento por usuario**: toda consulta de proyectos y generaciones filtra por el usuario en sesión, que los repositorios reciben como primer parámetro. Un recurso ajeno responde 404, nunca 403, y el dueño de un recurso nunca se lee del cuerpo de la petición.
 - **Secretos**: solo en variables de entorno del servidor. Nada de claves en el repositorio, en el frontend ni en los logs. `.env.example` lleva todas las variables sin valores reales.
 - **Arranque seguro**: la API no arranca si falta una variable o si, en producción, detecta valores de ejemplo o secretos débiles.
 - **Mismo origen**: el navegador siempre habla con un solo origen, que reenvía `/api` a la API (Vite en desarrollo, nginx en Docker, Vercel en producción). La API no envía cabeceras CORS y marca sus respuestas con `Cache-Control: no-store`.

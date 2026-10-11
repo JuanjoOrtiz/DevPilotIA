@@ -1,0 +1,70 @@
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 40px;
+  padding: 22px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.column {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Las convenciones son texto libre del usuario: se respetan sus saltos de línea. */
+.conventions {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-strong);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.missing {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-subtle);
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stack li {
+  display: flex;
+  min-width: 0;
+}

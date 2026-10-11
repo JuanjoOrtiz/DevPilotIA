@@ -7,20 +7,18 @@
   "language": {
     "label": "Language"
   },
-  "serverStatus": {
-    "title": "Server status",
-    "checking": "Checking",
-    "checkingHint": "Contacting the API…",
-    "retrying": "Retrying",
-    "retryingHint": "The API is not responding yet. It is retried automatically; there is no need to reload the page.",
-    "up": "Operational",
-    "upHint": "The API and the database are responding.",
-    "degraded": "Database unavailable",
-    "degradedHint": "The API responds, but it cannot reach the database.",
-    "unreachable": "No connection",
-    "unreachableHint": "The API could not be reached. Try again in a few minutes.",
+  "nav": {
+    "main": "Main",
+    "projects": "Projects"
+  },
+  "common": {
+    "cancel": "Cancel",
     "retry": "Retry",
-    "version": "Version {{version}}"
+    "previous": "Previous",
+    "next": "Next",
+    "required": "(required)",
+    "counter": "{{current}} / {{max}}",
+    "breadcrumbs": "Breadcrumb"
   },
   "auth": {
     "login": {
@@ -82,6 +80,111 @@
       }
     }
   },
+  "projects": {
+    "title": "Projects",
+    "intro": "The stack and the conventions of each project are sent to the AI as context.",
+    "new": "New project",
+    "search": "Search by name",
+    "count_one": "{{count}} project",
+    "count_other": "{{count}} projects",
+    "loading": "Loading projects…",
+    "noResults": "No project matches “{{query}}”.",
+    "empty": {
+      "title": "You have no projects yet",
+      "description": "Create the first one to give the AI context and generate your first specification.",
+      "action": "Create project"
+    },
+    "card": {
+      "stack": "Stack",
+      "generations_one": "generation",
+      "generations_other": "generations",
+      "lastActivity": "Last activity: {{date}}"
+    }
+  },
+  "project": {
+    "loading": "Loading project…",
+    "edit": "Edit",
+    "delete": "Delete",
+    "summary": {
+      "label": "Project details",
+      "description": "Description",
+      "stack": "Stack",
+      "conventions": "Conventions",
+      "noDescription": "No description.",
+      "noStack": "No technologies.",
+      "noConventions": "No conventions."
+    },
+    "notFound": {
+      "title": "We could not find this project",
+      "description": "It may have been deleted, or the address may be wrong.",
+      "action": "Back to projects"
+    },
+    "deleteDialog": {
+      "title": "Delete “{{name}}”?",
+      "generations_one": "Its <strong>generation</strong> will be deleted too.",
+      "generations_other": "Its <strong>{{count}} generations</strong> will be deleted too.",
+      "noGenerations": "This project has no generations.",
+      "irreversible": "This action cannot be undone.",
+      "confirm": "Delete project",
+      "deleting": "Deleting…"
+    }
+  },
+  "projectForm": {
+    "newTitle": "New project",
+    "editTitle": "Edit project",
+    "editCrumb": "Edit",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "techStack": "Tech stack",
+      "techStackPlaceholder": "Add a technology",
+      "techStackHint": "Type a technology and press Enter to add it as a tag.",
+      "removeTag": "Remove {{tag}}",
+      "conventions": "Conventions",
+      "conventionsHint": "Free text: architecture, naming, libraries, testing criteria."
+    },
+    "create": "Create project",
+    "creating": "Creating the project…",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "help": {
+      "title": "How this context is used",
+      "sent": "Every generation sends the AI the name, the description, the stack and the conventions of the project.",
+      "tasks": "The frontend and backend tasks in the specification mention the stack you declare here.",
+      "secrets": "Do not include credentials, proprietary code or confidential data."
+    }
+  },
+  "history": {
+    "title": "Generation history",
+    "loading": "Loading history…",
+    "columns": {
+      "title": "Title",
+      "type": "Type",
+      "complexity": "Complexity",
+      "status": "Status",
+      "date": "Date"
+    },
+    "type": {
+      "feature": "Feature",
+      "bug": "Bug"
+    },
+    "status": {
+      "generating": "Generating",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "edited": "Edited",
+    "sample": "Sample",
+    "noComplexity": "Not estimated",
+    "range_one": "{{from}}–{{to}} of {{count}} generation",
+    "range_other": "{{from}}–{{to}} of {{count}} generations",
+    "outOfRange": "There is nothing on this page.",
+    "pagination": "History pages",
+    "empty": {
+      "title": "This project has no generations yet",
+      "description": "When you generate a specification for this project, it will appear here."
+    }
+  },
   "validation": {
     "NAME_REQUIRED": "Enter your name.",
     "NAME_TOO_LONG": "The name can be up to 80 characters long.",
@@ -90,6 +193,15 @@
     "PASSWORD_REQUIRED": "Enter your password.",
     "PASSWORD_TOO_SHORT": "The password must be 8 characters or longer.",
     "PASSWORD_TOO_LONG": "The password is too long: 72 characters at most.",
+    "PROJECT_NAME_REQUIRED": "Enter a name for the project.",
+    "PROJECT_NAME_TOO_LONG": "The name can be up to 80 characters long.",
+    "DESCRIPTION_TOO_LONG": "The description can be up to 500 characters long.",
+    "CONVENTIONS_TOO_LONG": "The conventions can be up to 2,000 characters long.",
+    "TOO_MANY_TAGS": "You can add up to 15 technologies.",
+    "TAG_EMPTY": "A technology cannot be empty.",
+    "TAG_TOO_LONG": "Each technology can be up to 30 characters long.",
+    "PAGE_INVALID": "The page is not valid.",
+    "PAGE_SIZE_INVALID": "The page size is not valid.",
     "INVALID": "This value is not valid."
   },
   "errors": {
@@ -108,12 +220,5 @@
     "INTERNAL_ERROR": "Something went wrong on the server. Try again.",
     "NETWORK_ERROR": "The server could not be reached. Check your connection and try again.",
     "UNEXPECTED_RESPONSE": "The server answered something unexpected. Try again in a few minutes."
-  },
-  "nav": {
-    "main": "Main"
-  },
-  "home": {
-    "greeting": "Hello, {{name}}",
-    "intro": "Your account is ready. Your projects and your specifications will appear here."
   }
 }

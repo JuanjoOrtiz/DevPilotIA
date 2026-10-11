@@ -16,6 +16,15 @@ export default defineConfig({
       ),
     },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Las librerías cambian mucho menos que la aplicación: en su propio fichero, el
+        // navegador las conserva en caché entre un despliegue y el siguiente.
+        codeSplitting: { groups: [{ name: 'vendor', test: /node_modules/ }] },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
@@ -24,6 +33,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    setupFiles: ['src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
   },
 });

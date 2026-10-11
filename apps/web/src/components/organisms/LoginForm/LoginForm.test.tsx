@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SubmitFailure } from '../../../features/auth/submitFailure';
+import type { SubmitFailure } from '../../../features/forms/submitFailure';
 import i18n from '../../../i18n';
 import { LoginForm } from './LoginForm';
 

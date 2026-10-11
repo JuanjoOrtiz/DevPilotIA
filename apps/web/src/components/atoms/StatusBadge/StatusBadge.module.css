@@ -1,11 +1,13 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 .neutral {
@@ -26,4 +28,14 @@
 .danger {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
+}
+
+.info {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.caution {
+  background: var(--color-caution-bg);
+  color: var(--color-caution-text);
 }

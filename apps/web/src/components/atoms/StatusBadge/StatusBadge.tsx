@@ -1,14 +1,21 @@
 import type { ReactNode } from 'react';
 import styles from './StatusBadge.module.css';
 
-export type StatusTone = 'neutral' | 'success' | 'warning' | 'danger';
+export type StatusTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'caution';
 
 interface StatusBadgeProps {
   tone: StatusTone;
+  /** Icono decorativo delante del texto. */
+  icon?: ReactNode;
   children: ReactNode;
 }
 
 /** Etiqueta de estado. El texto siempre acompaña al color: el color nunca es el único aviso. */
-export function StatusBadge({ tone, children }: StatusBadgeProps) {
-  return <span className={`${styles.badge} ${styles[tone]}`}>{children}</span>;
+export function StatusBadge({ tone, icon, children }: StatusBadgeProps) {
+  return (
+    <span className={`${styles.badge} ${styles[tone]}`}>
+      {icon}
+      {children}
+    </span>
+  );
 }

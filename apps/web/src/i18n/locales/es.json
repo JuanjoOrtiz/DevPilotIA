@@ -7,20 +7,18 @@
   "language": {
     "label": "Idioma"
   },
-  "serverStatus": {
-    "title": "Estado del servidor",
-    "checking": "Comprobando",
-    "checkingHint": "Contactando con la API…",
-    "retrying": "Reintentando",
-    "retryingHint": "La API todavía no responde. Se vuelve a intentar automáticamente; no hace falta recargar la página.",
-    "up": "Operativo",
-    "upHint": "La API y la base de datos responden.",
-    "degraded": "Base de datos no disponible",
-    "degradedHint": "La API responde, pero no llega a la base de datos.",
-    "unreachable": "Sin conexión",
-    "unreachableHint": "No se pudo contactar con la API. Inténtalo de nuevo en unos minutos.",
+  "nav": {
+    "main": "Principal",
+    "projects": "Proyectos"
+  },
+  "common": {
+    "cancel": "Cancelar",
     "retry": "Reintentar",
-    "version": "Versión {{version}}"
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "required": "(obligatorio)",
+    "counter": "{{current}} / {{max}}",
+    "breadcrumbs": "Ruta"
   },
   "auth": {
     "login": {
@@ -82,6 +80,111 @@
       }
     }
   },
+  "projects": {
+    "title": "Proyectos",
+    "intro": "El stack y las convenciones de cada proyecto se envían a la IA como contexto.",
+    "new": "Nuevo proyecto",
+    "search": "Buscar por nombre",
+    "count_one": "{{count}} proyecto",
+    "count_other": "{{count}} proyectos",
+    "loading": "Cargando proyectos…",
+    "noResults": "Ningún proyecto coincide con «{{query}}».",
+    "empty": {
+      "title": "Todavía no tienes proyectos",
+      "description": "Crea el primero para dar contexto a la IA y generar tu primera especificación.",
+      "action": "Crear proyecto"
+    },
+    "card": {
+      "stack": "Stack",
+      "generations_one": "generación",
+      "generations_other": "generaciones",
+      "lastActivity": "Última actividad: {{date}}"
+    }
+  },
+  "project": {
+    "loading": "Cargando proyecto…",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "summary": {
+      "label": "Datos del proyecto",
+      "description": "Descripción",
+      "stack": "Stack",
+      "conventions": "Convenciones",
+      "noDescription": "Sin descripción.",
+      "noStack": "Sin tecnologías.",
+      "noConventions": "Sin convenciones."
+    },
+    "notFound": {
+      "title": "No hemos encontrado este proyecto",
+      "description": "Puede que se haya eliminado o que la dirección no sea correcta.",
+      "action": "Volver a proyectos"
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar «{{name}}»?",
+      "generations_one": "Se borrará también su <strong>generación</strong>.",
+      "generations_other": "Se borrarán también sus <strong>{{count}} generaciones</strong>.",
+      "noGenerations": "Este proyecto no tiene generaciones.",
+      "irreversible": "Esta acción no se puede deshacer.",
+      "confirm": "Eliminar proyecto",
+      "deleting": "Eliminando…"
+    }
+  },
+  "projectForm": {
+    "newTitle": "Nuevo proyecto",
+    "editTitle": "Editar proyecto",
+    "editCrumb": "Editar",
+    "fields": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "techStack": "Stack tecnológico",
+      "techStackPlaceholder": "Añadir tecnología",
+      "techStackHint": "Escribe una tecnología y pulsa Intro para añadirla como etiqueta.",
+      "removeTag": "Quitar {{tag}}",
+      "conventions": "Convenciones",
+      "conventionsHint": "Texto libre: arquitectura, nomenclatura, librerías, criterios de testing."
+    },
+    "create": "Crear proyecto",
+    "creating": "Creando el proyecto…",
+    "save": "Guardar cambios",
+    "saving": "Guardando…",
+    "help": {
+      "title": "Cómo se usa este contexto",
+      "sent": "En cada generación se envían a la IA el nombre, la descripción, el stack y las convenciones del proyecto.",
+      "tasks": "Las tareas de frontend y backend que devuelve la especificación mencionan el stack que declares aquí.",
+      "secrets": "No incluyas credenciales, código propietario ni datos confidenciales."
+    }
+  },
+  "history": {
+    "title": "Historial de generaciones",
+    "loading": "Cargando historial…",
+    "columns": {
+      "title": "Título",
+      "type": "Tipo",
+      "complexity": "Complejidad",
+      "status": "Estado",
+      "date": "Fecha"
+    },
+    "type": {
+      "feature": "Funcionalidad",
+      "bug": "Bug"
+    },
+    "status": {
+      "generating": "Generando",
+      "completed": "Completada",
+      "failed": "Fallida"
+    },
+    "edited": "Editada",
+    "sample": "Ejemplo",
+    "noComplexity": "Sin estimar",
+    "range_one": "{{from}}–{{to}} de {{count}} generación",
+    "range_other": "{{from}}–{{to}} de {{count}} generaciones",
+    "outOfRange": "No hay nada en esta página.",
+    "pagination": "Páginas del historial",
+    "empty": {
+      "title": "Este proyecto todavía no tiene generaciones",
+      "description": "Cuando generes una especificación para este proyecto, aparecerá aquí."
+    }
+  },
   "validation": {
     "NAME_REQUIRED": "Escribe tu nombre.",
     "NAME_TOO_LONG": "El nombre puede tener 80 caracteres como máximo.",
@@ -90,6 +193,15 @@
     "PASSWORD_REQUIRED": "Escribe tu contraseña.",
     "PASSWORD_TOO_SHORT": "La contraseña debe tener 8 caracteres o más.",
     "PASSWORD_TOO_LONG": "La contraseña es demasiado larga: 72 caracteres como máximo.",
+    "PROJECT_NAME_REQUIRED": "Escribe un nombre para el proyecto.",
+    "PROJECT_NAME_TOO_LONG": "El nombre puede tener 80 caracteres como máximo.",
+    "DESCRIPTION_TOO_LONG": "La descripción puede tener 500 caracteres como máximo.",
+    "CONVENTIONS_TOO_LONG": "Las convenciones pueden tener 2.000 caracteres como máximo.",
+    "TOO_MANY_TAGS": "Puedes añadir 15 tecnologías como máximo.",
+    "TAG_EMPTY": "Una tecnología no puede estar vacía.",
+    "TAG_TOO_LONG": "Cada tecnología puede tener 30 caracteres como máximo.",
+    "PAGE_INVALID": "La página no es válida.",
+    "PAGE_SIZE_INVALID": "El tamaño de página no es válido.",
     "INVALID": "Este valor no es válido."
   },
   "errors": {
@@ -108,12 +220,5 @@
     "INTERNAL_ERROR": "Algo ha fallado en el servidor. Inténtalo de nuevo.",
     "NETWORK_ERROR": "No se pudo contactar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
     "UNEXPECTED_RESPONSE": "El servidor ha respondido algo inesperado. Inténtalo de nuevo en unos minutos."
-  },
-  "nav": {
-    "main": "Principal"
-  },
-  "home": {
-    "greeting": "Hola, {{name}}",
-    "intro": "Tu cuenta está lista. Aquí aparecerán tus proyectos y tus especificaciones."
   }
 }

@@ -4,6 +4,7 @@ import type { CheckHealth } from '../../application/use-cases/CheckHealth.js';
 import type { TokenService } from '../../domain/providers/TokenService.js';
 import { createAuthController, type AuthUseCases } from '../controllers/authController.js';
 import { createHealthController } from '../controllers/healthController.js';
+import { createProjectController, type ProjectUseCases } from '../controllers/projectController.js';
 import { createAuthentication, type PublicRoute } from './authentication.js';
 import type { CookieSettings } from './cookies.js';
 import { errorHandler, notFoundHandler } from './errorHandler.js';
@@ -12,6 +13,7 @@ import { errorHandler, notFoundHandler } from './errorHandler.js';
 export interface AppDependencies {
   checkHealth: CheckHealth;
   auth: AuthUseCases;
+  projects: ProjectUseCases;
   tokens: TokenService;
   cookies: CookieSettings;
 }
@@ -33,6 +35,7 @@ export const PUBLIC_ROUTES: readonly PublicRoute[] = [
 export function createApp(dependencies: AppDependencies): Express {
   const app = express();
   const auth = createAuthController(dependencies.auth, dependencies.cookies);
+  const projects = createProjectController(dependencies.projects);
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -52,6 +55,13 @@ export function createApp(dependencies: AppDependencies): Express {
   v1.post('/auth/refresh', auth.refresh);
   v1.post('/auth/logout', auth.logout);
   v1.get('/auth/me', auth.me);
+
+  v1.get('/projects', projects.list);
+  v1.post('/projects', projects.create);
+  v1.get('/projects/:id', projects.get);
+  v1.patch('/projects/:id', projects.update);
+  v1.delete('/projects/:id', projects.remove);
+  v1.get('/projects/:id/generations', projects.listGenerations);
 
   app.use(API_PREFIX, v1);
 
