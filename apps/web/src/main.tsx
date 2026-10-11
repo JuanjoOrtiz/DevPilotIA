@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { HomePage } from './components/pages/HomePage/HomePage';
+import { BrowserRouter } from 'react-router';
+import { App } from './App';
+import { SessionProvider } from './features/auth/SessionContext';
 import './i18n';
 import './styles/global.css';
 
@@ -13,7 +15,11 @@ const queryClient = new QueryClient();
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <HomePage />
+      <SessionProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </SessionProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

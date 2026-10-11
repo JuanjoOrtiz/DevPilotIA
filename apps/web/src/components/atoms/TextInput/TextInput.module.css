@@ -1,0 +1,20 @@
+.input {
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.input::placeholder {
+  color: var(--color-text-subtle);
+}
+
+/* El borde gana un píxel: el relleno pierde uno para que el texto no se mueva. */
+.invalid {
+  padding: 0 11px;
+  border: 2px solid var(--color-danger-border);
+}

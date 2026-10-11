@@ -1,11 +1,11 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { loadEnv } from '../config/env.js';
+import { testEnv } from '../../test-support/testEnv.js';
 import { createPrismaClient } from './prismaClient.js';
 
 // Comprueba que las migraciones crean lo que el cliente de Prisma espera: columnas,
 // enums, listas, JSON y borrado en cascada.
 describe('database schema', () => {
-  const prisma = createPrismaClient(loadEnv().DATABASE_URL);
+  const prisma = createPrismaClient(testEnv().DATABASE_URL);
   const email = `schema-test-${Date.now()}@example.test`;
 
   afterAll(async () => {

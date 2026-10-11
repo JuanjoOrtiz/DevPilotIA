@@ -3,8 +3,21 @@ import { z } from 'zod';
 /** Credenciales de DATABASE_URL en .env.example y en docker-compose.yml. Nunca valen en producción. */
 const EXAMPLE_DATABASE_CREDENTIALS = 'devpilot:devpilot@';
 
+/** Los secretos de .env.example y de docker-compose.yml empiezan así. Nunca valen en producción. */
+const EXAMPLE_SECRET_PREFIX = 'example-';
+
 /** Modos de sslmode que cifran la conexión con la base de datos. */
 const ENCRYPTED_SSL_MODE = /[?&]sslmode=(require|verify-ca|verify-full)(&|$)/;
+
+/** SEG-04: secretos de 32 bytes o más. */
+const MIN_SECRET_BYTES = 32;
+
+const jwtSecret = z
+  .string({ error: 'is required' })
+  .refine(
+    (secret) => Buffer.byteLength(secret, 'utf8') >= MIN_SECRET_BYTES,
+    `must be at least ${MIN_SECRET_BYTES} bytes long`,
+  );
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -12,6 +25,8 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string({ error: 'is required' })
     .regex(/^postgres(ql)?:\/\/.+/, 'must be a postgresql:// connection string'),
+  JWT_ACCESS_SECRET: jwtSecret,
+  JWT_REFRESH_SECRET: jwtSecret,
   APP_VERSION: z.string().min(1).default('dev'),
 });
 
@@ -27,8 +42,8 @@ export class InvalidEnvError extends Error {
 
 /**
  * Valida las variables de entorno al arrancar. La API no arranca si falta alguna (SEG-02)
- * ni si producción usa credenciales de ejemplo (SEG-16) o una conexión sin cifrar a la
- * base de datos (SEG-04).
+ * ni si producción usa credenciales o secretos de ejemplo (SEG-16), secretos iguales o
+ * cortos (SEG-04) o una conexión sin cifrar a la base de datos (SEG-04).
  */
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
   const parsed = envSchema.safeParse({
@@ -43,16 +58,25 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   }
 
   const env = parsed.data;
+  const problems: string[] = [];
+
+  if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) {
+    problems.push('JWT_REFRESH_SECRET: must be different from JWT_ACCESS_SECRET');
+  }
   if (env.NODE_ENV === 'production') {
-    const problems: string[] = [];
     if (env.DATABASE_URL.includes(EXAMPLE_DATABASE_CREDENTIALS)) {
       problems.push('DATABASE_URL: uses the example credentials from .env.example');
     }
     if (!ENCRYPTED_SSL_MODE.test(env.DATABASE_URL)) {
       problems.push('DATABASE_URL: must set sslmode=require or sslmode=verify-full in production');
     }
-    if (problems.length > 0) throw new InvalidEnvError(problems);
+    for (const name of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const) {
+      if (env[name].startsWith(EXAMPLE_SECRET_PREFIX)) {
+        problems.push(`${name}: uses the example secret from .env.example`);
+      }
+    }
   }
+  if (problems.length > 0) throw new InvalidEnvError(problems);
 
   return env;
 }

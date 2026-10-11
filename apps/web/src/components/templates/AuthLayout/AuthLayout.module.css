@@ -1,0 +1,118 @@
+.page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 48px clamp(24px, 4.4vw, 56px);
+  background: var(--color-navy);
+  color: var(--color-text-on-navy);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.asideContent {
+  margin: auto 0;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px clamp(24px, 4.4vw, 56px) 48px;
+}
+
+.actions {
+  align-self: flex-end;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  max-width: 380px;
+  margin: auto;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.footer {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.footer a {
+  font-weight: 500;
+}
+
+/* En pantallas estrechas va primero el formulario, que es a lo que se viene: la marca
+   queda como cabecera y la presentación del producto pasa debajo. */
+@media (max-width: 880px) {
+  .page {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .aside {
+    display: contents;
+  }
+
+  .brand,
+  .asideContent {
+    padding: 20px 16px;
+    background: var(--color-navy);
+    color: var(--color-text-on-navy);
+  }
+
+  .brand {
+    order: 0;
+  }
+
+  .main {
+    order: 1;
+    flex: 1;
+    padding: 20px 16px 40px;
+  }
+
+  .asideContent {
+    order: 2;
+    margin: 0;
+    padding: 32px 16px 40px;
+  }
+
+  .column {
+    margin: 0 auto;
+  }
+}

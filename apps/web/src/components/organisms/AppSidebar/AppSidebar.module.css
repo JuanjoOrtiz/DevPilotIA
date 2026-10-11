@@ -1,0 +1,86 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px 16px;
+  background: var(--color-navy);
+  color: var(--color-text-on-navy-muted);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text-on-navy);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 0 4px;
+}
+
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.userName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-on-navy);
+}
+
+.signOut {
+  /* Zona de pulsación cómoda sin separar el texto de su nombre. */
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--color-text-on-navy-subtle);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.signOut:hover {
+  color: var(--color-text-on-navy);
+}
+
+/* Como cabecera, en pantallas estrechas: la marca arriba y la cuenta debajo, sin huecos. */
+@media (max-width: 760px) {
+  .sidebar {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .brand {
+    padding: 4px 0;
+  }
+
+  .account {
+    margin-top: 0;
+    padding: 0;
+  }
+}

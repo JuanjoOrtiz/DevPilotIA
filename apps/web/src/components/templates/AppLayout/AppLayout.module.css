@@ -1,0 +1,33 @@
+.page {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+}
+
+.sidebar > * {
+  flex: 1;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+  padding: 32px clamp(16px, 4vw, 40px) 48px;
+}
+
+/* En pantallas estrechas la barra lateral pasa a ser la cabecera. */
+@media (max-width: 760px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .content {
+    padding-top: 24px;
+  }
+}
