@@ -76,6 +76,8 @@ El idioma de la especificación generada sigue al idioma del texto que escribe e
 6. Guarda la especificación y pasa a `completed`, o guarda el código de error y pasa a `failed`.
 7. El frontend consulta el estado cada 2 segundos hasta que deja de ser `generating`.
 
+En producción la API es una función de Vercel. El trabajo en segundo plano del paso 3 se pasa a `waitUntil`, que mantiene viva la instancia hasta que la generación termina; sin eso, la plataforma podría suspenderla nada más enviar el 202.
+
 La generación entera, reintentos incluidos, termina o falla en 45 segundos (RNF-08); los dos tiempos se ajustan por variable de entorno. Antes de recibir el 202, el frontend muestra un estado «pendiente» que no existe en el modelo de datos.
 
 Cada generación registra modelo, número de intentos, duración y tokens consumidos; de ahí salen las métricas del dashboard.
@@ -115,6 +117,6 @@ Al alcanzar un límite se explica cuándo se reinicia (RF-GEN-07).
 | Respuesta que no cumple el esquema | Un reintento; después, generación fallida | `LLM_INVALID_RESPONSE` |
 | Contenido bloqueado por los filtros del proveedor | Generación fallida, sin reintento | `LLM_CONTENT_BLOCKED` |
 | Proveedor caído o error 5xx | Un reintento; después, generación fallida | `LLM_UNAVAILABLE` |
-| Generación en `generating` durante más de 2 minutos | Se marca como fallida al consultarla y al arrancar la API (cubre reinicios del servidor) | `LLM_TIMEOUT` |
+| Generación en `generating` durante más de 2 minutos | Se marca como fallida al consultarla y al arrancar la API (cubre reinicios e instancias interrumpidas a mitad) | `LLM_TIMEOUT` |
 
 Los errores del proveedor se traducen a errores de dominio en la capa de infraestructura. El frontend muestra un mensaje distinto por código y ofrece reintentar cuando tiene sentido; el reintento reenvía la misma entrada por `POST /projects/:id/generations` y crea una generación nueva. Cada generación que falla por causa del proveedor se envía a Sentry con su código de error, el modelo y el número de intentos.

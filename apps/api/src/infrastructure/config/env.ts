@@ -33,8 +33,8 @@ export class InvalidEnvError extends Error {
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
   const parsed = envSchema.safeParse({
     ...source,
-    // Render publica el commit desplegado en RENDER_GIT_COMMIT.
-    APP_VERSION: source.APP_VERSION ?? source.RENDER_GIT_COMMIT,
+    // Vercel publica el commit desplegado en VERCEL_GIT_COMMIT_SHA.
+    APP_VERSION: source.APP_VERSION ?? source.VERCEL_GIT_COMMIT_SHA,
   });
   if (!parsed.success) {
     throw new InvalidEnvError(

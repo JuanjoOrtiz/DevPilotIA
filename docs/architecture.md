@@ -1,16 +1,16 @@
 # Arquitectura
 
-El sistema tiene tres piezas desplegadas por separado: frontend, API y base de datos. Todo funciona con planes gratuitos y sin AWS.
+El sistema tiene tres piezas desplegadas por separado: frontend, API y base de datos. Todo funciona con planes gratuitos, sin AWS y sin dar una tarjeta.
 
 ```mermaid
 flowchart LR
-  subgraph Vercel
+  subgraph VW[Vercel · proyecto web]
     W[apps/web · React + Atomic Design]
   end
-  subgraph Render
+  subgraph VA[Vercel · proyecto API]
     P[presentation] --> AP[application] --> DO[domain]
     I[infrastructure] --> DO
-    M[main.ts · composición] -.-> P
+    M[composition.ts · composición] -.-> P
     M -.-> I
   end
   W -- REST /api/v1 --> P
@@ -33,8 +33,8 @@ flowchart LR
 | LLM | Gemini API, capa gratuita, modelo Flash | Salida estructurada nativa; límites por minuto y por día |
 | Autenticación | JWT propio: access token corto + refresh token | Sin dependencia de terceros |
 | Hosting del frontend | Vercel | Reenvía `/api` a la API: frontend y API comparten origen |
-| Hosting de la API | Render, web service Free con Docker | Se duerme tras 15 min sin tráfico; tarda cerca de 1 min en despertar |
-| Entorno local | Docker Compose: API + PostgreSQL + web | Un solo comando levanta todo |
+| Hosting de la API | Vercel, plan Hobby: Express como función, en Fráncfort | Sin estado en memoria entre peticiones; 300 s como máximo por petición; solo uso no comercial |
+| Entorno local | Docker Compose: API + PostgreSQL + web | Un solo comando levanta todo; el CI construye además la imagen de la API |
 | Pruebas | Vitest, Supertest, React Testing Library | Mismo runner en frontend y backend |
 | Monitorización | Sentry, plan Developer | 5.000 errores al mes |
 | CI/CD | GitHub Actions | |
@@ -43,7 +43,7 @@ flowchart LR
 
 Tres consecuencias de los planes gratuitos son requisitos:
 
-- **Arranque en frío.** La primera petición tras un rato de inactividad puede tardar cerca de un minuto. El frontend muestra «despertando el servidor», no un error.
+- **API sin estado.** En producción la API se ejecuta como una función: la plataforma la suspende entre peticiones y puede haber varias instancias a la vez. Los límites de uso y de intentos se cuentan en la base de datos, nunca en memoria, y el trabajo que sigue después de responder se registra con `waitUntil`.
 - **Cuota del LLM.** Al agotarla, Gemini responde 429. La aplicación limita las generaciones por usuario y explica el motivo.
 - **Privacidad.** En la capa gratuita, el contenido enviado puede usarse para mejorar los productos de Google. La pantalla de generación avisa de que no se pegue código ni datos confidenciales.
 
@@ -59,7 +59,6 @@ Tres consecuencias de los planes gratuitos son requisitos:
 ├── docs/
 ├── .github/workflows/       # ci.yml, deploy.yml, release.yml
 ├── docker-compose.yml
-├── render.yaml               # servicio de la API en Render
 ├── .env.example
 ├── CLAUDE.md
 ├── README.md                # inglés
@@ -88,7 +87,9 @@ apps/api/src/
 │   ├── http/                # app Express, rutas, middlewares, OpenAPI
 │   ├── controllers/
 │   └── validators/
-└── main.ts                  # composición: une implementaciones y casos de uso, y arranca
+├── composition.ts           # composición: une implementaciones y casos de uso
+├── main.ts                  # arranque como servidor: desarrollo y Docker
+└── index.ts                 # arranque como función: Vercel
 ```
 
 **Regla de dependencias.** Las dependencias apuntan siempre hacia `domain`:
@@ -96,12 +97,28 @@ apps/api/src/
 - `domain` no importa frameworks ni librerías de infraestructura: ni Express, ni Prisma, ni el SDK del LLM.
 - `application` solo depende de `domain`.
 - `infrastructure` y `presentation` dependen de las capas interiores y nunca al revés.
-- La composición (qué implementación recibe cada caso de uso) se hace solo en `main.ts`, el único fichero que importa de todas las capas.
+- La composición (qué implementación recibe cada caso de uso) se hace solo en `composition.ts`, el único fichero que importa de todas las capas.
 - `packages/shared`, que solo contiene esquemas Zod y tipos, se puede importar desde cualquier capa.
 
 Lo comprueba en el CI la regla `no-restricted-imports` de `eslint.config.js` (RNF-01). Cambiar de proveedor de LLM o de base de datos solo toca `infrastructure`.
 
 La interfaz `LLMProvider` se declara en `domain`, junto a las interfaces de repositorio; en `infrastructure/ai` quedan solo las implementaciones. Así los casos de uso no importan nada de infraestructura.
+
+### Dos formas de arrancar
+
+La misma aplicación arranca de dos maneras, y ninguna toca `domain`, `application` ni `presentation`:
+
+| Fichero | Cuándo se usa | Qué hace |
+| --- | --- | --- |
+| `main.ts` | Desarrollo, Docker y cualquier hosting de contenedores | Abre el puerto y cierra con orden al recibir `SIGTERM` |
+| `index.ts` | Vercel | Exporta la aplicación para que Vercel la ejecute como función y ajusta el pool de conexiones |
+
+Los dos llaman a `compose()` de `composition.ts`. Vercel ejecuta el mismo JavaScript que compila `npm run build`, el mismo que va dentro de la imagen Docker: su configuración está en `apps/api/vercel.json`.
+
+Dos reglas que impone ejecutarse como función:
+
+- **Nada de estado en memoria entre peticiones.** Una instancia puede desaparecer o duplicarse en cualquier momento.
+- **El trabajo en segundo plano se declara.** Lo que siga después de enviar la respuesta, como una generación tras el 202, se pasa a `waitUntil` de `@vercel/functions`; sin eso, la plataforma puede suspender la instancia a mitad.
 
 ## Frontend: Atomic Design
 
@@ -206,16 +223,24 @@ Consecuencias:
 - La API no necesita CORS y no envía ninguna cabecera `Access-Control-*`.
 - La cookie de refresh puede ser `SameSite=Strict`, porque nunca cruza de un sitio a otro.
 - Vercel puede guardar en caché lo que reenvía; por eso la API marca todas sus respuestas con `Cache-Control: no-store`.
-- La API ve la IP de Vercel, no la del visitante. La del visitante llega en `X-Forwarded-For`; hay que tenerlo en cuenta al limitar intentos por IP y al registrar eventos de seguridad.
+- En producción el frontend y la API son dos proyectos de Vercel. El de la API tiene además su propia URL pública, que el navegador nunca usa.
+- La API no recibe la conexión directa del visitante. Su IP llega en una cabecera que añade la plataforma; hay que comprobar cuál antes de limitar intentos por IP y de registrar eventos de seguridad (amenaza T-27).
 
 Decisión tomada el 10 de octubre de 2026. La alternativa descartada, dos dominios con `SameSite=None`, está en [threat-model.md](threat-model.md).
+
+## Por qué la API está en Vercel
+
+El plan inicial era Render con Docker. Se cambió el 11 de octubre de 2026 porque Render pidió una tarjeta para crear el servicio gratuito. Koyeb, Northflank y Cloud Run también la piden, y Fly.io ya no tiene plan gratuito. Entre las opciones sin tarjeta, Vercel deja la API en Fráncfort, junto a la base de datos, y responde sin el minuto de espera de un servidor gratuito que se duerme.
+
+A cambio, la API no corre en un contenedor en producción. Docker sigue en el proyecto: `docker compose up` levanta todo en local y el CI construye la imagen de la API en cada cambio, así que volver a un hosting de contenedores es cambiar el arranque de `index.ts` a `main.ts`.
 
 ## Base de datos y migraciones
 
 - En local y en el CI la base de datos es un PostgreSQL en Docker; en producción, Supabase.
-- Render y GitHub Actions solo salen por IPv4 y la conexión directa de Supabase es IPv6, así que la API y las migraciones usan el pooler de Supabase en modo sesión (puerto 5432).
+- Vercel y GitHub Actions solo salen por IPv4 y la conexión directa de Supabase es IPv6, así que la API y las migraciones usan el pooler de Supabase en modo sesión (puerto 5432).
+- En Vercel cada instancia de la función abre como mucho 3 conexiones y cierra las que llevan 5 s sin uso (`apps/api/src/index.ts`), porque el pooler en modo sesión admite pocas a la vez.
 - De Supabase se usa solo PostgreSQL. Su API de datos automática queda desactivada: ver [deployment.md](deployment.md).
-- La imagen que sirve la API se instala sin la CLI de Prisma y no puede migrar. En local migra el servicio `migrate` de Docker Compose; en producción, quien despliega, hasta que lo haga `deploy.yml`.
+- La API nunca migra al arrancar, y la imagen Docker ni siquiera lleva la CLI de Prisma. En local migra el servicio `migrate` de Docker Compose; en producción, quien despliega, hasta que lo haga `deploy.yml`.
 - En producción la API exige `sslmode=require` o `sslmode=verify-full` en `DATABASE_URL`.
 
 ## Fuentes
@@ -224,9 +249,17 @@ Límites y condiciones de los planes gratuitos, consultados el 9 de octubre de 2
 
 - [Gemini Developer API pricing](https://ai.google.dev/gemini-api/docs/pricing): modelos Flash gratuitos en la capa Free y uso del contenido para mejorar productos
 - [Gemini API rate limits](https://ai.google.dev/gemini-api/docs/rate-limits): límites por proyecto, error 429 y consulta de límites en AI Studio
-- [Render: Deploy for Free](https://render.com/docs/free): suspensión a los 15 minutos, arranque de un minuto y caducidad de la base de datos gratuita
 - [Supabase pricing](https://supabase.com/pricing): plan Free con 500 MB por proyecto, 2 proyectos activos y pausa tras 1 semana sin actividad
 - [Supabase: Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres): conexión directa solo por IPv6; pooler en modo sesión para redes IPv4
-- [Supabase: IPv4 and IPv6 compatibility](https://supabase.com/docs/guides/troubleshooting/supabase--your-network-ipv4-and-ipv6-compatibility-cHe3BP): Render y GitHub Actions solo aceptan IPv4
+- [Supabase: IPv4 and IPv6 compatibility](https://supabase.com/docs/guides/troubleshooting/supabase--your-network-ipv4-and-ipv6-compatibility-cHe3BP): Vercel y GitHub Actions solo aceptan IPv4
 - [Sentry pricing](https://sentry.io/pricing/): plan Developer gratuito, un usuario, 5.000 errores al mes y 30 días de historial
 - [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions): gratuito en repositorios públicos y 2.000 minutos al mes en privados con GitHub Free
+
+Sobre el alojamiento de la API, consultados el 11 de octubre de 2026:
+
+- [Vercel: Express on Vercel](https://vercel.com/docs/frameworks/backend/express): una aplicación Express se despliega como una única función; nombres válidos del fichero de entrada
+- [Vercel: Functions Limits](https://vercel.com/docs/functions/limitations): 300 s por petición y 2 GB de memoria en el plan Hobby
+- [Vercel: Fluid compute](https://vercel.com/docs/fluid-compute): varias peticiones por instancia y trabajo en segundo plano con `waitUntil`
+- [Vercel: @vercel/functions](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package): `waitUntil` y `attachDatabasePool`
+- [Vercel: Configuring regions](https://vercel.com/docs/functions/configuring-functions/region): una región por proyecto en el plan Hobby
+- [Render Community: Web service free tier credit card](https://community.render.com/t/web-service-free-tier-credit-card/33811): Render puede pedir una tarjeta para verificar la cuenta

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchHealth } from '../services/healthService';
 
-export type ServerState = 'checking' | 'waking' | 'up' | 'degraded' | 'unreachable';
+export type ServerState = 'checking' | 'retrying' | 'up' | 'degraded' | 'unreachable';
 
 export interface ServerStatus {
   state: ServerState;
@@ -9,14 +9,13 @@ export interface ServerStatus {
   retry: () => void;
 }
 
-// El servidor gratuito tarda cerca de un minuto en despertar: 15 reintentos cada 5 s.
-const RETRIES = 15;
-const RETRY_DELAY_MS = 5000;
+// Un arranque en frío de la API tarda unos segundos: 4 reintentos cada 3 s lo cubren.
+const RETRIES = 4;
+const RETRY_DELAY_MS = 3000;
 
 /**
- * Estado del servidor para la interfaz. Mientras la API no responde se muestra
- * «despertando el servidor», no un error; solo tras agotar los reintentos pasa a
- * «sin conexión».
+ * Estado del servidor para la interfaz. Si la API no responde a la primera se muestra
+ * «reintentando», no un error; solo tras agotar los reintentos pasa a «sin conexión».
  */
 export function useServerStatus(): ServerStatus {
   const query = useQuery({
@@ -40,7 +39,7 @@ function toState(query: {
   failureCount: number;
   data: { status: 'ok' | 'degraded' } | undefined;
 }): ServerState {
-  if (query.isFetching) return query.failureCount > 0 ? 'waking' : 'checking';
+  if (query.isFetching) return query.failureCount > 0 ? 'retrying' : 'checking';
   if (query.isSuccess) return query.data?.status === 'ok' ? 'up' : 'degraded';
   return 'unreachable';
 }

@@ -11,10 +11,10 @@ describe('loadEnv', () => {
   });
 
   it('takes the version from the deployed commit when APP_VERSION is not set', () => {
-    expect(loadEnv({ ...valid, RENDER_GIT_COMMIT: 'abc123' }).APP_VERSION).toBe('abc123');
-    expect(loadEnv({ ...valid, RENDER_GIT_COMMIT: 'abc123', APP_VERSION: 'v1' }).APP_VERSION).toBe(
-      'v1',
-    );
+    expect(loadEnv({ ...valid, VERCEL_GIT_COMMIT_SHA: 'abc123' }).APP_VERSION).toBe('abc123');
+    expect(
+      loadEnv({ ...valid, VERCEL_GIT_COMMIT_SHA: 'abc123', APP_VERSION: 'v1' }).APP_VERSION,
+    ).toBe('v1');
   });
 
   it('refuses to start without DATABASE_URL', () => {

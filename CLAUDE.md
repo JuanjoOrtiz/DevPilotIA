@@ -10,7 +10,7 @@ Este fichero resume las reglas que no se negocian. El detalle está en `docs/`; 
 | `docs/architecture.md` | Stack, estructura del monorepo, capas, modelo de datos y API REST |
 | `docs/ai-contract.md` | Esquema de la especificación, flujo de una generación y códigos de error |
 | `docs/threat-model.md` | Activos, actores, amenazas y mitigaciones |
-| `docs/deployment.md` | Puesta en marcha en Supabase, Render y Vercel |
+| `docs/deployment.md` | Puesta en marcha en Supabase y Vercel |
 
 ## Stack
 
@@ -19,7 +19,7 @@ Este fichero resume las reglas que no se negocian. El detalle está en `docs/`; 
 - **Backend**: Node.js + TypeScript + Express, Clean Architecture, Prisma + PostgreSQL.
 - **LLM**: Gemini API (capa gratuita, modelo Flash) detrás de la interfaz `LLMProvider`.
 - **Pruebas**: Vitest, Supertest, React Testing Library.
-- **Despliegue**: Vercel (web), Render con Docker (API), Supabase (PostgreSQL). Sin AWS y a coste cero.
+- **Despliegue**: Vercel (web y API, en dos proyectos) y Supabase (PostgreSQL). Docker para el entorno local y el CI. Sin AWS y a coste cero.
 
 No añadas dependencias fuera de este stack sin preguntar antes.
 
@@ -54,7 +54,8 @@ Capas en `apps/api/src`: `domain`, `application`, `infrastructure`, `presentatio
 - El cliente de Prisma se genera en `src/infrastructure/database/generated/` y no se versiona; solo lo importa `infrastructure`.
 - La imagen que sirve la API no lleva la CLI de Prisma: las migraciones las aplica el servicio `migrate` de Docker Compose o el pipeline.
 - Toda entrada se valida con Zod antes de llegar a un caso de uso. Los esquemas compartidos viven en `packages/shared`, que solo contiene esquemas Zod y tipos y se puede importar desde cualquier capa.
-- La composición se hace solo en `apps/api/src/main.ts`, el único fichero que importa de todas las capas.
+- La composición se hace solo en `apps/api/src/composition.ts`, el único fichero que importa de todas las capas. Hay dos arranques: `main.ts` como servidor (desarrollo y Docker) e `index.ts` como función (Vercel).
+- En producción la API es una función de Vercel: no guardes estado en memoria entre peticiones (límites, contadores, cachés) y registra con `waitUntil` cualquier trabajo que siga después de responder.
 - Todos los errores salen con el formato `{ "error": { "code", "message", "details" } }`.
 
 ## Reglas del frontend (Atomic Design)
