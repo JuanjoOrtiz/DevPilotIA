@@ -97,3 +97,13 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
 
   return env;
 }
+
+/**
+ * Configuración del arranque en Vercel, que siempre es producción: cookies `Secure` y todas
+ * las comprobaciones de arriba. No se lee de NODE_ENV porque Vercel no garantiza esa variable
+ * al ejecutar la función, y fijarla en el panel rompe la compilación: con
+ * `NODE_ENV=production`, `npm ci` no instala las dependencias de desarrollo que necesita.
+ */
+export function loadVercelEnv(source: Record<string, string | undefined> = process.env): Env {
+  return loadEnv({ ...source, NODE_ENV: 'production' });
+}

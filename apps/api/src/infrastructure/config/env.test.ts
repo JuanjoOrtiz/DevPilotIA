@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TEST_SECRETS } from '../../test-support/testEnv.js';
-import { InvalidEnvError, loadEnv } from './env.js';
+import { InvalidEnvError, loadEnv, loadVercelEnv } from './env.js';
 
 const valid = {
   DATABASE_URL: 'postgresql://app:s3cret-value@db.internal:5432/devpilot',
@@ -152,5 +152,39 @@ describe('loadEnv for the language model', () => {
     };
 
     expect(() => loadEnv(production)).toThrow(/LLM_PROVIDER: must be gemini/);
+  });
+});
+
+// Vercel no garantiza NODE_ENV al ejecutar la función, y fijarla en el panel rompe el build.
+describe('loadVercelEnv', () => {
+  const deployed = {
+    DATABASE_URL:
+      'postgresql://prisma.ref:real-password@pooler.example:5432/postgres?sslmode=require',
+    JWT_ACCESS_SECRET: 'a-real-access-secret-that-is-long-enough-0123',
+    JWT_REFRESH_SECRET: 'a-real-refresh-secret-that-is-long-enough-012',
+    LLM_PROVIDER: 'gemini',
+    GEMINI_API_KEY: 'a-gemini-key',
+  };
+
+  it('always runs in production, whatever NODE_ENV says or even without it', () => {
+    expect(loadVercelEnv(deployed).NODE_ENV).toBe('production');
+    expect(loadVercelEnv({ ...deployed, NODE_ENV: 'development' }).NODE_ENV).toBe('production');
+  });
+
+  it('applies every production check', () => {
+    expect(() =>
+      loadVercelEnv({
+        ...deployed,
+        ...TEST_SECRETS,
+        JWT_ACCESS_SECRET: 'example-access-secret-change-me-0123456789',
+      }),
+    ).toThrow(/JWT_ACCESS_SECRET: uses the example secret/);
+    expect(() =>
+      loadVercelEnv({
+        ...deployed,
+        DATABASE_URL: 'postgresql://prisma.ref:pw@pooler.example:5432/postgres',
+      }),
+    ).toThrow(/sslmode/);
+    expect(() => loadVercelEnv({ ...deployed, LLM_PROVIDER: 'fake' })).toThrow(/must be gemini/);
   });
 });

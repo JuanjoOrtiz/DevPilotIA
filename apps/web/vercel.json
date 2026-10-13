@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://cambia-esto-por-la-url-de-la-api.invalid/api/:path*"
+      "destination": "https://dev-pilot-ia.vercel.app/api/:path*"
     },
     {
       "source": "/(.*)",
