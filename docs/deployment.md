@@ -81,8 +81,11 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
 
    Opcionales: `GEMINI_MODEL` (por defecto, `gemini-flash-latest`), `GENERATION_DAILY_LIMIT_PER_USER` (20) y `GENERATION_DAILY_LIMIT_GLOBAL` (200). Ajusta el tope global a la cuota diaria gratuita del modelo elegido, que se consulta en Google AI Studio: una generación con preguntas hace dos llamadas, y cada reintento, una más.
 
+   No añadas `NODE_ENV`. En Vercel la API arranca siempre en modo producción (`loadVercelEnv` en `index.ts`), y con `NODE_ENV=production` en el panel `npm ci` deja fuera las dependencias de desarrollo y la compilación falla.
+
 4. Cuando termine, entra en «Settings» y «Environment Variables», edita las cinco y déjalas solo en el entorno «Production». Así las vistas previas de los pull requests no pueden tocar la base de datos real ni firmar sesiones válidas (amenaza T-28).
-5. Anota la URL de producción del proyecto, del tipo `https://devpilot-api.vercel.app`, y comprueba que responde:
+5. En «Settings» y «Git», cambia «Production Branch» a `main`. Vercel toma por defecto la rama por defecto de GitHub, que es `develop`: sin este cambio, producción sería lo que se integra y no lo que se publica.
+6. Anota la URL de producción del proyecto, del tipo `https://devpilot-api.vercel.app`, y comprueba que responde:
 
    ```bash
    curl https://TU-PROYECTO-API.vercel.app/api/v1/health
@@ -104,7 +107,8 @@ Si los registros muestran errores de «max clients», el pooler en modo sesión 
    ```
 
 2. En Vercel, importa otra vez el mismo repositorio como un proyecto nuevo, por ejemplo `devpilot-web`, y fija «Root Directory» en `apps/web`. El framework es Vite, con sus valores por defecto. No necesita variables de entorno.
-3. Abre la URL del proyecto. La página de inicio debe mostrar «Operativo».
+3. Como en la API, en «Settings» y «Git» cambia «Production Branch» a `main`.
+4. Abre la URL del proyecto: debe aparecer el inicio de sesión. Crea una cuenta, crea un proyecto y genera una especificación.
 
 A partir de aquí, Vercel despliega los dos proyectos con cada cambio en `main` y crea una vista previa de cada pull request y de la rama `develop`. La vista previa del frontend habla con la API de producción; la de la API no tiene base de datos.
 
