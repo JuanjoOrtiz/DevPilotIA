@@ -3,6 +3,10 @@ import helmet from 'helmet';
 import type { CheckHealth } from '../../application/use-cases/CheckHealth.js';
 import type { TokenService } from '../../domain/providers/TokenService.js';
 import { createAuthController, type AuthUseCases } from '../controllers/authController.js';
+import {
+  createGenerationController,
+  type GenerationUseCases,
+} from '../controllers/generationController.js';
 import { createHealthController } from '../controllers/healthController.js';
 import { createProjectController, type ProjectUseCases } from '../controllers/projectController.js';
 import { createAuthentication, type PublicRoute } from './authentication.js';
@@ -14,6 +18,7 @@ export interface AppDependencies {
   checkHealth: CheckHealth;
   auth: AuthUseCases;
   projects: ProjectUseCases;
+  generations: GenerationUseCases;
   tokens: TokenService;
   cookies: CookieSettings;
 }
@@ -36,6 +41,7 @@ export function createApp(dependencies: AppDependencies): Express {
   const app = express();
   const auth = createAuthController(dependencies.auth, dependencies.cookies);
   const projects = createProjectController(dependencies.projects);
+  const generations = createGenerationController(dependencies.generations);
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -62,6 +68,9 @@ export function createApp(dependencies: AppDependencies): Express {
   v1.patch('/projects/:id', projects.update);
   v1.delete('/projects/:id', projects.remove);
   v1.get('/projects/:id/generations', projects.listGenerations);
+  v1.post('/projects/:id/generations', generations.create);
+  v1.get('/generations/:id', generations.get);
+  v1.post('/generations/:id/answers', generations.answer);
 
   app.use(API_PREFIX, v1);
 

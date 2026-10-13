@@ -1,6 +1,6 @@
 # Requisitos
 
-Requisitos de DevPilot AI con su identificador, cerrados el 9 de octubre de 2026 y revisados el 10 y el 11 de octubre. La arquitectura está en [architecture.md](architecture.md), el contrato de IA en [ai-contract.md](ai-contract.md) y el modelo de amenazas en [threat-model.md](threat-model.md).
+Requisitos de DevPilot AI con su identificador, cerrados el 9 de octubre de 2026 y revisados el 10, el 11 y el 12 de octubre. La arquitectura está en [architecture.md](architecture.md), el contrato de IA en [ai-contract.md](ai-contract.md) y el modelo de amenazas en [threat-model.md](threat-model.md).
 
 ## Alcance del MVP
 
@@ -49,12 +49,14 @@ La interfaz se entrega en español e inglés, con selector de idioma. No hay cue
 | --- | --- | --- |
 | RF-GEN-01 | Formulario de generación: tipo (funcionalidad o bug), descripción en lenguaje natural y contexto adicional opcional | Descripción de entre 20 y 4.000 caracteres, con contador visible; contexto adicional de hasta 2.000 caracteres |
 | RF-GEN-02 | La IA devuelve una especificación con seis secciones | Descripción técnica, historias de usuario con criterios de aceptación, tareas de frontend y backend, riesgos y casos límite, casos de prueba y estimación de complejidad |
-| RF-GEN-03 | El contexto del proyecto se incluye en la petición | Las tareas generadas mencionan el stack declarado en el proyecto |
-| RF-GEN-04 | Estados visibles de la generación | Pendiente, generando, completada y fallida; «pendiente» existe solo en el frontend, entre el envío y la respuesta 202, y los otros tres son los valores de `status`; el botón se deshabilita mientras genera y no hay envíos duplicados |
+| RF-GEN-03 | El contexto del proyecto se incluye en la petición | Las tareas generadas mencionan el stack y respetan las convenciones declaradas en el proyecto; la misma entrada en dos proyectos con stacks distintos produce tareas distintas |
+| RF-GEN-04 | Estados visibles de la generación | Pendiente, generando, necesita aclaración, completada y fallida; «pendiente» existe solo en el frontend, entre el envío y la respuesta 202, y los otros cuatro son los valores de `status`; el botón se deshabilita mientras genera y no hay envíos duplicados |
 | RF-GEN-05 | Validación de la respuesta | Si la respuesta no cumple el esquema hay un reintento automático; si vuelve a fallar, la generación queda como fallida con un mensaje claro y un botón de reintento, que reenvía la misma entrada como una generación nueva |
 | RF-GEN-06 | Regenerar | Crea una generación nueva con la misma entrada; la anterior se conserva |
 | RF-GEN-07 | Límite de uso por usuario | Máximo configurable de generaciones al día (propuesta: 20); al alcanzarlo se explica cuándo se reinicia. Un tope global diario protege la cuota gratuita del modelo. Cada límite responde 429 con su propio código de error |
 | RF-GEN-08 | Aviso de privacidad | Texto visible junto al formulario: no pegar código ni datos confidenciales |
+| RF-GEN-09 | Preguntas aclaratorias | Si a la descripción le falta información para especificar sin inventar, la IA devuelve entre 2 y 4 preguntas concretas en lugar de la especificación y la generación queda en «necesita aclaración». El usuario responde (hasta 500 caracteres por respuesta, alguna puede quedar en blanco) o pulsa «Generar sin responder»; en ambos casos se genera la especificación. Hay una sola ronda de preguntas, y preguntar y generar cuentan como una única generación para los límites de uso |
+| RF-GEN-10 | Supuestos explícitos | La especificación incluye la lista de supuestos que la IA ha tenido que asumir, por ejemplo las preguntas que el usuario dejó sin responder; la vista de la especificación los muestra antes de las seis secciones |
 
 ### Edición manual
 
@@ -215,11 +217,11 @@ Lo imprescindible basta para entregar un TFM completo; lo demás suma nota y por
 
 | Nivel | Funcionales | No funcionales y seguridad | Pipeline y entregables |
 | --- | --- | --- | --- |
-| Imprescindible | RF-AUT-01 a 05; RF-PRO-01 a 05; RF-GEN-01 a 05, 07 y 08; RF-HIS-01 y 03; RF-EXP-01; RF-DAS-01 a 03 | RNF-01 a 07, 09, 11, 12 y 13; SEG-01, 02, 04 a 06 y 10 a 17 | `ci.yml` con sus jobs base; aplicación desplegada, repositorio, Docker, README en español, datos de demostración, slides y vídeo |
+| Imprescindible | RF-AUT-01 a 05; RF-PRO-01 a 05; RF-GEN-01 a 05 y 07 a 10; RF-HIS-01 y 03; RF-EXP-01; RF-DAS-01 a 03 | RNF-01 a 07, 09, 11, 12 y 13; SEG-01, 02, 04 a 06 y 10 a 17 | `ci.yml` con sus jobs base; aplicación desplegada, repositorio, Docker, README en español, datos de demostración, slides y vídeo |
 | Importante | RF-PRO-06; RF-GEN-06; RF-EDI-01, 02 y 04; RF-HIS-04; RF-EXP-02 a 04; RF-DAS-04 y 06 | RNF-08, 10 y 14 a 18, con Storybook solo para átomos y moléculas; SEG-03, 07 a 09, 18 y 19 | `deploy.yml`; jobs de Storybook, OpenAPI y auditoría en `ci.yml`; README en inglés |
 | Prescindible | RF-EDI-03; RF-HIS-02; RF-DAS-05 | Storybook de organismos; rechazo de contraseñas comunes; alerta por picos de logins fallidos; análisis dinámico; escaneo de la imagen Docker | `release.yml` |
 
-Son 23 requisitos funcionales imprescindibles, 11 importantes y 3 prescindibles. Tres reglas ordenan el trabajo:
+Son 25 requisitos funcionales imprescindibles, 11 importantes y 3 prescindibles. Tres reglas ordenan el trabajo:
 
 - **Orden estricto.** No se empieza nada importante hasta que lo imprescindible esté desplegado y probado.
 - **Despliegue sencillo al principio.** Hasta que exista `deploy.yml`, Vercel despliega por su cuenta desde `main`.

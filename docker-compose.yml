@@ -43,6 +43,9 @@ services:
       DATABASE_URL: postgresql://devpilot:devpilot@db:5432/devpilot
       JWT_ACCESS_SECRET: example-access-secret-change-me-0123456789
       JWT_REFRESH_SECRET: example-refresh-secret-change-me-012345678
+      # Modelo simulado: Docker funciona sin clave. Para usar Gemini, LLM_PROVIDER=gemini y GEMINI_API_KEY.
+      LLM_PROVIDER: fake
+      FAKE_LLM_LATENCY_MS: 2500
     ports:
       - '3000:3000'
     depends_on:

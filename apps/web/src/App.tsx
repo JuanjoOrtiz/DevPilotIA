@@ -3,7 +3,9 @@ import { Navigate, Route, Routes } from 'react-router';
 import { LoadingScreen } from './components/molecules/LoadingScreen/LoadingScreen';
 import { AppShell } from './components/pages/AppShell/AppShell';
 import { EditProjectPage } from './components/pages/EditProjectPage/EditProjectPage';
+import { GenerationPage } from './components/pages/GenerationPage/GenerationPage';
 import { LoginPage } from './components/pages/LoginPage/LoginPage';
+import { NewGenerationPage } from './components/pages/NewGenerationPage/NewGenerationPage';
 import { NewProjectPage } from './components/pages/NewProjectPage/NewProjectPage';
 import { ProjectDetailPage } from './components/pages/ProjectDetailPage/ProjectDetailPage';
 import { ProjectsPage } from './components/pages/ProjectsPage/ProjectsPage';
@@ -29,6 +31,8 @@ export function App() {
           <Route path={ROUTES.newProject} element={<NewProjectPage />} />
           <Route path={ROUTE_PATTERNS.project} element={<ProjectDetailPage />} />
           <Route path={ROUTE_PATTERNS.editProject} element={<EditProjectPage />} />
+          <Route path={ROUTE_PATTERNS.newGeneration} element={<NewGenerationPage />} />
+          <Route path={ROUTE_PATTERNS.generation} element={<GenerationPage />} />
         </Route>
         {/* La página de entrada, y cualquier dirección que no exista, llevan a los proyectos. */}
         <Route path="*" element={<Navigate to={ROUTES.projects} replace />} />

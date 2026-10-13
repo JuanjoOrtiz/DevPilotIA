@@ -54,6 +54,17 @@
   overflow-wrap: anywhere;
 }
 
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
 .badges {
   display: flex;
   align-items: center;

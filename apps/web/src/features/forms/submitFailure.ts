@@ -6,13 +6,19 @@ export interface SubmitFailure {
   code: ApiErrorCode;
   /** Motivos por campo, tal y como los devuelve la API en `details.fields`. */
   fields: Record<string, string[]>;
+  /** El resto de `details` del error, como la hora a la que se reinicia un límite. */
+  details?: Record<string, unknown>;
 }
 
 export function toSubmitFailure(error: unknown): SubmitFailure {
   if (!(error instanceof ApiError)) return { code: 'INTERNAL_ERROR', fields: {} };
 
-  const details = fieldErrorsSchema.safeParse(error.details);
-  return { code: error.code, fields: details.success ? details.data.fields : {} };
+  const fields = fieldErrorsSchema.safeParse(error.details);
+  return {
+    code: error.code,
+    fields: fields.success ? fields.data.fields : {},
+    details: error.details,
+  };
 }
 
 /**
