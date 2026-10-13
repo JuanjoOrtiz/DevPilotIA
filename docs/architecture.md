@@ -174,9 +174,9 @@ Cuatro tablas: un usuario tiene muchos proyectos y un proyecto tiene muchas gene
 | User | id, name, email, passwordHash, createdAt | Email único |
 | RefreshToken | id, userId, tokenHash, expiresAt, revokedAt | Se guarda el hash, nunca el token |
 | Project | id, userId, name, description, techStack, conventions, createdAt, updatedAt | techStack es una lista de etiquetas |
-| Generation | id, projectId, type, inputText, additionalContext, status, errorCode, aiSpec, editedSpec, title, complexity, model, attempts, durationMs, inputTokens, outputTokens, isSample, createdAt, completedAt, editedAt | aiSpec y editedSpec son JSONB; title y complexity se copian fuera del JSON para listar y agregar sin leerlo; isSample marca la generación de ejemplo, que no cuenta para los límites de uso |
+| Generation | id, projectId, type, inputText, additionalContext, status, errorCode, clarifyingQuestions, clarificationAnswers, aiSpec, editedSpec, title, complexity, model, attempts, durationMs, inputTokens, outputTokens, isSample, createdAt, completedAt, editedAt | aiSpec, editedSpec, clarifyingQuestions y clarificationAnswers son JSONB; title y complexity se copian fuera del JSON para listar y agregar sin leerlo; isSample marca la generación de ejemplo, que no cuenta para los límites de uso |
 
-Valores cerrados: `type` es `feature` o `bug`; `status` es `generating`, `completed` o `failed`. La especificación vigente es `editedSpec` si existe y `aiSpec` en caso contrario.
+Valores cerrados: `type` es `feature` o `bug`; `status` es `generating`, `needs_clarification`, `completed` o `failed`. La especificación vigente es `editedSpec` si existe y `aiSpec` en caso contrario.
 
 Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación marcada con `isSample` (RF-PRO-06). Se crea desde un fichero del repositorio, sin llamar al LLM.
 
@@ -201,6 +201,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | GET | /generations/:id | Estado y especificación de una generación |
 | PATCH | /generations/:id | Guarda la versión editada |
 | POST | /generations/:id/restore | Descarta la edición y vuelve al original |
+| POST | /generations/:id/answers | Envía las respuestas a las preguntas aclaratorias, o `skip: true` para generar sin responder; solo en `needs_clarification`; responde 202 |
 | POST | /generations/:id/regenerate | Crea una generación nueva con la misma entrada; responde 202 |
 | DELETE | /generations/:id | Elimina una generación |
 | GET | /generations/:id/export | Descarga con `format=md` o `format=json` |

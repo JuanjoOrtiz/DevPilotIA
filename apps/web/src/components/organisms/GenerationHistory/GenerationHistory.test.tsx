@@ -1,5 +1,6 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../i18n';
 import { formatDateTime } from '../../../i18n/format';
@@ -166,5 +167,25 @@ describe('GenerationHistory', () => {
 
     expect(screen.getByRole('rowheader', { name: title })).toBeTruthy();
     expect(container.querySelector('img')).toBeNull();
+  });
+
+  // RF-HIS-03 y RF-GEN-09
+  it('links each title to its generation and marks the ones waiting for answers', () => {
+    const waiting = generation({ status: 'needs_clarification', title: null });
+    render(
+      <MemoryRouter>
+        <GenerationHistory
+          page={pageOf([waiting])}
+          onRetry={noop}
+          onPageChange={noop}
+          hrefFor={(id) => `/generations/${id}`}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: waiting.inputExcerpt }).getAttribute('href')).toBe(
+      `/generations/${waiting.id}`,
+    );
+    expect(screen.getByText('Necesita aclaración')).toBeTruthy();
   });
 });

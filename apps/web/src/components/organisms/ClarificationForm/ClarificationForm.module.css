@@ -1,0 +1,85 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-warning-text);
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--color-border-soft);
+  border-left: 3px solid var(--color-warning-text);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.text {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.why {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.whyLabel {
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .form {
+    padding: 20px 16px;
+  }
+}

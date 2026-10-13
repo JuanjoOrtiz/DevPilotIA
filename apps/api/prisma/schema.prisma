@@ -20,6 +20,7 @@ enum GenerationType {
 
 enum GenerationStatus {
   generating
+  needs_clarification
   completed
   failed
 }
@@ -76,31 +77,37 @@ model Project {
 }
 
 model Generation {
-  id                String           @id @default(uuid()) @db.Uuid
-  projectId         String           @map("project_id") @db.Uuid
-  type              GenerationType
-  inputText         String           @map("input_text")
-  additionalContext String?          @map("additional_context")
-  status            GenerationStatus @default(generating)
-  errorCode         String?          @map("error_code")
-  aiSpec            Json?            @map("ai_spec")
-  editedSpec        Json?            @map("edited_spec")
+  id                   String           @id @default(uuid()) @db.Uuid
+  projectId            String           @map("project_id") @db.Uuid
+  type                 GenerationType
+  inputText            String           @map("input_text")
+  additionalContext    String?          @map("additional_context")
+  status               GenerationStatus @default(generating)
+  errorCode            String?          @map("error_code")
+  // Preguntas de la IA y respuestas del usuario (RF-GEN-09).
+  clarifyingQuestions  Json?            @map("clarifying_questions")
+  clarificationAnswers Json?            @map("clarification_answers")
+  answeredAt           DateTime?        @map("answered_at") @db.Timestamptz(3)
+  aiSpec               Json?            @map("ai_spec")
+  editedSpec           Json?            @map("edited_spec")
   // title y complexity se copian fuera del JSON para listar y agregar sin leerlo.
-  title             String?
-  complexity        Complexity?
-  model             String?
-  attempts          Int              @default(0)
-  durationMs        Int?             @map("duration_ms")
-  inputTokens       Int?             @map("input_tokens")
-  outputTokens      Int?             @map("output_tokens")
+  title                String?
+  complexity           Complexity?
+  model                String?
+  attempts             Int              @default(0)
+  durationMs           Int?             @map("duration_ms")
+  inputTokens          Int?             @map("input_tokens")
+  outputTokens         Int?             @map("output_tokens")
   // Generación de ejemplo de una cuenta nueva: no cuenta para los límites de uso.
-  isSample          Boolean          @default(false) @map("is_sample")
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
-  editedAt          DateTime?        @map("edited_at") @db.Timestamptz(3)
+  isSample             Boolean          @default(false) @map("is_sample")
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt          DateTime?        @map("completed_at") @db.Timestamptz(3)
+  editedAt             DateTime?        @map("edited_at") @db.Timestamptz(3)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
+  // Límite global diario: cuenta las generaciones creadas desde las 00:00 UTC.
+  @@index([createdAt])
   @@map("generations")
 }

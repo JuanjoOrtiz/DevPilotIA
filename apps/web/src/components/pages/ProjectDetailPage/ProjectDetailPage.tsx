@@ -71,6 +71,10 @@ export function ProjectDetailPage() {
         }
         actions={
           <>
+            <LinkButton to={ROUTES.newGeneration(projectId)}>
+              <Icon name="sparkle" />
+              {t('project.newGeneration')}
+            </LinkButton>
             <LinkButton to={ROUTES.editProject(projectId)} variant="secondary">
               <Icon name="pencil" />
               {t('project.edit')}
@@ -90,6 +94,7 @@ export function ProjectDetailPage() {
         error={history.isError ? t(queryErrorKey(history.error)) : undefined}
         onRetry={() => void history.refetch()}
         onPageChange={(next) => setSearchParams(next > 1 ? { page: String(next) } : {})}
+        hrefFor={ROUTES.generation}
       />
 
       {/* RF-PRO-05: pide confirmación e informa de que se borran también las generaciones. */}

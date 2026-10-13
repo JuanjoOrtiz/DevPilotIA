@@ -1,4 +1,11 @@
-import type { GenerationPageResponse, GenerationSummary, Project } from '@devpilot/shared';
+import type {
+  ClarifyingQuestion,
+  GenerationDetail,
+  GenerationPageResponse,
+  GenerationSummary,
+  Project,
+  Specification,
+} from '@devpilot/shared';
 
 export const portal: Project = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -47,4 +54,61 @@ export function pageOf(
   overrides: Partial<GenerationPageResponse> = {},
 ): GenerationPageResponse {
   return { items, page: 1, pageSize: 10, total: items.length, ...overrides };
+}
+
+export const specification: Specification = {
+  schemaVersion: 1,
+  title: 'Exportar el historial de pedidos a CSV',
+  assumptions: ['Solo se exportan los pedidos del usuario en sesión'],
+  technicalDescription: 'Nuevo endpoint que genera el CSV en streaming con Node.js.',
+  userStories: [
+    {
+      asA: 'cliente',
+      iWant: 'descargar mis pedidos en CSV',
+      soThat: 'pueda analizarlos en una hoja de cálculo',
+      acceptanceCriteria: ['El fichero incluye fecha, importe y estado'],
+    },
+  ],
+  tasks: {
+    frontend: [{ title: 'Botón de exportar', description: 'En la lista de pedidos, con React' }],
+    backend: [],
+  },
+  risks: [{ description: 'Exportaciones grandes', severity: 'high', mitigation: 'Streaming' }],
+  edgeCases: ['Usuario sin pedidos'],
+  testCases: [
+    {
+      title: 'Exporta los pedidos',
+      type: 'integration',
+      steps: ['Crear dos pedidos', 'Pedir la exportación'],
+      expectedResult: 'Un CSV con dos filas',
+    },
+  ],
+  complexity: { size: 'M', rationale: 'Un endpoint y un botón' },
+};
+
+export const questions: ClarifyingQuestion[] = [
+  { id: 'q1', question: '¿Qué columnas debe tener el CSV?', why: 'Define el formato del fichero' },
+  { id: 'q2', question: '¿Hay un máximo de pedidos?', why: 'Cambia cómo se genera el fichero' },
+];
+
+export function generationDetail(overrides: Partial<GenerationDetail> = {}): GenerationDetail {
+  return {
+    id: '44444444-4444-4444-8444-444444444444',
+    projectId: portal.id,
+    type: 'feature',
+    status: 'completed',
+    inputText: 'Quiero que los clientes exporten su historial de pedidos a CSV',
+    additionalContext: null,
+    errorCode: null,
+    clarifyingQuestions: null,
+    clarificationAnswers: null,
+    specification,
+    title: specification.title,
+    complexity: 'M',
+    isEdited: false,
+    isSample: false,
+    createdAt: '2026-10-12T12:00:00.000Z',
+    completedAt: '2026-10-12T12:00:20.000Z',
+    ...overrides,
+  };
 }

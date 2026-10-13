@@ -56,7 +56,7 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 | T-06 | Fuga de la base de datos con contraseñas recuperables | Hash con bcrypt o argon2 | SEG-04 |
 | T-07 | XSS a través del texto del usuario o de la salida del modelo | Todo se muestra como texto; lint que prohíbe `dangerouslySetInnerHTML`; el Markdown exportado escapa el contenido | SEG-05, SEG-14 |
 | T-08 | Inyección SQL | Prisma con consultas parametrizadas, sin SQL construido a mano; Zod en todas las entradas | SEG-05 |
-| T-09 | Inyección de prompt: la entrada pide ignorar las instrucciones o revelar el prompt | Texto del usuario delimitado como dato, instrucciones fijas, salida validada contra el esquema; el modelo no tiene herramientas ni puede actuar | SEG-11 |
+| T-09 | Inyección de prompt: la entrada pide ignorar las instrucciones o revelar el prompt | Texto del usuario, incluidas las respuestas a las preguntas aclaratorias, delimitado como dato, instrucciones fijas, salida validada contra el esquema; el modelo no tiene herramientas ni puede actuar | SEG-11 |
 | T-10 | El prompt arrastra secretos o datos de otros usuarios hacia el proveedor | El prompt contiene solo el proyecto y el texto del usuario en sesión | SEG-12 |
 | T-11 | Agotamiento de la cuota del LLM, por abuso de una cuenta o creando cuentas en serie | Límite por usuario, tope global diario, límite de intentos en el registro, longitud máxima en todo texto que entra en el prompt, tope de tokens de salida y tiempo máximo de 45 s por generación | SEG-13, RF-GEN-07, RNF-04 |
 | T-12 | El modelo devuelve JSON inválido, incompleto o con contenido inesperado | Validación con Zod antes de guardar, un reintento y, si falla, generación marcada como fallida | SEG-08, SEG-14 |

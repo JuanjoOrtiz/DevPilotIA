@@ -1,5 +1,6 @@
 import type { GenerationPageResponse, GenerationSummary } from '@devpilot/shared';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { useDateFormat } from '../../../hooks/useDateFormat';
 import { Icon, type IconName } from '../../atoms/Icon/Icon';
 import { StatusBadge, type StatusTone } from '../../atoms/StatusBadge/StatusBadge';
@@ -17,12 +18,15 @@ interface GenerationHistoryProps {
   error?: string | undefined;
   onRetry: () => void;
   onPageChange: (page: number) => void;
+  /** Dirección de cada generación. Si llega, el título de cada fila la abre (RF-HIS-03). */
+  hrefFor?: (generationId: string) => string;
 }
 
 const COLUMNS = ['title', 'type', 'complexity', 'status', 'date'] as const;
 
 const STATUS: Record<GenerationSummary['status'], { tone: StatusTone; icon: IconName }> = {
   generating: { tone: 'info', icon: 'progress' },
+  needs_clarification: { tone: 'warning', icon: 'question' },
   completed: { tone: 'success', icon: 'check' },
   failed: { tone: 'danger', icon: 'alert' },
 };
@@ -31,7 +35,13 @@ const STATUS: Record<GenerationSummary['status'], { tone: StatusTone; icon: Icon
  * Historial de generaciones de un proyecto, de más reciente a más antigua (RF-HIS-01).
  * No pide datos: recibe la página y avisa cuando el usuario quiere otra.
  */
-export function GenerationHistory({ page, error, onRetry, onPageChange }: GenerationHistoryProps) {
+export function GenerationHistory({
+  page,
+  error,
+  onRetry,
+  onPageChange,
+  hrefFor,
+}: GenerationHistoryProps) {
   const { t } = useTranslation();
   const format = useDateFormat();
 
@@ -69,7 +79,13 @@ export function GenerationHistory({ page, error, onRetry, onPageChange }: Genera
                 {page.items.map((generation) => (
                   <tr key={generation.id} role="row">
                     <th role="rowheader" scope="row" className={styles.title}>
-                      {generation.title ?? generation.inputExcerpt}
+                      {hrefFor ? (
+                        <Link to={hrefFor(generation.id)} className={styles.link}>
+                          {generation.title ?? generation.inputExcerpt}
+                        </Link>
+                      ) : (
+                        (generation.title ?? generation.inputExcerpt)
+                      )}
                     </th>
                     <td role="cell">
                       <StatusBadge tone={generation.type === 'bug' ? 'caution' : 'info'}>
