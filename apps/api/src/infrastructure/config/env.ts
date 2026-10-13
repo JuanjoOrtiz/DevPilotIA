@@ -28,6 +28,17 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: jwtSecret,
   JWT_REFRESH_SECRET: jwtSecret,
   APP_VERSION: z.string().min(1).default('dev'),
+  /** `gemini` en producción; `fake` responde sin red ni clave (local y CI). */
+  LLM_PROVIDER: z.enum(['gemini', 'fake']).default('fake'),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
+  LLM_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1024).max(65536).default(8192),
+  LLM_ATTEMPT_TIMEOUT_MS: z.coerce.number().int().min(1000).default(20_000),
+  GENERATION_TIMEOUT_MS: z.coerce.number().int().min(1000).default(45_000),
+  /** Espera del modelo simulado, para ver los estados de la interfaz en local. */
+  FAKE_LLM_LATENCY_MS: z.coerce.number().int().min(0).default(0),
+  GENERATION_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(1).default(20),
+  GENERATION_DAILY_LIMIT_GLOBAL: z.coerce.number().int().min(1).default(200),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -63,7 +74,13 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) {
     problems.push('JWT_REFRESH_SECRET: must be different from JWT_ACCESS_SECRET');
   }
+  if (env.LLM_PROVIDER === 'gemini' && !env.GEMINI_API_KEY) {
+    problems.push('GEMINI_API_KEY: is required when LLM_PROVIDER is gemini');
+  }
   if (env.NODE_ENV === 'production') {
+    if (env.LLM_PROVIDER !== 'gemini') {
+      problems.push('LLM_PROVIDER: must be gemini in production');
+    }
     if (env.DATABASE_URL.includes(EXAMPLE_DATABASE_CREDENTIALS)) {
       problems.push('DATABASE_URL: uses the example credentials from .env.example');
     }
@@ -79,4 +96,14 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   if (problems.length > 0) throw new InvalidEnvError(problems);
 
   return env;
+}
+
+/**
+ * Configuración del arranque en Vercel, que siempre es producción: cookies `Secure` y todas
+ * las comprobaciones de arriba. No se lee de NODE_ENV porque Vercel no garantiza esa variable
+ * al ejecutar la función, y fijarla en el panel rompe la compilación: con
+ * `NODE_ENV=production`, `npm ci` no instala las dependencias de desarrollo que necesita.
+ */
+export function loadVercelEnv(source: Record<string, string | undefined> = process.env): Env {
+  return loadEnv({ ...source, NODE_ENV: 'production' });
 }

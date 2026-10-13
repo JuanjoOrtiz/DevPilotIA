@@ -39,6 +39,16 @@ const SHAPES = {
   check: { viewBox: '0 0 12 12', strokeWidth: 1.8, paths: <path d="m2.5 6.5 2.3 2.3 4.7-5.3" /> },
   alert: { viewBox: '0 0 12 12', strokeWidth: 1.8, paths: <path d="M6 2.5v4M6 9.3v.2" /> },
   close: { viewBox: '0 0 12 12', strokeWidth: 1.6, paths: <path d="m3 3 6 6M9 3 3 9" /> },
+  question: {
+    viewBox: '0 0 12 12',
+    strokeWidth: 1.6,
+    paths: <path d="M4.3 4.4a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M6 9.3v.2" />,
+  },
+  sparkle: {
+    viewBox: '0 0 16 16',
+    strokeWidth: 1.5,
+    paths: <path d="M8 2.5 9.3 6.7 13.5 8 9.3 9.3 8 13.5 6.7 9.3 2.5 8 6.7 6.7z" />,
+  },
   progress: {
     viewBox: '0 0 12 12',
     strokeWidth: 1.8,

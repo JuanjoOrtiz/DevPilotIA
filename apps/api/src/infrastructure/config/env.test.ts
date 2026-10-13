@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TEST_SECRETS } from '../../test-support/testEnv.js';
-import { InvalidEnvError, loadEnv } from './env.js';
+import { InvalidEnvError, loadEnv, loadVercelEnv } from './env.js';
 
 const valid = {
   DATABASE_URL: 'postgresql://app:s3cret-value@db.internal:5432/devpilot',
@@ -11,7 +11,20 @@ describe('loadEnv', () => {
   it('applies defaults for optional variables', () => {
     const env = loadEnv(valid);
 
-    expect(env).toEqual({ ...valid, NODE_ENV: 'development', PORT: 3000, APP_VERSION: 'dev' });
+    expect(env).toEqual({
+      ...valid,
+      NODE_ENV: 'development',
+      PORT: 3000,
+      APP_VERSION: 'dev',
+      LLM_PROVIDER: 'fake',
+      GEMINI_MODEL: 'gemini-flash-latest',
+      LLM_MAX_OUTPUT_TOKENS: 8192,
+      LLM_ATTEMPT_TIMEOUT_MS: 20_000,
+      GENERATION_TIMEOUT_MS: 45_000,
+      FAKE_LLM_LATENCY_MS: 0,
+      GENERATION_DAILY_LIMIT_PER_USER: 20,
+      GENERATION_DAILY_LIMIT_GLOBAL: 200,
+    });
   });
 
   it('takes the version from the deployed commit when APP_VERSION is not set', () => {
@@ -75,6 +88,8 @@ describe('loadEnv in production', () => {
     ...valid,
     NODE_ENV: 'production',
     DATABASE_URL: `${valid.DATABASE_URL}?sslmode=require&uselibpqcompat=true`,
+    LLM_PROVIDER: 'gemini',
+    GEMINI_API_KEY: 'test-gemini-key',
   };
 
   it('accepts an encrypted connection with real credentials and secrets', () => {
@@ -117,5 +132,59 @@ describe('loadEnv in production', () => {
     expect(() =>
       loadEnv({ ...production, DATABASE_URL: `${valid.DATABASE_URL}?sslmode=disable` }),
     ).toThrow(/sslmode/);
+  });
+});
+
+describe('loadEnv for the language model', () => {
+  it('needs a key to use Gemini', () => {
+    expect(() => loadEnv({ ...valid, LLM_PROVIDER: 'gemini' })).toThrow(/GEMINI_API_KEY/);
+    expect(loadEnv({ ...valid, LLM_PROVIDER: 'gemini', GEMINI_API_KEY: 'k' }).LLM_PROVIDER).toBe(
+      'gemini',
+    );
+  });
+
+  // Producción nunca responde con el modelo simulado.
+  it('refuses the fake model in production', () => {
+    const production = {
+      ...valid,
+      NODE_ENV: 'production',
+      DATABASE_URL: `${valid.DATABASE_URL}?sslmode=require`,
+    };
+
+    expect(() => loadEnv(production)).toThrow(/LLM_PROVIDER: must be gemini/);
+  });
+});
+
+// Vercel no garantiza NODE_ENV al ejecutar la función, y fijarla en el panel rompe el build.
+describe('loadVercelEnv', () => {
+  const deployed = {
+    DATABASE_URL:
+      'postgresql://prisma.ref:real-password@pooler.example:5432/postgres?sslmode=require',
+    JWT_ACCESS_SECRET: 'a-real-access-secret-that-is-long-enough-0123',
+    JWT_REFRESH_SECRET: 'a-real-refresh-secret-that-is-long-enough-012',
+    LLM_PROVIDER: 'gemini',
+    GEMINI_API_KEY: 'a-gemini-key',
+  };
+
+  it('always runs in production, whatever NODE_ENV says or even without it', () => {
+    expect(loadVercelEnv(deployed).NODE_ENV).toBe('production');
+    expect(loadVercelEnv({ ...deployed, NODE_ENV: 'development' }).NODE_ENV).toBe('production');
+  });
+
+  it('applies every production check', () => {
+    expect(() =>
+      loadVercelEnv({
+        ...deployed,
+        ...TEST_SECRETS,
+        JWT_ACCESS_SECRET: 'example-access-secret-change-me-0123456789',
+      }),
+    ).toThrow(/JWT_ACCESS_SECRET: uses the example secret/);
+    expect(() =>
+      loadVercelEnv({
+        ...deployed,
+        DATABASE_URL: 'postgresql://prisma.ref:pw@pooler.example:5432/postgres',
+      }),
+    ).toThrow(/sslmode/);
+    expect(() => loadVercelEnv({ ...deployed, LLM_PROVIDER: 'fake' })).toThrow(/must be gemini/);
   });
 });

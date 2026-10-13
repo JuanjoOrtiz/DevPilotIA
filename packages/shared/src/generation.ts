@@ -4,7 +4,13 @@ export const GENERATION_TYPES = ['feature', 'bug'] as const;
 export const generationTypeSchema = z.enum(GENERATION_TYPES);
 export type GenerationType = z.infer<typeof generationTypeSchema>;
 
-export const GENERATION_STATUSES = ['generating', 'completed', 'failed'] as const;
+/** `needs_clarification`: la IA ha hecho preguntas y espera las respuestas (RF-GEN-09). */
+export const GENERATION_STATUSES = [
+  'generating',
+  'needs_clarification',
+  'completed',
+  'failed',
+] as const;
 export const generationStatusSchema = z.enum(GENERATION_STATUSES);
 export type GenerationStatus = z.infer<typeof generationStatusSchema>;
 

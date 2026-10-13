@@ -103,6 +103,7 @@
   },
   "project": {
     "loading": "Loading project…",
+    "newGeneration": "New generation",
     "edit": "Edit",
     "delete": "Delete",
     "summary": {
@@ -170,6 +171,7 @@
     },
     "status": {
       "generating": "Generating",
+      "needs_clarification": "Needs clarification",
       "completed": "Completed",
       "failed": "Failed"
     },
@@ -183,6 +185,120 @@
     "empty": {
       "title": "This project has no generations yet",
       "description": "When you generate a specification for this project, it will appear here."
+    }
+  },
+  "generation": {
+    "newTitle": "New generation",
+    "loading": "Loading generation…",
+    "form": {
+      "type": "Type",
+      "inputText": "Description",
+      "placeholder": {
+        "feature": "Describe the feature: what it should do, for whom and why.",
+        "bug": "Describe the bug: what happens, what should happen and how to reproduce it."
+      },
+      "additionalContext": "Additional context",
+      "additionalContextHint": "Optional: constraints, affected screens, links to tickets…",
+      "submit": "Generate specification",
+      "submitting": "Sending…",
+      "quota": "You have reached your limit of {{limit}} generations per day. You can generate again from {{time}}.",
+      "globalQuota": "The service has reached its generation limit for today. Try again from {{time}}."
+    },
+    "help": {
+      "title": "Before sending",
+      "context": "The AI receives the stack and conventions of \"{{project}}\" along with your description.",
+      "questions": "If the description lacks something important, the AI will ask you 2 to 4 questions before specifying.",
+      "privacy": "Do not paste code, credentials or confidential data: the text is sent to an external AI provider."
+    },
+    "progress": {
+      "title": "Generating the specification",
+      "titleAnswers": "Generating with your answers",
+      "description": "It usually takes 10 to 30 seconds. You can leave this page: the generation goes on and you will find it in the project history.",
+      "steps": {
+        "sent": "Request sent",
+        "generating": "The AI is working",
+        "ready": "Specification ready"
+      },
+      "done": "Done",
+      "current": "In progress"
+    },
+    "clarification": {
+      "title": "The AI needs a few details",
+      "description": "Answer what you know. Any question you leave blank will be treated as an assumption in the specification.",
+      "why": "Why it asks",
+      "answer": "Your answer to question {{number}}",
+      "submit": "Generate specification",
+      "submitting": "Sending…",
+      "skip": "Generate without answering"
+    },
+    "failed": {
+      "title": "The specification could not be generated",
+      "retry": "Try again",
+      "retrying": "Trying again…",
+      "back": "Back to the project"
+    },
+    "request": {
+      "title": "What you asked for",
+      "description": "Description",
+      "additionalContext": "Additional context",
+      "answers": "Your answers",
+      "noAnswer": "No answer"
+    },
+    "notFound": {
+      "title": "We could not find this generation",
+      "description": "It may have been deleted or the address may be wrong.",
+      "action": "Back to projects"
+    }
+  },
+  "specification": {
+    "assumptions": {
+      "title": "Assumptions",
+      "description": "What the AI decided without you saying so. Review it before implementing."
+    },
+    "sections": {
+      "technical": "Technical description",
+      "stories": "User stories",
+      "tasks": "Tasks",
+      "risks": "Risks and edge cases",
+      "tests": "Test cases",
+      "complexity": "Complexity estimate"
+    },
+    "story": {
+      "asA": "As",
+      "iWant": "I want",
+      "soThat": "so that",
+      "criteria": "Acceptance criteria"
+    },
+    "tasks": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "none": "No tasks."
+    },
+    "risks": {
+      "mitigation": "Mitigation",
+      "edgeCases": "Edge cases",
+      "none": "No risks identified.",
+      "noEdgeCases": "No edge cases."
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "tests": {
+      "type": {
+        "unit": "Unit",
+        "integration": "Integration",
+        "e2e": "E2E"
+      },
+      "expected": "Expected result",
+      "none": "No test cases."
+    },
+    "complexity": {
+      "S": "Hours",
+      "M": "One or two days",
+      "L": "Up to a week",
+      "XL": "More than a week: better split it"
     }
   },
   "validation": {
@@ -202,6 +318,13 @@
     "TAG_TOO_LONG": "Each technology can be up to 30 characters long.",
     "PAGE_INVALID": "The page is not valid.",
     "PAGE_SIZE_INVALID": "The page size is not valid.",
+    "GENERATION_TYPE_INVALID": "Choose whether it is a feature or a bug.",
+    "INPUT_TOO_SHORT": "Describe the task in 20 characters or more.",
+    "INPUT_TOO_LONG": "The description can be 4,000 characters at most.",
+    "CONTEXT_TOO_LONG": "The additional context can be 2,000 characters at most.",
+    "ANSWER_TOO_LONG": "Each answer can be 500 characters at most.",
+    "ANSWER_UNKNOWN_QUESTION": "That question is not part of this generation.",
+    "ANSWERS_INVALID": "The answers are not valid.",
     "INVALID": "This value is not valid."
   },
   "errors": {
@@ -210,6 +333,7 @@
     "INVALID_CREDENTIALS": "The email or the password is not correct.",
     "EMAIL_ALREADY_REGISTERED": "An account with this email already exists.",
     "NOT_FOUND": "We could not find what you are looking for.",
+    "GENERATION_NOT_AWAITING_ANSWERS": "This generation is no longer waiting for answers. Reload the page to see its status.",
     "USER_QUOTA_EXCEEDED": "You have reached your generation limit for today.",
     "GLOBAL_QUOTA_EXCEEDED": "The service has reached its generation limit for today.",
     "LLM_RATE_LIMITED": "The model is receiving too many requests. Try again in a few minutes.",

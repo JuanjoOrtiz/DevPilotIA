@@ -1,6 +1,16 @@
 // Dobles en memoria para los tests unitarios. No se compilan ni se despliegan.
 import { randomUUID } from 'node:crypto';
-import type { GenerationSummary } from '../domain/entities/Generation.js';
+import type {
+  ClarificationAnswer,
+  ClarifyingQuestion,
+  ErrorCode,
+  Specification,
+} from '@devpilot/shared';
+import type {
+  Generation,
+  GenerationSummary,
+  GenerationUsage,
+} from '../domain/entities/Generation.js';
 import type { Project, ProjectOverview } from '../domain/entities/Project.js';
 import type { RefreshToken } from '../domain/entities/RefreshToken.js';
 import type { User } from '../domain/entities/User.js';
@@ -16,6 +26,7 @@ import type {
 import type {
   GenerationPage,
   GenerationRepository,
+  NewGeneration,
   PageRequest,
 } from '../domain/repositories/GenerationRepository.js';
 import type { ProjectData, ProjectRepository } from '../domain/repositories/ProjectRepository.js';
@@ -109,17 +120,36 @@ export class InMemoryRefreshTokenRepository implements RefreshTokenRepository {
   }
 }
 
-interface StoredGeneration extends GenerationSummary {
+interface StoredGeneration extends Generation {
   /** Dueño del proyecto: en la base de datos sale de la relación con `projects`. */
   userId: string;
+  usage: GenerationUsage;
+}
+
+const NO_USAGE: GenerationUsage = {
+  model: null,
+  attempts: 0,
+  durationMs: 0,
+  inputTokens: 0,
+  outputTokens: 0,
+};
+
+function withoutOwner({ userId: _userId, usage: _usage, ...generation }: StoredGeneration) {
+  return structuredClone(generation);
 }
 
 export class InMemoryGenerationRepository implements GenerationRepository {
   readonly generations: StoredGeneration[] = [];
   private readonly clock: Clock;
+  /** Dueño de cada proyecto, para crear generaciones como lo haría la base de datos. */
+  private readonly owners = new Map<string, string>();
 
   constructor(clock: Clock = new FixedClock()) {
     this.clock = clock;
+  }
+
+  registerProject(project: Pick<Project, 'id' | 'userId'>): void {
+    this.owners.set(project.id, project.userId);
   }
 
   pageForProject(
@@ -133,16 +163,123 @@ export class InMemoryGenerationRepository implements GenerationRepository {
     const start = (page - 1) * pageSize;
 
     return Promise.resolve({
-      items: all.slice(start, start + pageSize).map(({ userId: _userId, ...summary }) => summary),
+      items: all.slice(start, start + pageSize).map(summaryOf),
       total: all.length,
     });
   }
 
-  /** Guarda una generación ya terminada, como las que dejará el flujo de generación. */
+  create(projectId: string, data: NewGeneration): Promise<Generation> {
+    const userId = this.owners.get(projectId);
+    if (!userId) return Promise.reject(new Error(`Unknown project ${projectId}`));
+    const generation = this.store({ id: projectId, userId }, { ...data, status: 'generating' });
+    return Promise.resolve(withoutOwner(generation));
+  }
+
+  findForUser(userId: string, generationId: string): Promise<Generation | null> {
+    const found = this.owned(userId, generationId);
+    return Promise.resolve(found ? withoutOwner(found) : null);
+  }
+
+  countForUserSince(userId: string, since: Date): Promise<number> {
+    return Promise.resolve(
+      this.generations.filter((g) => g.userId === userId && g.createdAt >= since && !g.isSample)
+        .length,
+    );
+  }
+
+  countAllSince(since: Date): Promise<number> {
+    return Promise.resolve(
+      this.generations.filter((g) => g.createdAt >= since && !g.isSample).length,
+    );
+  }
+
+  saveAnswers(
+    userId: string,
+    generationId: string,
+    answers: ClarificationAnswer[],
+    at: Date,
+  ): Promise<boolean> {
+    const generation = this.owned(userId, generationId);
+    if (generation?.status !== 'needs_clarification') return Promise.resolve(false);
+    Object.assign(generation, {
+      status: 'generating',
+      clarificationAnswers: structuredClone(answers),
+      answeredAt: at,
+    });
+    return Promise.resolve(true);
+  }
+
+  complete(
+    generationId: string,
+    specification: Specification,
+    usage: GenerationUsage,
+    at: Date,
+  ): Promise<void> {
+    this.finish(generationId, usage, {
+      status: 'completed',
+      aiSpec: structuredClone(specification),
+      title: specification.title,
+      complexity: specification.complexity.size,
+      completedAt: at,
+    });
+    return Promise.resolve();
+  }
+
+  requestClarification(
+    generationId: string,
+    questions: ClarifyingQuestion[],
+    usage: GenerationUsage,
+  ): Promise<void> {
+    this.finish(generationId, usage, {
+      status: 'needs_clarification',
+      clarifyingQuestions: structuredClone(questions),
+    });
+    return Promise.resolve();
+  }
+
+  fail(generationId: string, code: ErrorCode, usage: GenerationUsage): Promise<void> {
+    this.finish(generationId, usage, { status: 'failed', errorCode: code });
+    return Promise.resolve();
+  }
+
+  failIfStale(userId: string, generationId: string, before: Date): Promise<boolean> {
+    const generation = this.owned(userId, generationId);
+    if (generation?.status !== 'generating') return Promise.resolve(false);
+    if ((generation.answeredAt ?? generation.createdAt) >= before) return Promise.resolve(false);
+    Object.assign(generation, { status: 'failed', errorCode: 'LLM_TIMEOUT' });
+    return Promise.resolve(true);
+  }
+
+  /** Guarda una generación ya terminada, como las que deja el flujo de generación. */
   add(
     project: Pick<Project, 'id' | 'userId'>,
-    overrides: Partial<GenerationSummary> = {},
+    overrides: Partial<Generation> = {},
   ): GenerationSummary {
+    return summaryOf(this.store(project, overrides));
+  }
+
+  /** Lo que se ha acumulado de una generación: modelo, intentos y tokens. */
+  usageOf(generationId: string): GenerationUsage {
+    const found = this.generations.find((generation) => generation.id === generationId);
+    if (!found) throw new Error(`Unknown generation ${generationId}`);
+    return { ...found.usage };
+  }
+
+  forProject(projectId: string): GenerationSummary[] {
+    return this.generations
+      .filter((generation) => generation.projectId === projectId)
+      .map(summaryOf);
+  }
+
+  removeForProject(projectId: string): void {
+    const kept = this.generations.filter((generation) => generation.projectId !== projectId);
+    this.generations.splice(0, this.generations.length, ...kept);
+  }
+
+  private store(
+    project: Pick<Project, 'id' | 'userId'>,
+    overrides: Partial<Generation>,
+  ): StoredGeneration {
     const generation: StoredGeneration = {
       id: randomUUID(),
       projectId: project.id,
@@ -151,24 +288,60 @@ export class InMemoryGenerationRepository implements GenerationRepository {
       status: 'completed',
       title: 'Exportar el historial a CSV',
       inputText: 'Quiero exportar el historial de pedidos a CSV',
+      additionalContext: null,
       complexity: 'M',
+      errorCode: null,
+      clarifyingQuestions: null,
+      clarificationAnswers: null,
+      aiSpec: null,
+      editedSpec: null,
       editedAt: null,
+      answeredAt: null,
+      completedAt: null,
       isSample: false,
       createdAt: this.clock.now(),
+      usage: { ...NO_USAGE },
       ...overrides,
     };
+    if (generation.status === 'generating') {
+      Object.assign(generation, { title: null, complexity: null });
+    }
     this.generations.push(generation);
     return generation;
   }
 
-  forProject(projectId: string): GenerationSummary[] {
-    return this.generations.filter((generation) => generation.projectId === projectId);
+  private owned(userId: string, generationId: string): StoredGeneration | undefined {
+    return this.generations.find((g) => g.id === generationId && g.userId === userId);
   }
 
-  removeForProject(projectId: string): void {
-    const kept = this.generations.filter((generation) => generation.projectId !== projectId);
-    this.generations.splice(0, this.generations.length, ...kept);
+  /** Como la base de datos: solo cambia una generación que sigue en `generating`. */
+  private finish(generationId: string, usage: GenerationUsage, changes: Partial<Generation>) {
+    const generation = this.generations.find((g) => g.id === generationId);
+    if (generation?.status !== 'generating') return;
+    Object.assign(generation, changes);
+    generation.usage = {
+      model: usage.model ?? generation.usage.model,
+      attempts: generation.usage.attempts + usage.attempts,
+      durationMs: generation.usage.durationMs + usage.durationMs,
+      inputTokens: generation.usage.inputTokens + usage.inputTokens,
+      outputTokens: generation.usage.outputTokens + usage.outputTokens,
+    };
   }
+}
+
+function summaryOf(generation: StoredGeneration): GenerationSummary {
+  return {
+    id: generation.id,
+    projectId: generation.projectId,
+    type: generation.type,
+    status: generation.status,
+    title: generation.title,
+    inputText: generation.inputText,
+    complexity: generation.complexity,
+    editedAt: generation.editedAt,
+    isSample: generation.isSample,
+    createdAt: generation.createdAt,
+  };
 }
 
 export class InMemoryProjectRepository implements ProjectRepository {
@@ -198,6 +371,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const now = this.clock.now();
     const project: Project = { id: randomUUID(), userId, ...data, createdAt: now, updatedAt: now };
     this.projects.push(project);
+    this.generations.registerProject(project);
     return Promise.resolve({ ...project });
   }
 

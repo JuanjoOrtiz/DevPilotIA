@@ -103,6 +103,7 @@
   },
   "project": {
     "loading": "Cargando proyecto…",
+    "newGeneration": "Nueva generación",
     "edit": "Editar",
     "delete": "Eliminar",
     "summary": {
@@ -170,6 +171,7 @@
     },
     "status": {
       "generating": "Generando",
+      "needs_clarification": "Necesita aclaración",
       "completed": "Completada",
       "failed": "Fallida"
     },
@@ -183,6 +185,120 @@
     "empty": {
       "title": "Este proyecto todavía no tiene generaciones",
       "description": "Cuando generes una especificación para este proyecto, aparecerá aquí."
+    }
+  },
+  "generation": {
+    "newTitle": "Nueva generación",
+    "loading": "Cargando generación…",
+    "form": {
+      "type": "Tipo",
+      "inputText": "Descripción",
+      "placeholder": {
+        "feature": "Describe la funcionalidad: qué debe hacer, para quién y por qué.",
+        "bug": "Describe el bug: qué pasa, qué debería pasar y cómo reproducirlo."
+      },
+      "additionalContext": "Contexto adicional",
+      "additionalContextHint": "Opcional: restricciones, pantallas afectadas, enlaces a tickets…",
+      "submit": "Generar especificación",
+      "submitting": "Enviando…",
+      "quota": "Has alcanzado tu límite de {{limit}} generaciones al día. Podrás generar de nuevo a partir del {{time}}.",
+      "globalQuota": "El servicio ha alcanzado su límite de generaciones de hoy. Vuelve a intentarlo a partir del {{time}}."
+    },
+    "help": {
+      "title": "Antes de enviar",
+      "context": "La IA recibe el stack y las convenciones de «{{project}}» junto con tu descripción.",
+      "questions": "Si a la descripción le falta algo importante, la IA te hará entre 2 y 4 preguntas antes de especificar.",
+      "privacy": "No pegues código, credenciales ni datos confidenciales: el texto se envía a un proveedor externo de IA."
+    },
+    "progress": {
+      "title": "Generando la especificación",
+      "titleAnswers": "Generando con tus respuestas",
+      "description": "Suele tardar entre 10 y 30 segundos. Puedes salir de esta página: la generación sigue y la encontrarás en el historial del proyecto.",
+      "steps": {
+        "sent": "Petición enviada",
+        "generating": "La IA está trabajando",
+        "ready": "Especificación lista"
+      },
+      "done": "Hecho",
+      "current": "En curso"
+    },
+    "clarification": {
+      "title": "La IA necesita algunos detalles",
+      "description": "Responde lo que sepas. Las preguntas que dejes en blanco se tratarán como supuestos en la especificación.",
+      "why": "Por qué lo pregunta",
+      "answer": "Tu respuesta a la pregunta {{number}}",
+      "submit": "Generar especificación",
+      "submitting": "Enviando…",
+      "skip": "Generar sin responder"
+    },
+    "failed": {
+      "title": "No se pudo generar la especificación",
+      "retry": "Reintentar",
+      "retrying": "Reintentando…",
+      "back": "Volver al proyecto"
+    },
+    "request": {
+      "title": "Lo que pediste",
+      "description": "Descripción",
+      "additionalContext": "Contexto adicional",
+      "answers": "Tus respuestas",
+      "noAnswer": "Sin respuesta"
+    },
+    "notFound": {
+      "title": "No hemos encontrado esta generación",
+      "description": "Puede que se haya eliminado o que la dirección no sea correcta.",
+      "action": "Volver a proyectos"
+    }
+  },
+  "specification": {
+    "assumptions": {
+      "title": "Supuestos",
+      "description": "Lo que la IA ha decidido sin que lo dijeras. Revísalo antes de implementar."
+    },
+    "sections": {
+      "technical": "Descripción técnica",
+      "stories": "Historias de usuario",
+      "tasks": "Tareas",
+      "risks": "Riesgos y casos límite",
+      "tests": "Casos de prueba",
+      "complexity": "Estimación de complejidad"
+    },
+    "story": {
+      "asA": "Como",
+      "iWant": "quiero",
+      "soThat": "para",
+      "criteria": "Criterios de aceptación"
+    },
+    "tasks": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "none": "Sin tareas."
+    },
+    "risks": {
+      "mitigation": "Mitigación",
+      "edgeCases": "Casos límite",
+      "none": "Sin riesgos identificados.",
+      "noEdgeCases": "Sin casos límite."
+    },
+    "severity": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta"
+    },
+    "tests": {
+      "type": {
+        "unit": "Unitaria",
+        "integration": "Integración",
+        "e2e": "E2E"
+      },
+      "expected": "Resultado esperado",
+      "none": "Sin casos de prueba."
+    },
+    "complexity": {
+      "S": "Horas",
+      "M": "Uno o dos días",
+      "L": "Hasta una semana",
+      "XL": "Más de una semana: conviene dividirla"
     }
   },
   "validation": {
@@ -202,6 +318,13 @@
     "TAG_TOO_LONG": "Cada tecnología puede tener 30 caracteres como máximo.",
     "PAGE_INVALID": "La página no es válida.",
     "PAGE_SIZE_INVALID": "El tamaño de página no es válido.",
+    "GENERATION_TYPE_INVALID": "Elige si es una funcionalidad o un bug.",
+    "INPUT_TOO_SHORT": "Describe la tarea con 20 caracteres o más.",
+    "INPUT_TOO_LONG": "La descripción puede tener 4.000 caracteres como máximo.",
+    "CONTEXT_TOO_LONG": "El contexto adicional puede tener 2.000 caracteres como máximo.",
+    "ANSWER_TOO_LONG": "Cada respuesta puede tener 500 caracteres como máximo.",
+    "ANSWER_UNKNOWN_QUESTION": "Esa pregunta no forma parte de esta generación.",
+    "ANSWERS_INVALID": "Las respuestas no son válidas.",
     "INVALID": "Este valor no es válido."
   },
   "errors": {
@@ -210,6 +333,7 @@
     "INVALID_CREDENTIALS": "El email o la contraseña no son correctos.",
     "EMAIL_ALREADY_REGISTERED": "Ya existe una cuenta con este email.",
     "NOT_FOUND": "No hemos encontrado lo que buscas.",
+    "GENERATION_NOT_AWAITING_ANSWERS": "Esta generación ya no espera respuestas. Recarga la página para ver su estado.",
     "USER_QUOTA_EXCEEDED": "Has alcanzado tu límite de generaciones de hoy.",
     "GLOBAL_QUOTA_EXCEEDED": "El servicio ha alcanzado su límite de generaciones de hoy.",
     "LLM_RATE_LIMITED": "El modelo está recibiendo demasiadas peticiones. Inténtalo de nuevo en unos minutos.",

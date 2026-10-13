@@ -20,6 +20,13 @@ export const FIELD_ERRORS = [
   'TAG_TOO_LONG',
   'PAGE_INVALID',
   'PAGE_SIZE_INVALID',
+  'GENERATION_TYPE_INVALID',
+  'INPUT_TOO_SHORT',
+  'INPUT_TOO_LONG',
+  'CONTEXT_TOO_LONG',
+  'ANSWER_TOO_LONG',
+  'ANSWER_UNKNOWN_QUESTION',
+  'ANSWERS_INVALID',
 ] as const;
 export type FieldError = (typeof FIELD_ERRORS)[number];
 
