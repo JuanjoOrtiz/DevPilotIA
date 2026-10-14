@@ -161,6 +161,7 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
     tokens,
     // En local se trabaja por HTTP y una cookie Secure no llegaría a guardarse.
     cookies: { secure: env.NODE_ENV === 'production' },
+    apiDocs: { enabled: env.API_DOCS_ENABLED, version: env.APP_VERSION },
   });
 
   return { app, database };

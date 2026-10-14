@@ -35,7 +35,13 @@ const DATA_ACCESS = ['@tanstack/react-query'];
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/coverage/**', '**/generated/**', '**/node_modules/**'],
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/generated/**',
+      '**/node_modules/**',
+      '**/storybook-static/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,

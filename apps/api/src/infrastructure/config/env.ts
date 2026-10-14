@@ -39,6 +39,11 @@ const envSchema = z.object({
   FAKE_LLM_LATENCY_MS: z.coerce.number().int().min(0).default(0),
   GENERATION_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(1).default(20),
   GENERATION_DAILY_LIMIT_GLOBAL: z.coerce.number().int().min(1).default(200),
+  // SEG-17: Swagger UI y /api/openapi.json solo con el valor exacto `true`.
+  API_DOCS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -5,3 +5,4 @@ package-lock.json
 apps/api/prisma/migrations
 # Las tablas de la documentación se mantienen a mano
 *.md
+storybook-static
