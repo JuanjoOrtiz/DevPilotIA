@@ -87,7 +87,8 @@ apps/api/src/
 │   ├── security/            # bcrypt, JWT y reloj del sistema
 │   └── ai/                  # GeminiProvider, FakeLLMProvider
 ├── presentation/
-│   ├── http/                # app Express, rutas, middlewares, OpenAPI
+│   ├── http/                # app Express, rutas y middlewares
+│   ├── openapi/             # especificación OpenAPI y Swagger UI
 │   ├── controllers/
 │   └── validators/
 ├── test-support/            # dobles en memoria para los tests; no se compila
@@ -155,7 +156,7 @@ Reglas (RNF-02):
 - Un nivel solo importa niveles inferiores.
 - Átomos y moléculas no llaman a la API ni usan estado global.
 - Las páginas componen plantillas y organismos; el acceso a datos vive en `features`, `services` y `hooks`.
-- Storybook sigue la misma jerarquía.
+- Storybook sigue la misma jerarquía (RNF-18): cada átomo y cada molécula tiene sus historias, con controles, el panel de accesibilidad y un selector de idioma en la barra de herramientas. `npm run storybook -w @devpilot/web` lo abre en <http://localhost:6006>. `stories.test.tsx` pinta todas las historias en los tests y comprueba que ningún átomo ni molécula se queda sin ellas, así que una historia rota hace fallar el CI. Los organismos (prescindible) no tienen historias.
 
 Las mismas reglas están en `eslint.config.js`, junto con la que prohíbe `dangerouslySetInnerHTML`. Cada componente vive en su carpeta con su CSS Module; los colores y tamaños salen de `styles/tokens.css`.
 
@@ -209,7 +210,9 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | GET | /dashboard/summary | Indicadores, actividad de los últimos 30 días y reparto por complejidad; los filtros `from`, `to` y `projectId` llegan con RF-DAS-06 |
 | GET | /health | Comprobación de vida de la API y de la base de datos |
 
-La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, se activan con una variable de entorno y no cuentan entre los 21 endpoints.
+La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, solo existen con `API_DOCS_ENABLED=true` (SEG-17) y no cuentan entre los 21 endpoints.
+
+**OpenAPI (RNF-17).** `presentation/openapi/openApiDocument.ts` lista cada operación con los esquemas Zod de `packages/shared` y genera un documento OpenAPI 3.1 con `z.toJSONSchema`: nada se escribe a mano. Un test lee las rutas de `app.ts` y falla si alguna no está documentada, si se documenta una que no existe o si una ruta pública no coincide con `PUBLIC_ROUTES`; otro comprueba que el documento es válido (respuestas, parámetros, referencias). Swagger UI se carga de jsDelivr con versión fija y comprobación de integridad (SRI), con una CSP propia solo para esa página.
 
 Todos los errores comparten formato:
 

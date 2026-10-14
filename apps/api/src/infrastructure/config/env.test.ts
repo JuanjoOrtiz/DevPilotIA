@@ -24,6 +24,7 @@ describe('loadEnv', () => {
       FAKE_LLM_LATENCY_MS: 0,
       GENERATION_DAILY_LIMIT_PER_USER: 20,
       GENERATION_DAILY_LIMIT_GLOBAL: 200,
+      API_DOCS_ENABLED: false,
     });
   });
 
@@ -43,6 +44,13 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ ...valid, DATABASE_URL: 'mysql://app:pw@db/devpilot' })).toThrow(
       /DATABASE_URL/,
     );
+  });
+
+  // SEG-17: la documentación de la API solo se activa con el valor exacto `true`.
+  it('enables the API docs only with API_DOCS_ENABLED=true', () => {
+    expect(loadEnv({ ...valid, API_DOCS_ENABLED: 'true' }).API_DOCS_ENABLED).toBe(true);
+    expect(loadEnv({ ...valid, API_DOCS_ENABLED: 'false' }).API_DOCS_ENABLED).toBe(false);
+    expect(() => loadEnv({ ...valid, API_DOCS_ENABLED: 'yes' })).toThrow();
   });
 
   it('refuses an invalid PORT', () => {

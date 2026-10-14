@@ -24,6 +24,7 @@ npm run db:deploy
 npm run db:seed   # opcional: datos de ejemplo para demo@example.com / devpilot-demo
 npm run dev:api   # en una terminal: http://localhost:3000
 npm run dev:web   # en otra: http://localhost:5173
+npm run storybook -w @devpilot/web   # catálogo de componentes: http://localhost:6006
 ```
 
 ## Estructura
