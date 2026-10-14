@@ -8,7 +8,7 @@ const llm = new FakeLLMProvider();
 
 function request(inputText: string, shape: 'questions-or-specification' | 'specification') {
   return buildRequest(
-    { project: portal, type: 'feature', inputText, additionalContext: null },
+    { project: portal, type: 'feature', inputText, additionalContext: null, language: 'es' },
     { shape, timeoutMs: 1000 },
   );
 }

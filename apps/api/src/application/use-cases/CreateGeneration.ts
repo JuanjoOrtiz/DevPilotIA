@@ -68,7 +68,12 @@ export class CreateGeneration {
       });
     }
 
-    const generation = await generations.create(projectId, input);
+    // El idioma no se guarda: solo decide cómo escribe el modelo en esta generación.
+    const generation = await generations.create(projectId, {
+      type: input.type,
+      inputText: input.inputText,
+      additionalContext: input.additionalContext,
+    });
 
     background.run(() =>
       runner.run(
@@ -78,6 +83,7 @@ export class CreateGeneration {
           type: generation.type,
           inputText: generation.inputText,
           additionalContext: generation.additionalContext,
+          language: input.language,
         },
         'questions-or-specification',
       ),

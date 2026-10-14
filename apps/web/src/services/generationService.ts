@@ -3,17 +3,28 @@ import {
   type AnswerClarificationRequest,
   type CreateGenerationRequest,
   type GenerationDetail,
+  type SpecLanguage,
 } from '@devpilot/shared';
+import i18n from '../i18n';
 import { apiRequest } from './apiClient';
+
+/** La especificación se escribe en el idioma que tiene la interfaz al pedirla. */
+function currentLanguage(): SpecLanguage {
+  return i18n.resolvedLanguage === 'en' ? 'en' : 'es';
+}
 
 /** RF-GEN-01: lanza una generación. La API responde 202 sin esperar al modelo. */
 export async function createGeneration(
   projectId: string,
-  input: CreateGenerationRequest,
+  input: Omit<CreateGenerationRequest, 'language'>,
 ): Promise<GenerationDetail> {
   const { generation } = await apiRequest(
     `/projects/${encodeURIComponent(projectId)}/generations`,
-    { method: 'POST', body: input, schema: generationResponseSchema },
+    {
+      method: 'POST',
+      body: { ...input, language: currentLanguage() },
+      schema: generationResponseSchema,
+    },
   );
   return generation;
 }
@@ -37,7 +48,11 @@ export async function answerClarification(
 ): Promise<GenerationDetail> {
   const { generation } = await apiRequest(
     `/generations/${encodeURIComponent(generationId)}/answers`,
-    { method: 'POST', body: input, schema: generationResponseSchema },
+    {
+      method: 'POST',
+      body: { ...input, language: currentLanguage() },
+      schema: generationResponseSchema,
+    },
   );
   return generation;
 }

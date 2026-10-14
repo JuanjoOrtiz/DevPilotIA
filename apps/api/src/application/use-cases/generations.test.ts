@@ -20,6 +20,7 @@ const exportRequest = {
   type: 'feature' as const,
   inputText: 'Quiero que los clientes exporten su historial de pedidos a CSV',
   additionalContext: null,
+  language: 'es' as const,
 };
 
 async function setUp(llm = new ScriptedLLMProvider(), limits = {}) {
@@ -159,6 +160,7 @@ describe('clarifying questions', () => {
 
     const answered = await answerClarification.execute(LUCIA, id, {
       answers: [{ questionId: 'q1', answer: 'Fecha, importe y estado' }],
+      language: 'en',
     });
     expect(answered.status).toBe('generating');
     await background.settle();
@@ -166,6 +168,8 @@ describe('clarifying questions', () => {
     const second = llm.requests[1];
     expect(second?.shape).toBe('specification');
     expect(second?.prompt).toContain('Fecha, importe y estado');
+    // El idioma es el de la interfaz al responder, aunque la entrada esté en español.
+    expect(second?.prompt).toContain('"outputLanguage": "English"');
     expect(second?.prompt).toContain(sampleQuestions[1]?.question);
 
     expect(await getGeneration.execute(LUCIA, id)).toMatchObject({
@@ -182,7 +186,7 @@ describe('clarifying questions', () => {
     const { answerClarification, background, generations, llm, id } = await askedQuestions();
     llm.reply(specificationReply());
 
-    await answerClarification.execute(LUCIA, id, { skip: true });
+    await answerClarification.execute(LUCIA, id, { skip: true, language: 'es' });
     await background.settle();
 
     expect(llm.requests[1]?.prompt).toContain('"answer": null');
@@ -200,17 +204,19 @@ describe('clarifying questions', () => {
     fixture.llm.reply(specificationReply());
 
     await expect(
-      fixture.answerClarification.execute(LUCIA, created.id, { skip: true }),
+      fixture.answerClarification.execute(LUCIA, created.id, { skip: true, language: 'es' }),
     ).resolves.toMatchObject({ status: 'generating' });
   });
 
   it('refuses answers when the generation is not waiting for them', async () => {
     const { answerClarification, background, llm, id } = await askedQuestions();
     llm.reply(specificationReply());
-    await answerClarification.execute(LUCIA, id, { skip: true });
+    await answerClarification.execute(LUCIA, id, { skip: true, language: 'es' });
     await background.settle();
 
-    const error = await rejection(answerClarification.execute(LUCIA, id, { skip: true }));
+    const error = await rejection(
+      answerClarification.execute(LUCIA, id, { skip: true, language: 'es' }),
+    );
 
     expect(error.code).toBe('GENERATION_NOT_AWAITING_ANSWERS');
   });
@@ -219,7 +225,10 @@ describe('clarifying questions', () => {
     const { answerClarification, id } = await askedQuestions();
 
     const error = await rejection(
-      answerClarification.execute(LUCIA, id, { answers: [{ questionId: 'q9', answer: 'x' }] }),
+      answerClarification.execute(LUCIA, id, {
+        answers: [{ questionId: 'q9', answer: 'x' }],
+        language: 'es',
+      }),
     );
 
     expect(error.code).toBe('VALIDATION_ERROR');
@@ -229,9 +238,10 @@ describe('clarifying questions', () => {
     const { answerClarification, getGeneration, id } = await askedQuestions();
 
     expect((await rejection(getGeneration.execute(MARCOS, id))).code).toBe('NOT_FOUND');
-    expect((await rejection(answerClarification.execute(MARCOS, id, { skip: true }))).code).toBe(
-      'NOT_FOUND',
-    );
+    expect(
+      (await rejection(answerClarification.execute(MARCOS, id, { skip: true, language: 'es' })))
+        .code,
+    ).toBe('NOT_FOUND');
   });
 });
 
