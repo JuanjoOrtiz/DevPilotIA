@@ -29,6 +29,8 @@ export default defineConfig({
               test: /node_modules[\\/](recharts|victory-vendor|d3-[^\\/]+|@reduxjs|react-redux|redux|immer|reselect|es-toolkit|decimal\.js-light|eventemitter3)[\\/]/,
               priority: 1,
             },
+            // El router va aparte del resto de librerías para que ningún fichero pase de 500 kB.
+            { name: 'router', test: /node_modules[\\/]react-router[\\/]/, priority: 1 },
             { name: 'vendor', test: /node_modules/ },
           ],
         },

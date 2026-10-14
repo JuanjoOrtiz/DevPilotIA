@@ -1,11 +1,14 @@
 import type {
   AnswerClarificationRequest,
   CreateGenerationRequest,
+  ExportFormat,
   GenerationDetail,
   SpecLanguage,
+  UpdateSpecificationRequest,
 } from '@devpilot/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as generationService from '../../services/generationService';
+import { dashboardKeys } from '../dashboard/dashboardQueries';
 import { projectKeys } from '../projects/projectQueries';
 
 /** Cada cuánto se consulta una generación en curso (docs/ai-contract.md). */
@@ -98,9 +101,62 @@ export function useAnswerClarification(generationId: string) {
   });
 }
 
-/** RF-EXP-01: descarga la especificación vigente en Markdown. */
+/** RF-EXP-01 y 02: descarga la especificación vigente en Markdown o en JSON. */
 export function useExportGeneration(generationId: string) {
   return useMutation({
-    mutationFn: () => generationService.exportGeneration(generationId),
+    mutationFn: (format: ExportFormat) => generationService.exportGeneration(generationId, format),
+  });
+}
+
+/** RF-EXP-03: copia el Markdown al portapapeles. */
+export function useCopyMarkdown(generationId: string) {
+  return useMutation({ mutationFn: () => generationService.copyMarkdown(generationId) });
+}
+
+/** El historial del proyecto y el dashboard cambian con cada generación que se edita o borra. */
+function refreshLists(queryClient: ReturnType<typeof useQueryClient>, projectId: string) {
+  return Promise.all([
+    refreshProject(queryClient, projectId),
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.summary() }),
+  ]);
+}
+
+/** RF-EDI-02: guarda la edición; la página vuelve a mostrar la generación ya editada. */
+export function useUpdateSpecification(generation: GenerationDetail) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: UpdateSpecificationRequest) =>
+      generationService.updateSpecification(generation.id, input),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(generationKeys.detail(updated.id), updated);
+      return refreshLists(queryClient, updated.projectId);
+    },
+  });
+}
+
+/** RF-GEN-06: una generación nueva con la misma entrada; la original se conserva. */
+export function useRegenerateGeneration(generation: GenerationDetail) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => generationService.regenerateGeneration(generation.id),
+    onSuccess: (created) => {
+      queryClient.setQueryData(generationKeys.detail(created.id), created);
+      return refreshLists(queryClient, created.projectId);
+    },
+  });
+}
+
+/** RF-HIS-04. */
+export function useDeleteGeneration(generation: GenerationDetail) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => generationService.deleteGeneration(generation.id),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: generationKeys.detail(generation.id) });
+      return refreshLists(queryClient, generation.projectId);
+    },
   });
 }

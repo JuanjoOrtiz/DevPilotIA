@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Navigate, Route, Routes } from 'react-router';
 import { LoadingScreen } from './components/molecules/LoadingScreen/LoadingScreen';
 import { AppShell } from './components/pages/AppShell/AppShell';
+import { EditGenerationPage } from './components/pages/EditGenerationPage/EditGenerationPage';
 import { EditProjectPage } from './components/pages/EditProjectPage/EditProjectPage';
 import { GenerationPage } from './components/pages/GenerationPage/GenerationPage';
 import { LoginPage } from './components/pages/LoginPage/LoginPage';
@@ -49,6 +50,7 @@ export function App() {
           <Route path={ROUTE_PATTERNS.editProject} element={<EditProjectPage />} />
           <Route path={ROUTE_PATTERNS.newGeneration} element={<NewGenerationPage />} />
           <Route path={ROUTE_PATTERNS.generation} element={<GenerationPage />} />
+          <Route path={ROUTE_PATTERNS.editGeneration} element={<EditGenerationPage />} />
         </Route>
         {/* La página de entrada, y cualquier dirección que no exista, llevan al dashboard. */}
         <Route path="*" element={<Navigate to={ROUTES.dashboard} replace />} />

@@ -10,6 +10,7 @@ export const ROUTES = {
   editProject: (projectId: string) => `/projects/${projectId}/edit`,
   newGeneration: (projectId: string) => `/projects/${projectId}/generations/new`,
   generation: (generationId: string) => `/generations/${generationId}`,
+  editGeneration: (generationId: string) => `/generations/${generationId}/edit`,
 } as const;
 
 /** Las mismas rutas con parámetros, tal y como las declara el router. */
@@ -18,4 +19,5 @@ export const ROUTE_PATTERNS = {
   editProject: ROUTES.editProject(':projectId'),
   newGeneration: ROUTES.newGeneration(':projectId'),
   generation: ROUTES.generation(':generationId'),
+  editGeneration: ROUTES.editGeneration(':generationId'),
 } as const;

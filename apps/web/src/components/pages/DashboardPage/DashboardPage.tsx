@@ -12,9 +12,13 @@ import { PageHeader } from '../../molecules/PageHeader/PageHeader';
 import { ActivityChart } from '../../organisms/ActivityChart/ActivityChart';
 import { ComplexityChart } from '../../organisms/ComplexityChart/ComplexityChart';
 import { DashboardStats } from '../../organisms/DashboardStats/DashboardStats';
+import { ProjectsChart } from '../../organisms/ProjectsChart/ProjectsChart';
 import { DashboardLayout } from '../../templates/DashboardLayout/DashboardLayout';
 
-/** RF-DAS-01 a 03: indicadores, actividad de los últimos 30 días y reparto por complejidad. */
+/**
+ * RF-DAS-01 a 04: indicadores, actividad de los últimos 30 días, reparto por complejidad y
+ * proyectos con más generaciones.
+ */
 export function DashboardPage() {
   const { t } = useTranslation();
   const format = useNumberFormat();
@@ -47,6 +51,7 @@ export function DashboardPage() {
         main={<ActivityChart activity={summary.data.activity} />}
       >
         <ComplexityChart complexity={summary.data.complexity} />
+        <ProjectsChart projects={summary.data.projects} projectPath={ROUTES.project} />
       </DashboardLayout>
     );
   }

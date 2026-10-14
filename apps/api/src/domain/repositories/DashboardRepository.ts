@@ -1,4 +1,4 @@
-import type { Complexity } from '@devpilot/shared';
+import type { Complexity, DashboardProject } from '@devpilot/shared';
 
 /** Recuentos de todo lo que tiene un usuario, para los indicadores del dashboard. */
 export interface DashboardTotalsData {
@@ -17,6 +17,9 @@ export interface DashboardTotalsData {
 /** Lecturas agregadas del dashboard. Como el resto, filtran siempre por el usuario. */
 export interface DashboardRepository {
   totalsForUser(userId: string): Promise<DashboardTotalsData>;
+
+  /** Los proyectos con más generaciones, de más a menos; sin los que no tienen ninguna. */
+  topProjectsForUser(userId: string, limit: number): Promise<DashboardProject[]>;
 
   /** Fecha de creación de cada generación del usuario creada desde `since`. */
   creationDatesForUser(userId: string, since: Date): Promise<Date[]>;

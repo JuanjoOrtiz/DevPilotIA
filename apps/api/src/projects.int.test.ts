@@ -26,8 +26,11 @@ const portal = {
   conventions: 'Clean Architecture en el backend.',
 };
 
-/** Una persona nueva en cada test, con su sesión iniciada. */
-async function signIn() {
+/**
+ * Una persona nueva en cada test, con su sesión iniciada. Salvo que se pida, sin el
+ * proyecto de ejemplo del registro, para que cada test parta de una cuenta vacía.
+ */
+async function signIn({ keepSample = false } = {}) {
   sequence += 1;
   const registered = await request(app)
     .post('/api/v1/auth/register')
@@ -38,6 +41,7 @@ async function signIn() {
     });
   const { accessToken, user } = sessionResponseSchema.parse(registered.body);
   const authorization = `Bearer ${accessToken}`;
+  if (!keepSample) await prisma.project.deleteMany({ where: { userId: user.id } });
 
   return {
     userId: user.id,
@@ -242,6 +246,26 @@ describe('isolation between users against PostgreSQL', () => {
     });
     expect(stored.name).toBe(portal.name);
     expect(stored.generations).toHaveLength(1);
+  });
+
+  // RF-PRO-06
+  it('gives every new account a sample project with a completed sample generation', async () => {
+    const session = await signIn({ keepSample: true });
+
+    const { projects } = projectListResponseSchema.parse(
+      (await session.get('/api/v1/projects')).body,
+    );
+    expect(projects).toHaveLength(1);
+    expect(projects[0]).toMatchObject({ generationCount: 1 });
+
+    const history = generationPageResponseSchema.parse(
+      (await session.get(`/api/v1/projects/${projects[0]?.id}/generations`)).body,
+    );
+    expect(history.items[0]).toMatchObject({
+      status: 'completed',
+      isSample: true,
+      complexity: 'M',
+    });
   });
 
   it('never lists the projects of another user', async () => {

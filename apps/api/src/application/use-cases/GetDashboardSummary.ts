@@ -1,6 +1,7 @@
 import {
   COMPLEXITIES,
   DASHBOARD_ACTIVITY_DAYS,
+  DASHBOARD_TOP_PROJECTS,
   type DashboardDay,
   type DashboardSummary,
 } from '@devpilot/shared';
@@ -15,7 +16,7 @@ function utcDay(date: Date): string {
 }
 
 /**
- * Indicadores y series del dashboard (RF-DAS-01 a 03). La actividad cubre los últimos
+ * Indicadores y series del dashboard (RF-DAS-01 a 04). La actividad cubre los últimos
  * 30 días UTC, hoy incluido, con los días sin generaciones a cero.
  */
 export class GetDashboardSummary {
@@ -32,9 +33,10 @@ export class GetDashboardSummary {
     const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     const firstDay = new Date(today - (DASHBOARD_ACTIVITY_DAYS - 1) * DAY_MS);
 
-    const [totals, dates] = await Promise.all([
+    const [totals, dates, projects] = await Promise.all([
       this.dashboard.totalsForUser(userId),
       this.dashboard.creationDatesForUser(userId, firstDay),
+      this.dashboard.topProjectsForUser(userId, DASHBOARD_TOP_PROJECTS),
     ]);
 
     const perDay = new Map<string, number>();
@@ -64,6 +66,7 @@ export class GetDashboardSummary {
         size,
         count: totals.completedByComplexity[size] ?? 0,
       })),
+      projects,
     };
   }
 }

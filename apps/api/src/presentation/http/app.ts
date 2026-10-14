@@ -76,6 +76,9 @@ export function createApp(dependencies: AppDependencies): Express {
   v1.get('/projects/:id/generations', projects.listGenerations);
   v1.post('/projects/:id/generations', generations.create);
   v1.get('/generations/:id', generations.get);
+  v1.patch('/generations/:id', generations.update);
+  v1.delete('/generations/:id', generations.remove);
+  v1.post('/generations/:id/regenerate', generations.regenerate);
   v1.post('/generations/:id/answers', generations.answer);
   v1.get('/generations/:id/export', generations.export);
   v1.get('/generations/:id/translation', generations.translation);

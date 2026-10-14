@@ -28,7 +28,9 @@ afterEach(() => {
 });
 
 const loginHeading = () => screen.findByRole('heading', { name: 'Iniciar sesión' });
-const homeHeading = () => screen.findByRole('heading', { name: 'Dashboard', level: 1 });
+// El dashboard se carga aparte (React.lazy): la primera vez tarda algo más.
+const homeHeading = () =>
+  screen.findByRole('heading', { name: 'Dashboard', level: 1 }, { timeout: 5000 });
 const projectsHeading = () => screen.findByRole('heading', { name: 'Proyectos', level: 1 });
 
 // RF-AUT-05: sin sesión se redirige al login.

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { App } from '../App';
 import { SessionProvider } from '../features/auth/SessionContext';
 
@@ -14,14 +14,17 @@ export const lucia: User = {
   createdAt: '2026-10-11T10:00:00.000Z',
 };
 
-/** Los proveedores de la aplicación, con el router en memoria. */
+/** Los proveedores de la aplicación, con un router de datos en memoria, como en main.tsx. */
 export function AppProviders({ path = '/', children }: { path?: string; children: ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createMemoryRouter([{ path: '*', element: children }], {
+    initialEntries: [path],
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+        <RouterProvider router={router} />
       </SessionProvider>
     </QueryClientProvider>
   );

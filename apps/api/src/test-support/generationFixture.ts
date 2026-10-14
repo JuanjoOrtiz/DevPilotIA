@@ -1,7 +1,10 @@
 import { GenerationRunner, type Wait } from '../application/services/GenerationRunner.js';
 import { AnswerClarification } from '../application/use-cases/AnswerClarification.js';
 import { CreateGeneration, type DailyLimits } from '../application/use-cases/CreateGeneration.js';
+import { DeleteGeneration } from '../application/use-cases/DeleteGeneration.js';
 import { ExportGeneration } from '../application/use-cases/ExportGeneration.js';
+import { RegenerateGeneration } from '../application/use-cases/RegenerateGeneration.js';
+import { UpdateSpecification } from '../application/use-cases/UpdateSpecification.js';
 import { GetGeneration } from '../application/use-cases/GetGeneration.js';
 import { TranslateSpecification } from '../application/use-cases/TranslateSpecification.js';
 import type { LLMProvider } from '../domain/providers/LLMProvider.js';
@@ -40,6 +43,14 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     reportFailure: (failure) => failures.push(failure.code),
   });
   const limits: DailyLimits = { perUser: 20, global: 200, ...options.limits };
+  const createGeneration = new CreateGeneration({
+    projects,
+    generations,
+    runner,
+    background,
+    clock,
+    limits,
+  });
 
   return {
     clock,
@@ -49,14 +60,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     generations,
     waits,
     failures,
-    createGeneration: new CreateGeneration({
-      projects,
-      generations,
-      runner,
-      background,
-      clock,
-      limits,
-    }),
+    createGeneration,
     getGeneration: new GetGeneration(generations, clock),
     answerClarification: new AnswerClarification({
       projects,
@@ -67,5 +71,8 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     }),
     exportGeneration: new ExportGeneration(generations),
     translateSpecification: new TranslateSpecification({ generations, llm, attemptMs: 20_000 }),
+    updateSpecification: new UpdateSpecification(generations, clock),
+    deleteGeneration: new DeleteGeneration(generations),
+    regenerateGeneration: new RegenerateGeneration(generations, createGeneration),
   };
 }

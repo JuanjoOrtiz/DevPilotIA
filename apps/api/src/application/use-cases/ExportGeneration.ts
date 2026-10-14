@@ -43,8 +43,18 @@ export class ExportGeneration {
 
     // En el idioma pedido si ya está traducida (RF-EXP-04: siempre la versión vigente).
     const specification = specificationIn(generation, request.language) ?? current;
+    const fileName = exportFileName(specification.title, request.format);
+
+    // RF-EXP-02: el JSON es la especificación tal cual, con su `schemaVersion`.
+    if (request.format === 'json') {
+      return {
+        fileName,
+        contentType: 'application/json; charset=utf-8',
+        content: `${JSON.stringify(specification, null, 2)}\n`,
+      };
+    }
     return {
-      fileName: exportFileName(specification.title, request.format),
+      fileName,
       contentType: 'text/markdown; charset=utf-8',
       content: specificationToMarkdown(specification, generation.type, request.language),
     };

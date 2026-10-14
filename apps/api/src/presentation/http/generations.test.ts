@@ -37,6 +37,9 @@ async function signIn(app: Express, person = lucia) {
     get: (path: string) => request(app).get(path).set('Authorization', authorization),
     post: (path: string, body?: object) =>
       request(app).post(path).set('Authorization', authorization).send(body),
+    patch: (path: string, body: object) =>
+      request(app).patch(path).set('Authorization', authorization).send(body),
+    delete: (path: string) => request(app).delete(path).set('Authorization', authorization),
   };
 }
 
@@ -299,5 +302,74 @@ describe('GET /api/v1/generations/:id/translation', () => {
     const down = await session.get(`${path}?language=en`);
     expect(down.status).toBe(503);
     expect(errorCode(down)).toBe('LLM_UNAVAILABLE');
+  });
+});
+
+describe('editing, regenerating and deleting a generation', () => {
+  async function completed() {
+    const context = await setUp(new ScriptedLLMProvider([specificationReply()]));
+    const created = await context.session.post(
+      `/api/v1/projects/${context.project.id}/generations`,
+      exportRequest,
+    );
+    await context.generations.background.settle();
+    return { ...context, id: generationOf(created).id };
+  }
+
+  // RF-EDI-02
+  it('saves a valid edition and rejects one that breaks the schema', async () => {
+    const { session, id } = await completed();
+    const patch = (body: object) => session.patch(`/api/v1/generations/${id}`, body);
+
+    const saved = await patch({
+      specification: { ...sampleSpecification, title: 'Título editado' },
+      language: 'es',
+    });
+    expect(saved.status).toBe(200);
+    expect(generationOf(saved)).toMatchObject({ title: 'Título editado', isEdited: true });
+
+    const invalid = await patch({
+      specification: { ...sampleSpecification, userStories: [] },
+      language: 'es',
+    });
+    expect(invalid.status).toBe(400);
+    expect(errorCode(invalid)).toBe('VALIDATION_ERROR');
+  });
+
+  // RF-GEN-06
+  it('regenerates with the same input and answers 202', async () => {
+    const { session, generations, llm, id } = await completed();
+    llm.reply(specificationReply());
+
+    const response = await session.post(`/api/v1/generations/${id}/regenerate`, {
+      language: 'en',
+    });
+    await generations.background.settle();
+
+    expect(response.status).toBe(202);
+    expect(generationOf(response)).toMatchObject({ status: 'generating', language: 'en' });
+    expect(generationOf(response).id).not.toBe(id);
+  });
+
+  // RF-HIS-04
+  it('deletes a generation and then answers 404', async () => {
+    const { session, id } = await completed();
+    const remove = () => session.delete(`/api/v1/generations/${id}`);
+
+    expect((await remove()).status).toBe(204);
+    expect((await session.get(`/api/v1/generations/${id}`)).status).toBe(404);
+    expect((await remove()).status).toBe(404);
+  });
+
+  // RF-EXP-02
+  it('downloads the specification as JSON', async () => {
+    const { session, id } = await completed();
+
+    const response = await session.get(`/api/v1/generations/${id}/export?format=json`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toBe('application/json; charset=utf-8');
+    expect(response.headers['content-disposition']).toContain('.json"');
+    expect(response.body).toMatchObject({ schemaVersion: 1, title: sampleSpecification.title });
   });
 });

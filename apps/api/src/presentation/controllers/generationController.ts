@@ -2,6 +2,8 @@ import {
   answerClarificationRequestSchema,
   createGenerationRequestSchema,
   exportGenerationQuerySchema,
+  regenerateRequestSchema,
+  updateSpecificationRequestSchema,
   translationQuerySchema,
   type GenerationResponse,
   type TranslationResponse,
@@ -9,6 +11,9 @@ import {
 import type { RequestHandler } from 'express';
 import type { AnswerClarification } from '../../application/use-cases/AnswerClarification.js';
 import type { CreateGeneration } from '../../application/use-cases/CreateGeneration.js';
+import type { DeleteGeneration } from '../../application/use-cases/DeleteGeneration.js';
+import type { RegenerateGeneration } from '../../application/use-cases/RegenerateGeneration.js';
+import type { UpdateSpecification } from '../../application/use-cases/UpdateSpecification.js';
 import type { ExportGeneration } from '../../application/use-cases/ExportGeneration.js';
 import type { GetGeneration } from '../../application/use-cases/GetGeneration.js';
 import type { TranslateSpecification } from '../../application/use-cases/TranslateSpecification.js';
@@ -22,6 +27,9 @@ export interface GenerationUseCases {
   answerClarification: AnswerClarification;
   exportGeneration: ExportGeneration;
   translateSpecification: TranslateSpecification;
+  updateSpecification: UpdateSpecification;
+  deleteGeneration: DeleteGeneration;
+  regenerateGeneration: RegenerateGeneration;
 }
 
 export interface GenerationController {
@@ -30,6 +38,9 @@ export interface GenerationController {
   answer: RequestHandler;
   export: RequestHandler;
   translation: RequestHandler;
+  update: RequestHandler;
+  remove: RequestHandler;
+  regenerate: RequestHandler;
 }
 
 /**
@@ -67,6 +78,38 @@ export function createGenerationController(useCases: GenerationUseCases): Genera
           authenticatedUserId(res),
           generationId,
           input,
+        ),
+      };
+      res.status(202).json(body);
+    },
+
+    update: async (req, res) => {
+      const generationId = parseResourceId(req.params.id);
+      const input = parseBody(updateSpecificationRequestSchema, req.body);
+      const body: GenerationResponse = {
+        generation: await useCases.updateSpecification.execute(
+          authenticatedUserId(res),
+          generationId,
+          input,
+        ),
+      };
+      res.json(body);
+    },
+
+    remove: async (req, res) => {
+      const generationId = parseResourceId(req.params.id);
+      await useCases.deleteGeneration.execute(authenticatedUserId(res), generationId);
+      res.status(204).end();
+    },
+
+    regenerate: async (req, res) => {
+      const generationId = parseResourceId(req.params.id);
+      const { language } = parseBody(regenerateRequestSchema, req.body);
+      const body: GenerationResponse = {
+        generation: await useCases.regenerateGeneration.execute(
+          authenticatedUserId(res),
+          generationId,
+          language,
         ),
       };
       res.status(202).json(body);
