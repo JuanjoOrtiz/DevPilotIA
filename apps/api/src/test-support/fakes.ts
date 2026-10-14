@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   ClarificationAnswer,
   ClarifyingQuestion,
+  DashboardProject,
   ErrorCode,
   SpecLanguage,
   Specification,
@@ -33,6 +34,7 @@ import type {
   GenerationPage,
   GenerationRepository,
   NewGeneration,
+  NewSampleGeneration,
   PageRequest,
 } from '../domain/repositories/GenerationRepository.js';
 import type { ProjectData, ProjectRepository } from '../domain/repositories/ProjectRepository.js';
@@ -179,6 +181,53 @@ export class InMemoryGenerationRepository implements GenerationRepository {
     if (!userId) return Promise.reject(new Error(`Unknown project ${projectId}`));
     const generation = this.store({ id: projectId, userId }, { ...data, status: 'generating' });
     return Promise.resolve(withoutOwner(generation));
+  }
+
+  createSample(projectId: string, sample: NewSampleGeneration): Promise<Generation> {
+    const userId = this.owners.get(projectId);
+    if (!userId) return Promise.reject(new Error(`Unknown project ${projectId}`));
+    const { specification, createdAt, ...data } = sample;
+    const generation = this.store(
+      { id: projectId, userId },
+      {
+        ...data,
+        status: 'completed',
+        aiSpec: structuredClone(specification),
+        title: specification.title,
+        complexity: specification.complexity.size,
+        isSample: true,
+        createdAt,
+        completedAt: createdAt,
+      },
+    );
+    return Promise.resolve(withoutOwner(generation));
+  }
+
+  saveEdit(
+    userId: string,
+    generationId: string,
+    specification: Specification,
+    language: SpecLanguage,
+    at: Date,
+  ): Promise<boolean> {
+    const generation = this.owned(userId, generationId);
+    if (generation?.status !== 'completed') return Promise.resolve(false);
+    Object.assign(generation, {
+      editedSpec: structuredClone(specification),
+      editedAt: at,
+      title: specification.title,
+      complexity: specification.complexity.size,
+      language,
+      translations: {},
+    });
+    return Promise.resolve(true);
+  }
+
+  deleteForUser(userId: string, generationId: string): Promise<boolean> {
+    const generation = this.owned(userId, generationId);
+    if (!generation) return Promise.resolve(false);
+    this.generations.splice(this.generations.indexOf(generation), 1);
+    return Promise.resolve(true);
   }
 
   findForUser(userId: string, generationId: string): Promise<Generation | null> {
@@ -545,6 +594,19 @@ export class InMemoryDashboardRepository implements DashboardRepository {
           : null,
       completedByComplexity,
     });
+  }
+
+  topProjectsForUser(userId: string, limit: number): Promise<DashboardProject[]> {
+    const counted = this.projects.projects
+      .filter((project) => project.userId === userId)
+      .map((project) => ({
+        projectId: project.id,
+        name: project.name,
+        count: this.generations.forProject(project.id).length,
+      }))
+      .filter((project) => project.count > 0)
+      .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    return Promise.resolve(counted.slice(0, limit));
   }
 
   creationDatesForUser(userId: string, since: Date): Promise<Date[]> {

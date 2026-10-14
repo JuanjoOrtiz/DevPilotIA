@@ -27,6 +27,10 @@ export const FIELD_ERRORS = [
   'ANSWER_TOO_LONG',
   'ANSWER_UNKNOWN_QUESTION',
   'ANSWERS_INVALID',
+  'TEXT_REQUIRED',
+  'TEXT_TOO_LONG',
+  'LIST_REQUIRED',
+  'TOO_MANY_ITEMS',
 ] as const;
 export type FieldError = (typeof FIELD_ERRORS)[number];
 

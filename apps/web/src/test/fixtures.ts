@@ -141,6 +141,10 @@ export function dashboardSummary(overrides: Partial<DashboardSummary> = {}): Das
       { size: 'L', count: 6 },
       { size: 'XL', count: 2 },
     ],
+    projects: [
+      { projectId: portal.id, name: portal.name, count: 11 },
+      { projectId: reservas.id, name: reservas.name, count: 9 },
+    ],
     ...overrides,
   };
 }

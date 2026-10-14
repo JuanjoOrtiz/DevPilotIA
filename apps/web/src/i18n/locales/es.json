@@ -60,6 +60,11 @@
       "description_one": "{{count}} generación completada",
       "description_other": "{{count}} generaciones completadas",
       "chart": "Gráfica de barras por complejidad: {{values}}."
+    },
+    "projects": {
+      "title": "Generaciones por proyecto",
+      "description": "Los proyectos con más actividad",
+      "chart": "Barras horizontales: {{values}}."
     }
   },
   "auth": {
@@ -234,8 +239,26 @@
     "loading": "Cargando generación…",
     "export": {
       "markdown": "Exportar a Markdown",
+      "json": "Exportar a JSON",
+      "copy": "Copiar Markdown",
+      "copied": "Markdown copiado al portapapeles.",
       "exporting": "Exportando…",
-      "failed": "No se pudo exportar: {{reason}}"
+      "failed": "No se pudo exportar: {{reason}}",
+      "copyFailed": "No se pudo copiar: {{reason}}"
+    },
+    "actions": {
+      "label": "Acciones de la generación",
+      "edit": "Editar",
+      "regenerate": "Regenerar",
+      "regenerating": "Regenerando…",
+      "regenerateFailed": "No se pudo regenerar: {{reason}}",
+      "delete": "Eliminar"
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar «{{title}}»?",
+      "body": "Se borrará esta generación y su especificación. Esta acción no se puede deshacer.",
+      "confirm": "Eliminar generación",
+      "deleting": "Eliminando…"
     },
     "translation": {
       "translating": "Traduciendo la especificación al español…",
@@ -350,6 +373,61 @@
       "M": "Uno o dos días",
       "L": "Hasta una semana",
       "XL": "Más de una semana: conviene dividirla"
+    },
+    "editor": {
+      "title": "Editar especificación",
+      "crumb": "Editar",
+      "intro": "Los cambios se validan con el mismo esquema que la respuesta de la IA. La versión original se conserva.",
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "cancel": "Cancelar",
+      "invalid": "Revisa los campos marcados antes de guardar.",
+      "add": "Añadir",
+      "remove": "Eliminar",
+      "removeItem": "Eliminar {{item}}",
+      "fields": {
+        "title": "Título",
+        "technicalDescription": "Descripción técnica",
+        "asA": "Como",
+        "iWant": "Quiero",
+        "soThat": "Para",
+        "taskTitle": "Tarea",
+        "taskDescription": "Detalle",
+        "riskDescription": "Riesgo",
+        "severity": "Gravedad",
+        "mitigation": "Mitigación",
+        "testTitle": "Caso de prueba",
+        "testType": "Tipo",
+        "expected": "Resultado esperado",
+        "size": "Tamaño",
+        "rationale": "Justificación"
+      },
+      "items": {
+        "assumption": "Supuesto {{number}}",
+        "story": "Historia {{number}}",
+        "criterion": "Criterio {{number}}",
+        "task": "Tarea {{number}}",
+        "risk": "Riesgo {{number}}",
+        "edgeCase": "Caso límite {{number}}",
+        "test": "Caso de prueba {{number}}",
+        "step": "Paso {{number}}"
+      },
+      "addItem": {
+        "assumption": "Añadir supuesto",
+        "story": "Añadir historia",
+        "criterion": "Añadir criterio",
+        "task": "Añadir tarea",
+        "risk": "Añadir riesgo",
+        "edgeCase": "Añadir caso límite",
+        "test": "Añadir caso de prueba",
+        "step": "Añadir paso"
+      },
+      "unsaved": {
+        "title": "¿Salir sin guardar?",
+        "body": "Tienes cambios sin guardar en la especificación. Si sales ahora, se perderán.",
+        "leave": "Salir sin guardar",
+        "stay": "Seguir editando"
+      }
     }
   },
   "validation": {
@@ -376,6 +454,10 @@
     "ANSWER_TOO_LONG": "Cada respuesta puede tener 500 caracteres como máximo.",
     "ANSWER_UNKNOWN_QUESTION": "Esa pregunta no forma parte de esta generación.",
     "ANSWERS_INVALID": "Las respuestas no son válidas.",
+    "TEXT_REQUIRED": "Este campo no puede estar vacío.",
+    "TEXT_TOO_LONG": "El texto es demasiado largo.",
+    "LIST_REQUIRED": "Añade al menos un elemento.",
+    "TOO_MANY_ITEMS": "Esta lista tiene demasiados elementos.",
     "INVALID": "Este valor no es válido."
   },
   "errors": {

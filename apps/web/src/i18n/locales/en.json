@@ -60,6 +60,11 @@
       "description_one": "{{count}} completed generation",
       "description_other": "{{count}} completed generations",
       "chart": "Bar chart by complexity: {{values}}."
+    },
+    "projects": {
+      "title": "Generations per project",
+      "description": "The most active projects",
+      "chart": "Horizontal bars: {{values}}."
     }
   },
   "auth": {
@@ -234,8 +239,26 @@
     "loading": "Loading generation…",
     "export": {
       "markdown": "Export to Markdown",
+      "json": "Export to JSON",
+      "copy": "Copy Markdown",
+      "copied": "Markdown copied to the clipboard.",
       "exporting": "Exporting…",
-      "failed": "Could not export: {{reason}}"
+      "failed": "Could not export: {{reason}}",
+      "copyFailed": "Could not copy: {{reason}}"
+    },
+    "actions": {
+      "label": "Generation actions",
+      "edit": "Edit",
+      "regenerate": "Regenerate",
+      "regenerating": "Regenerating…",
+      "regenerateFailed": "Could not regenerate: {{reason}}",
+      "delete": "Delete"
+    },
+    "deleteDialog": {
+      "title": "Delete “{{title}}”?",
+      "body": "This generation and its specification will be deleted. This cannot be undone.",
+      "confirm": "Delete generation",
+      "deleting": "Deleting…"
     },
     "translation": {
       "translating": "Translating the specification into English…",
@@ -350,6 +373,61 @@
       "M": "One or two days",
       "L": "Up to a week",
       "XL": "More than a week: better split it"
+    },
+    "editor": {
+      "title": "Edit specification",
+      "crumb": "Edit",
+      "intro": "Changes are validated with the same schema as the AI answer. The original version is kept.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "invalid": "Check the highlighted fields before saving.",
+      "add": "Add",
+      "remove": "Remove",
+      "removeItem": "Remove {{item}}",
+      "fields": {
+        "title": "Title",
+        "technicalDescription": "Technical description",
+        "asA": "As a",
+        "iWant": "I want",
+        "soThat": "So that",
+        "taskTitle": "Task",
+        "taskDescription": "Details",
+        "riskDescription": "Risk",
+        "severity": "Severity",
+        "mitigation": "Mitigation",
+        "testTitle": "Test case",
+        "testType": "Type",
+        "expected": "Expected result",
+        "size": "Size",
+        "rationale": "Rationale"
+      },
+      "items": {
+        "assumption": "Assumption {{number}}",
+        "story": "Story {{number}}",
+        "criterion": "Criterion {{number}}",
+        "task": "Task {{number}}",
+        "risk": "Risk {{number}}",
+        "edgeCase": "Edge case {{number}}",
+        "test": "Test case {{number}}",
+        "step": "Step {{number}}"
+      },
+      "addItem": {
+        "assumption": "Add assumption",
+        "story": "Add story",
+        "criterion": "Add criterion",
+        "task": "Add task",
+        "risk": "Add risk",
+        "edgeCase": "Add edge case",
+        "test": "Add test case",
+        "step": "Add step"
+      },
+      "unsaved": {
+        "title": "Leave without saving?",
+        "body": "You have unsaved changes in the specification. If you leave now, they will be lost.",
+        "leave": "Leave without saving",
+        "stay": "Keep editing"
+      }
     }
   },
   "validation": {
@@ -376,6 +454,10 @@
     "ANSWER_TOO_LONG": "Each answer can be 500 characters at most.",
     "ANSWER_UNKNOWN_QUESTION": "That question is not part of this generation.",
     "ANSWERS_INVALID": "The answers are not valid.",
+    "TEXT_REQUIRED": "This field cannot be empty.",
+    "TEXT_TOO_LONG": "The text is too long.",
+    "LIST_REQUIRED": "Add at least one item.",
+    "TOO_MANY_ITEMS": "This list has too many items.",
     "INVALID": "This value is not valid."
   },
   "errors": {

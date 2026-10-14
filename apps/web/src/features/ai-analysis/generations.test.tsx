@@ -260,7 +260,32 @@ describe('exporting a generation', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Exportar a Markdown' }));
 
-    expect(api.exportGeneration).toHaveBeenCalledWith(GENERATION.id);
+    expect(api.exportGeneration).toHaveBeenCalledWith(GENERATION.id, 'md');
+  });
+
+  // RF-EXP-02
+  it('downloads the specification in JSON', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.exportGeneration.mockResolvedValue(undefined);
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Exportar a JSON' }));
+
+    expect(api.exportGeneration).toHaveBeenCalledWith(GENERATION.id, 'json');
+  });
+
+  // RF-EXP-03
+  it('copies the Markdown and confirms it', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.copyMarkdown.mockResolvedValue(undefined);
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Copiar Markdown' }));
+
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'Markdown copiado al portapapeles.',
+    );
+    expect(api.copyMarkdown).toHaveBeenCalledWith(GENERATION.id);
   });
 
   it('says why the file could not be downloaded', async () => {
@@ -284,6 +309,115 @@ describe('exporting a generation', () => {
     await screen.findByRole('button', { name: 'Reintentar' });
 
     expect(screen.queryByRole('button', { name: 'Exportar a Markdown' })).toBeNull();
+  });
+});
+
+// RF-GEN-06 y RF-HIS-04
+describe('regenerating and deleting a generation', () => {
+  it('regenerates with the same input and opens the new generation', async () => {
+    const created = generationDetail({
+      id: '55555555-5555-4555-8555-555555555555',
+      status: 'generating',
+      title: null,
+      specification: null,
+    });
+    api.getGeneration.mockImplementation(async (id) => (id === created.id ? created : GENERATION));
+    api.regenerateGeneration.mockResolvedValue(created);
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Regenerar' }));
+
+    expect(api.regenerateGeneration).toHaveBeenCalledWith(GENERATION.id);
+    expect(
+      await screen.findByRole('heading', { name: 'Generando la especificación' }),
+    ).toBeTruthy();
+  });
+
+  it('asks for confirmation before deleting and then goes back to the project', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.deleteGeneration.mockResolvedValue(undefined);
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Eliminar' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(api.deleteGeneration).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar generación' }));
+
+    expect(api.deleteGeneration).toHaveBeenCalledWith(GENERATION.id);
+    expect(await screen.findByRole('heading', { level: 1, name: portal.name })).toBeTruthy();
+  });
+});
+
+// RF-EDI-01, 02 y 04
+describe('editing a generation', () => {
+  const EDIT_PATH = `/generations/${GENERATION.id}/edit`;
+
+  it('saves the edited specification, validated, in the language it was edited', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.updateSpecification.mockImplementation(async (_id, input) =>
+      generationDetail({
+        specification: input.specification,
+        title: input.specification.title,
+        isEdited: true,
+      }),
+    );
+    const { user } = renderApp(EDIT_PATH);
+
+    const title = await screen.findByRole('textbox', { name: 'Título' });
+    await user.clear(title);
+    await user.type(title, 'Exportar pedidos y facturas');
+    await user.click(screen.getByRole('button', { name: 'Añadir caso límite' }));
+    await user.type(screen.getByRole('textbox', { name: 'Caso límite 2' }), 'Pedidos cancelados');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(api.updateSpecification).toHaveBeenCalledOnce());
+    const [id, input] = api.updateSpecification.mock.calls[0] ?? [];
+    expect(id).toBe(GENERATION.id);
+    expect(input).toMatchObject({
+      language: 'es',
+      specification: {
+        title: 'Exportar pedidos y facturas',
+        edgeCases: ['Usuario sin pedidos', 'Pedidos cancelados'],
+      },
+    });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Exportar pedidos y facturas' }),
+    ).toBeTruthy();
+  });
+
+  it('does not save an empty field or a story without criteria', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    const { user } = renderApp(EDIT_PATH);
+
+    await user.clear(await screen.findByRole('textbox', { name: 'Título' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar Criterio 1' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByText('Este campo no puede estar vacío.')).toBeTruthy();
+    expect(screen.getByText('Añade al menos un elemento.')).toBeTruthy();
+    expect(api.updateSpecification).not.toHaveBeenCalled();
+  });
+
+  it('asks before leaving with unsaved changes', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    const { user } = renderApp(EDIT_PATH);
+
+    await user.type(await screen.findByRole('textbox', { name: 'Título' }), ' (borrador)');
+    await user.click(screen.getByRole('link', { name: 'Cancelar' }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Seguir editando' }));
+    expect(screen.getByRole('textbox', { name: 'Título' })).toBeTruthy();
+
+    await user.click(screen.getByRole('link', { name: 'Cancelar' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Salir sin guardar',
+      }),
+    );
+    expect(
+      await screen.findByRole('heading', { level: 1, name: specification.title }),
+    ).toBeTruthy();
   });
 });
 

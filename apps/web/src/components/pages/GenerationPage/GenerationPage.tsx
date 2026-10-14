@@ -1,9 +1,13 @@
-import type { GenerationDetail } from '@devpilot/shared';
+import type { ExportFormat, GenerationDetail } from '@devpilot/shared';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import {
   useAnswerClarification,
+  useCopyMarkdown,
+  useDeleteGeneration,
   useExportGeneration,
+  useRegenerateGeneration,
   useGeneration,
   useRetryGeneration,
   useSpecificationTranslation,
@@ -16,16 +20,17 @@ import { useSpecLanguage } from '../../../hooks/useSpecLanguage';
 import { errorMessageKey, isNotFound, queryErrorKey } from '../../../i18n/messages';
 import { ROUTES } from '../../../routes';
 import { Alert } from '../../atoms/Alert/Alert';
-import { Button } from '../../atoms/Button/Button';
-import { Icon } from '../../atoms/Icon/Icon';
 import { LinkButton } from '../../atoms/LinkButton/LinkButton';
 import { Breadcrumbs } from '../../molecules/Breadcrumbs/Breadcrumbs';
+import { ConfirmDialog } from '../../molecules/ConfirmDialog/ConfirmDialog';
 import { EmptyState } from '../../molecules/EmptyState/EmptyState';
 import { ErrorPanel } from '../../molecules/ErrorPanel/ErrorPanel';
 import { LoadingPanel } from '../../molecules/LoadingPanel/LoadingPanel';
 import { PageHeader } from '../../molecules/PageHeader/PageHeader';
+import { StatusMessage } from '../../molecules/StatusMessage/StatusMessage';
 import { TranslationNotice } from '../../molecules/TranslationNotice/TranslationNotice';
 import { ClarificationForm } from '../../organisms/ClarificationForm/ClarificationForm';
+import { GenerationActions } from '../../organisms/GenerationActions/GenerationActions';
 import { GenerationFailure } from '../../organisms/GenerationFailure/GenerationFailure';
 import { GenerationProgress } from '../../organisms/GenerationProgress/GenerationProgress';
 import { GenerationRequest } from '../../organisms/GenerationRequest/GenerationRequest';
@@ -75,6 +80,10 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
   const answer = useAnswerClarification(generation.id);
   const retry = useRetryGeneration();
   const exportFile = useExportGeneration(generation.id);
+  const copy = useCopyMarkdown(generation.id);
+  const regenerate = useRegenerateGeneration(generation);
+  const remove = useDeleteGeneration(generation);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const language = useSpecLanguage();
   const translation = useSpecificationTranslation(generation, language);
 
@@ -147,23 +156,58 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
     }
   }
 
+  const reason = (error: unknown) => t(queryErrorKey(error));
+  const failure = exportFile.isError
+    ? t('generation.export.failed', { reason: reason(exportFile.error) })
+    : copy.isError
+      ? t('generation.export.copyFailed', { reason: reason(copy.error) })
+      : regenerate.isError
+        ? generationFailureMessage(toSubmitFailure(regenerate.error), t, format.dateTime)
+        : undefined;
+
+  function exportAs(format: ExportFormat) {
+    copy.reset();
+    exportFile.mutate(format);
+  }
+
+  function copyMarkdown() {
+    exportFile.reset();
+    copy.mutate();
+  }
+
+  function confirmDeletion() {
+    remove.mutate(undefined, {
+      onSuccess: () => void navigate(ROUTES.project(generation.projectId), { replace: true }),
+    });
+  }
+
   return (
     <>
       <PageHeader
         title={title}
         actions={
-          generation.status === 'completed' &&
-          generation.specification && (
-            <Button
-              variant="secondary"
-              disabled={exportFile.isPending}
-              onClick={() => exportFile.mutate()}
-            >
-              <Icon name="download" />
-              {exportFile.isPending
-                ? t('generation.export.exporting')
-                : t('generation.export.markdown')}
-            </Button>
+          generation.status !== 'generating' && (
+            <GenerationActions
+              hasSpecification={generation.status === 'completed' && specification !== null}
+              editTo={ROUTES.editGeneration(generation.id)}
+              busy={
+                regenerate.isPending
+                  ? 'regenerate'
+                  : exportFile.isPending
+                    ? 'export'
+                    : copy.isPending
+                      ? 'copy'
+                      : null
+              }
+              onRegenerate={() =>
+                regenerate.mutate(undefined, {
+                  onSuccess: (created) => void navigate(ROUTES.generation(created.id)),
+                })
+              }
+              onExport={exportAs}
+              onCopy={copyMarkdown}
+              onDelete={() => setConfirmingDelete(true)}
+            />
           )
         }
         breadcrumbs={
@@ -179,14 +223,30 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
           />
         }
       />
-      {exportFile.isError && (
-        <Alert>
-          {t('generation.export.failed', { reason: t(queryErrorKey(exportFile.error)) })}
-        </Alert>
-      )}
+      {failure && <Alert>{failure}</Alert>}
+      {copy.isSuccess && <StatusMessage>{t('generation.export.copied')}</StatusMessage>}
       <FormPageLayout aside={<GenerationRequest generation={generation} />}>
         {main()}
       </FormPageLayout>
+      <ConfirmDialog
+        open={confirmingDelete}
+        title={t('generation.deleteDialog.title', { title })}
+        confirmLabel={
+          remove.isPending
+            ? t('generation.deleteDialog.deleting')
+            : t('generation.deleteDialog.confirm')
+        }
+        cancelLabel={t('common.cancel')}
+        busy={remove.isPending}
+        error={remove.isError ? reason(remove.error) : undefined}
+        onConfirm={confirmDeletion}
+        onCancel={() => {
+          remove.reset();
+          setConfirmingDelete(false);
+        }}
+      >
+        {t('generation.deleteDialog.body')}
+      </ConfirmDialog>
     </>
   );
 }

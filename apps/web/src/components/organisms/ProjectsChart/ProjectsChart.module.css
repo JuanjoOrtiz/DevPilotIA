@@ -1,0 +1,49 @@
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-sans);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
+}
+
+.count {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  height: 12px;
+}
+
+.bar {
+  height: 12px;
+  min-width: 4px;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: var(--color-accent);
+}

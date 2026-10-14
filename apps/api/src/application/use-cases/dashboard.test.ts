@@ -112,4 +112,24 @@ describe('GetDashboardSummary', () => {
     expect(result.totals.projects).toBe(0);
     expect(result.totals.generations).toBe(0);
   });
+
+  // RF-DAS-04
+  it('lists the five projects with more generations, without the empty ones', async () => {
+    const { generations, projects, summary } = setUp();
+    const counts = [3, 1, 6, 2, 5, 4, 0];
+    for (const [index, count] of counts.entries()) {
+      const project = await projects.create(LUCIA, { ...portal, name: `Proyecto ${index}` });
+      for (let i = 0; i < count; i += 1) generations.add(project);
+    }
+
+    const result = await summary.execute(LUCIA);
+
+    expect(result.projects.map((project) => [project.name, project.count])).toEqual([
+      ['Proyecto 2', 6],
+      ['Proyecto 4', 5],
+      ['Proyecto 5', 4],
+      ['Proyecto 0', 3],
+      ['Proyecto 3', 2],
+    ]);
+  });
 });

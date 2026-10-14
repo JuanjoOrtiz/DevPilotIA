@@ -199,12 +199,12 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | GET | /projects/:id/generations | Historial paginado con `page` y `pageSize`, de más reciente a más antigua |
 | POST | /projects/:id/generations | Lanza una generación; responde 202 |
 | GET | /generations/:id | Estado y especificación de una generación |
-| PATCH | /generations/:id | Guarda la versión editada |
-| POST | /generations/:id/restore | Descarta la edición y vuelve al original |
+| PATCH | /generations/:id | Guarda la versión editada con su idioma; la de la IA se conserva |
+| POST | /generations/:id/restore | Descarta la edición y vuelve al original (RF-EDI-03, prescindible: aún no existe) |
 | POST | /generations/:id/answers | Envía las respuestas a las preguntas aclaratorias, o `skip: true` para generar sin responder; solo en `needs_clarification`; responde 202 |
-| POST | /generations/:id/regenerate | Crea una generación nueva con la misma entrada; responde 202 |
+| POST | /generations/:id/regenerate | Crea una generación nueva con la misma entrada, en `language`; cuenta para los límites; responde 202 |
 | DELETE | /generations/:id | Elimina una generación |
-| GET | /generations/:id/export | Descarga la especificación vigente con `format=md` (JSON con RF-EXP-02) y `language=es\|en` para los títulos del fichero; 409 `SPECIFICATION_NOT_READY` si aún no hay especificación |
+| GET | /generations/:id/export | Descarga la especificación vigente con `format=md` o `format=json` y `language=es\|en` para los títulos del fichero; 409 `SPECIFICATION_NOT_READY` si aún no hay especificación |
 | GET | /generations/:id/translation | La especificación vigente en `language=es\|en`; la traduce con el modelo la primera vez y la guarda |
 | GET | /dashboard/summary | Indicadores, actividad de los últimos 30 días y reparto por complejidad; los filtros `from`, `to` y `projectId` llegan con RF-DAS-06 |
 | GET | /health | Comprobación de vida de la API y de la base de datos |
@@ -246,10 +246,24 @@ Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están 
 ## Dashboard y exportación
 
 - **Agregados en la base de datos.** `GET /dashboard/summary` cuenta filas con `groupBy` y `aggregate` de Prisma, siempre con el usuario en la condición; nunca lee las especificaciones. La actividad son las fechas de creación de los últimos 30 días, agrupadas por día UTC en el caso de uso, con los días sin generaciones a cero.
+- **Proyectos con más actividad (RF-DAS-04).** Los cinco con más generaciones, sin los que no tienen ninguna, en barras horizontales de HTML para que los nombres largos se lean enteros.
 - **Qué cuenta cada indicador.** Proyectos y generaciones son todos los del usuario. El porcentaje de completadas es completadas entre el total. El tiempo medio es la media de `duration_ms` (tiempo con el modelo) de las completadas que no son de ejemplo. La complejidad reparte solo las completadas.
 - **Sin datos.** Con cero generaciones, el dashboard muestra una invitación a ir a proyectos en lugar de gráficas vacías.
 - **Recharts aparte.** La página del dashboard y las librerías de gráficas se descargan en su propio fichero (`React.lazy` y el grupo `charts` de `vite.config.ts`): el resto de la aplicación no las carga.
 - **Exportación a Markdown.** La genera la API (`application/services/SpecificationMarkdown.ts`) a partir de la especificación vigente: la editada si existe y, si no, la de la IA. Lleva el título, los supuestos y las seis secciones; los criterios de aceptación y las tareas son listas de casillas (`- [ ]`). Los títulos de las secciones van en el idioma de la interfaz; el contenido, en el que se generó. El nombre del fichero es el título en ASCII, sin comillas, para que no pueda romper la cabecera `Content-Disposition`.
+
+## Edición, regeneración y borrado
+
+- **Editar (RF-EDI-01 y 02).** La página `/generations/:id/edit` edita todas las secciones: se pueden cambiar, añadir y quitar supuestos, historias con sus criterios, tareas, riesgos, casos límite y casos de prueba con sus pasos. El formulario valida con `specificationSchema`, el mismo que la respuesta de la IA, y la API vuelve a validar. Los motivos de error son códigos de `FIELD_ERRORS` (`TEXT_REQUIRED`, `TEXT_TOO_LONG`, `LIST_REQUIRED`, `TOO_MANY_ITEMS`).
+- **Qué se guarda.** La versión editada va a `edited_spec` y la de la IA (`ai_spec`) no se toca. `title` y `complexity` se copian de la editada para el historial y el dashboard. Se edita lo que se ve: si la interfaz está en otro idioma, la traducción; la generación guarda el idioma de la versión editada y descarta las traducciones anteriores.
+- **Cambios sin guardar (RF-EDI-04).** Salir del editor con cambios pide confirmación, tanto al navegar dentro de la aplicación (`useBlocker`, que necesita el router de datos de `main.tsx`) como al cerrar o recargar la pestaña (`beforeunload`).
+- **Regenerar (RF-GEN-06).** Crea una generación nueva con la misma entrada y en el idioma de la interfaz; la anterior se conserva. Pasa por `CreateGeneration`, así que cuenta para los límites diarios.
+- **Eliminar (RF-HIS-04).** Pide confirmación y vuelve al proyecto.
+- **Exportar y copiar (RF-EXP-02 y 03).** El JSON es la especificación vigente tal cual, con `schemaVersion`. «Copiar Markdown» pide el Markdown a la API y lo copia con `ClipboardItem`, que Safari acepta aunque el texto llegue después del clic.
+
+## Proyecto de ejemplo
+
+Al registrarse, `RegisterUser` crea con `SampleProjectProvisioner` un proyecto de ejemplo y una generación completada marcada con `isSample` (RF-PRO-06). El contenido está en `application/samples/sampleProject.ts`: no llama al modelo, no cuenta para los límites y no entra en el tiempo medio del dashboard. Se puede editar y eliminar como cualquier otro. Si fallara al crearse, la cuenta y la sesión siguen adelante.
 
 ## Idioma de la especificación
 

@@ -4,11 +4,14 @@ import {
   type AnswerClarificationRequest,
   type CreateGenerationRequest,
   type GenerationDetail,
+  type ExportFormat,
   type SpecLanguage,
   type Specification,
+  type UpdateSpecificationRequest,
 } from '@devpilot/shared';
 import i18n from '../i18n';
 import { apiDownload, apiRequest } from './apiClient';
+import { copyText } from './clipboard';
 import { saveFile } from './download';
 
 /** La especificación se escribe en el idioma que tiene la interfaz al pedirla. */
@@ -60,17 +63,57 @@ export async function answerClarification(
   return generation;
 }
 
+function exportPath(generationId: string, format: ExportFormat): string {
+  const query = new URLSearchParams({ format, language: currentLanguage() });
+  return `/generations/${encodeURIComponent(generationId)}/export?${query.toString()}`;
+}
+
 /**
- * RF-EXP-01: descarga la especificación vigente en Markdown. Los títulos del fichero van
- * en el idioma de la interfaz.
+ * RF-EXP-01 y 02: descarga la especificación vigente en Markdown o en JSON. Los títulos
+ * del Markdown van en el idioma de la interfaz.
  */
-export async function exportGeneration(generationId: string): Promise<void> {
-  const query = new URLSearchParams({ format: 'md', language: currentLanguage() });
-  const file = await apiDownload(
-    `/generations/${encodeURIComponent(generationId)}/export?${query.toString()}`,
-    'specification.md',
-  );
+export async function exportGeneration(
+  generationId: string,
+  format: ExportFormat = 'md',
+): Promise<void> {
+  const file = await apiDownload(exportPath(generationId, format), `specification.${format}`);
   saveFile(file.content, file.fileName);
+}
+
+/** RF-EXP-03: copia al portapapeles el Markdown de la especificación vigente. */
+export function copyMarkdown(generationId: string): Promise<void> {
+  return copyText(
+    apiDownload(exportPath(generationId, 'md'), 'specification.md').then((file) =>
+      file.content.text(),
+    ),
+  );
+}
+
+/** RF-EDI-02: guarda la versión editada, en el idioma en que se editó. */
+export async function updateSpecification(
+  generationId: string,
+  input: UpdateSpecificationRequest,
+): Promise<GenerationDetail> {
+  const { generation } = await apiRequest(`/generations/${encodeURIComponent(generationId)}`, {
+    method: 'PATCH',
+    body: input,
+    schema: generationResponseSchema,
+  });
+  return generation;
+}
+
+/** RF-GEN-06: una generación nueva con la misma entrada; la API responde 202. */
+export async function regenerateGeneration(generationId: string): Promise<GenerationDetail> {
+  const { generation } = await apiRequest(
+    `/generations/${encodeURIComponent(generationId)}/regenerate`,
+    { method: 'POST', body: { language: currentLanguage() }, schema: generationResponseSchema },
+  );
+  return generation;
+}
+
+/** RF-HIS-04. */
+export async function deleteGeneration(generationId: string): Promise<void> {
+  await apiRequest(`/generations/${encodeURIComponent(generationId)}`, { method: 'DELETE' });
 }
 
 /**

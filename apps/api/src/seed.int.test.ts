@@ -46,7 +46,8 @@ describe('seed against PostgreSQL', () => {
     const result = await seedDemoData(prisma, { ...base, mode: 'production', email: owner });
 
     expect(result).toMatchObject({ createdUser: false, projects: 3, generations: 25 });
-    expect(await prisma.project.count({ where: { user: { email: owner } } })).toBe(3);
+    // Los 3 del seed más el proyecto de ejemplo que recibe toda cuenta al registrarse.
+    expect(await prisma.project.count({ where: { user: { email: owner } } })).toBe(4);
   });
 
   it('locally creates the sample user, who can sign in and sees the four charts with data', async () => {
@@ -80,6 +81,7 @@ describe('seed against PostgreSQL', () => {
     });
     expect(summary.totals.averageDurationMs).toBeGreaterThan(5_000);
     expect(summary.activity.reduce((sum, day) => sum + day.count, 0)).toBe(25);
+    expect(summary.projects.map((project) => project.count)).toEqual([11, 9, 5]);
     expect(summary.complexity).toEqual([
       { size: 'S', count: 6 },
       { size: 'M', count: 7 },
