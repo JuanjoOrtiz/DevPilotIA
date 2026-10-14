@@ -13,6 +13,7 @@ import {
 } from '../controllers/generationController.js';
 import { createHealthController } from '../controllers/healthController.js';
 import { createProjectController, type ProjectUseCases } from '../controllers/projectController.js';
+import { createApiDocsRouter } from '../openapi/apiDocs.js';
 import { createAuthentication, type PublicRoute } from './authentication.js';
 import type { CookieSettings } from './cookies.js';
 import { errorHandler, notFoundHandler } from './errorHandler.js';
@@ -26,6 +27,8 @@ export interface AppDependencies {
   dashboard: DashboardUseCases;
   tokens: TokenService;
   cookies: CookieSettings;
+  /** SEG-17: la especificación OpenAPI y Swagger UI solo existen si se activan. */
+  apiDocs?: { enabled: boolean; version: string };
 }
 
 export const API_PREFIX = '/api/v1';
@@ -86,6 +89,9 @@ export function createApp(dependencies: AppDependencies): Express {
   v1.get('/dashboard/summary', dashboard.summary);
 
   app.use(API_PREFIX, v1);
+  // Fuera de /api/v1 y públicas, pero solo si se activan expresamente (SEG-17).
+  if (dependencies.apiDocs?.enabled)
+    app.use('/api', createApiDocsRouter(dependencies.apiDocs.version));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

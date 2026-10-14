@@ -137,6 +137,10 @@ DATABASE_URL='cadena-de-supabase' npm run db:deploy   # en producción
 
 Cada migración debe ser compatible con la versión de la API que está desplegada.
 
+## Documentación de la API
+
+Swagger UI y la especificación OpenAPI vienen desactivadas (SEG-17). Para verlas en producción, añade en el proyecto de la API de Vercel la variable `API_DOCS_ENABLED=true` y vuelve a desplegar: quedan en `https://<web>/api/docs` y `https://<web>/api/openapi.json`. Para retirarlas, borra la variable y despliega de nuevo. En local basta ponerla en `.env`.
+
 ## Datos de demostración en producción
 
 El seed carga 3 proyectos y 25 generaciones en **una cuenta ya registrada**; en producción nunca crea usuarios (SEG-16). Detalles en `docs/architecture.md`, «Datos de demostración (seed)».

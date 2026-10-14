@@ -18,6 +18,8 @@ interface TestAppOptions {
   llm?: ScriptedLLMProvider;
   /** Cada cuenta nueva recibe el proyecto de ejemplo, como en producción (RF-PRO-06). */
   sampleProjects?: boolean;
+  /** SEG-17: Swagger UI y la especificación OpenAPI. */
+  apiDocs?: boolean;
 }
 
 /** La aplicación HTTP completa sobre dobles en memoria: sin base de datos ni criptografía. */
@@ -56,6 +58,7 @@ export function createTestApp(options: TestAppOptions = {}) {
     },
     tokens: auth.tokens,
     cookies: { secure: options.secureCookies ?? false },
+    apiDocs: { enabled: options.apiDocs ?? false, version: 'test' },
   });
 
   return { app, auth, projects, generations, llm };
