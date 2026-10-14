@@ -17,7 +17,7 @@ describe('loadEnv', () => {
       PORT: 3000,
       APP_VERSION: 'dev',
       LLM_PROVIDER: 'fake',
-      GEMINI_MODEL: 'gemini-flash-latest',
+      GEMINI_MODEL: 'gemini-3.5-flash-lite',
       LLM_MAX_OUTPUT_TOKENS: 8192,
       LLM_ATTEMPT_TIMEOUT_MS: 20_000,
       GENERATION_TIMEOUT_MS: 45_000,

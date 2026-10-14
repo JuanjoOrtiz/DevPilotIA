@@ -11,16 +11,17 @@ export interface GeminiSchema {
   propertyOrdering?: string[];
   required?: string[];
   items?: GeminiSchema;
-  minItems?: number;
-  maxItems?: number;
 }
 
 type JsonSchema = Record<string, unknown>;
 
 /**
  * Convierte el JSON Schema que sale de Zod al subconjunto que entiende Gemini. Lo que no
- * cabe (longitudes, patrones, constantes) se pierde aquí, pero no importa: la respuesta se
- * valida después con el esquema Zod completo.
+ * cabe (longitudes, número de elementos, patrones, constantes) se pierde aquí, pero no
+ * importa: la respuesta se valida después con el esquema Zod completo.
+ *
+ * `minItems` y `maxItems` se quitan a propósito: los modelos Gemini 3.x responden
+ * 400 «invalid argument» a un esquema que los lleva (comprobado el 14 de octubre de 2026).
  */
 export function toGeminiSchema(schema: JsonSchema): GeminiSchema {
   const type = schema.type;
@@ -36,12 +37,7 @@ export function toGeminiSchema(schema: JsonSchema): GeminiSchema {
     };
   }
   if (type === 'array') {
-    return {
-      type: 'array',
-      items: toGeminiSchema(schema.items as JsonSchema),
-      ...(typeof schema.minItems === 'number' && { minItems: schema.minItems }),
-      ...(typeof schema.maxItems === 'number' && { maxItems: schema.maxItems }),
-    };
+    return { type: 'array', items: toGeminiSchema(schema.items as JsonSchema) };
   }
   if (type === 'string') {
     const values = Array.isArray(schema.enum)
