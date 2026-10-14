@@ -79,7 +79,7 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
    | `LLM_PROVIDER`       | `gemini`                                             |
    | `GEMINI_API_KEY`     | La clave de Google AI Studio                         |
 
-   Opcionales: `GEMINI_MODEL` (por defecto, `gemini-3.5-flash-lite`: una versión fija y no un alias como `gemini-flash-latest`, que Google cambia sin aviso y que en octubre de 2026 respondía 503 por saturación; los modelos 2.5 ya no existen), `GENERATION_DAILY_LIMIT_PER_USER` (20) y `GENERATION_DAILY_LIMIT_GLOBAL` (200). Ajusta el tope global a la cuota diaria gratuita del modelo elegido, que se consulta en Google AI Studio: una generación con preguntas hace dos llamadas, y cada reintento, una más.
+   Opcionales: `GEMINI_MODEL` (por defecto, `gemini-3.5-flash-lite`: una versión fija y no un alias como `gemini-flash-latest`, que Google cambia sin aviso y que en octubre de 2026 respondía 503 por saturación; los modelos 2.5 ya no existen), `GENERATION_DAILY_LIMIT_PER_USER` (20), `GENERATION_DAILY_LIMIT_GLOBAL` (200), los límites de intentos `AUTH_LOGIN_LIMIT_PER_EMAIL` (5), `AUTH_LOGIN_LIMIT_PER_IP` (20) y `AUTH_REGISTER_LIMIT_PER_IP` (10), y `SENTRY_DSN` (ver «Monitorización con Sentry»). Ajusta el tope global a la cuota diaria gratuita del modelo elegido, que se consulta en Google AI Studio: una generación con preguntas hace dos llamadas, y cada reintento, una más.
 
    No añadas `NODE_ENV`. En Vercel la API arranca siempre en modo producción (`loadVercelEnv` en `index.ts`), y con `NODE_ENV=production` en el panel `npm ci` deja fuera las dependencias de desarrollo y la compilación falla.
 
@@ -106,7 +106,7 @@ Si los registros muestran errores de «max clients», el pooler en modo sesión 
    { "source": "/api/:path*", "destination": "https://TU-PROYECTO-API.vercel.app/api/:path*" }
    ```
 
-2. En Vercel, importa otra vez el mismo repositorio como un proyecto nuevo, por ejemplo `devpilot-web`, y fija «Root Directory» en `apps/web`. El framework es Vite, con sus valores por defecto. No necesita variables de entorno.
+2. En Vercel, importa otra vez el mismo repositorio como un proyecto nuevo, por ejemplo `devpilot-web`, y fija «Root Directory» en `apps/web`. El framework es Vite, con sus valores por defecto. No necesita variables de entorno salvo las de Sentry, que son opcionales (ver «Monitorización con Sentry»).
 3. Como en la API, en «Settings» y «Git» cambia «Production Branch» a `main`.
 4. Abre la URL del proyecto: debe aparecer el inicio de sesión. Crea una cuenta, crea un proyecto y genera una especificación.
 
@@ -158,6 +158,35 @@ Se puede repetir: borra los tres proyectos de ejemplo de esa cuenta y los vuelve
 
 En local basta `npm run db:seed`: crea `demo@example.com` con la contraseña `devpilot-demo` si no existe.
 
+## Monitorización con Sentry
+
+Sin DSN no se envía nada a Sentry, así que todo funciona igual sin este apartado.
+
+1. En [sentry.io](https://sentry.io), con el plan Developer gratuito, crea dos proyectos: uno de plataforma «Node.js» (Express) para la API y otro «React» para el frontend. Elige la región de datos de la UE si te la ofrece.
+2. En cada proyecto, «Settings», «Client Keys (DSN)», copia el DSN. Un DSN no es un secreto: solo permite enviar eventos.
+3. En el proyecto de la API de Vercel añade `SENTRY_DSN` con el DSN de Node.js.
+4. En el proyecto web de Vercel añade `VITE_SENTRY_DSN` con el DSN de React. Se lee al compilar, así que hace falta volver a desplegar.
+5. Para que los errores del frontend se lean con el código original, en el proyecto web añade además `SENTRY_ORG` y `SENTRY_PROJECT` (los nombres cortos de la organización y del proyecto React) y `SENTRY_AUTH_TOKEN`, un «Organization Auth Token» creado en «Settings», «Auth Tokens». **Ese token sí es un secreto**: solo en el panel de Vercel, en el entorno «Production». El build sube los source maps y después los borra, así que no se publican.
+6. Deja las tres variables de Sentry del proyecto web y `SENTRY_DSN` solo en «Production», como el resto (amenaza T-28): las vistas previas no envían eventos.
+7. Alertas, en «Alerts» de cada proyecto:
+   - La regla por defecto «A new issue is created» avisa por email de cada error nuevo (RNF-15). Comprueba que existe.
+   - En el proyecto de la API, una regla de «Issues» que avise cuando el evento con mensaje `Refresh token reuse` aparezca una vez, y otra cuando `Login attempts limit reached` aparezca más de 3 veces en una hora: son las alertas de SEG-09.
+
+Para comprobarlo, en Sentry, «Issues», debe aparecer el primer evento real; para forzar uno sin tocar el código, el aviso de `Login attempts limit reached` sale con seis logins fallidos seguidos con el mismo email.
+
+## Límite de intentos e IP del visitante
+
+El login y el registro se limitan por email y por IP (SEG-07). La migración `20261015000000_auth_attempts` crea su tabla, y se aplica antes de pasar el código a `main`, como cualquier otra.
+
+Después de desplegar hay que comprobar que la IP que ve la API es la del visitante y no la del proyecto web que reenvía `/api` (amenaza T-27):
+
+1. Haz un login con una contraseña incorrecta desde la aplicación.
+2. En el proyecto de la API de Vercel, «Logs», busca `"kind":"security"`: la línea de `login_failed` lleva `ip`.
+3. Compárala con tu IP pública. Si coincide, no hay nada que hacer.
+4. Si es una IP de Vercel y se repite con otro dispositivo u otra red, todos los visitantes comparten IP y los límites por IP bloquearían a todos a la vez. En ese caso sube `AUTH_LOGIN_LIMIT_PER_IP` y `AUTH_REGISTER_LIMIT_PER_IP` (por ejemplo, a 1000) y vuelve a desplegar: el límite por email sigue protegiendo cada cuenta.
+
+Si alguien queda bloqueado en una demostración, el bloqueo dura 15 minutos en el login y una hora en el registro. Para liberarlo antes, en el editor SQL de Supabase: `delete from auth_attempts;`.
+
 ## Límites del plan gratuito que afectan a la entrega
 
 - **Supabase pausa el proyecto tras una semana sin actividad**, y reactivarlo es manual, desde su panel. Si entre la entrega y la evaluación pasan más de siete días sin visitas, la aplicación aparecerá con «Base de datos no disponible». Conviene entrar al menos una vez por semana o programar una visita automática a `/api/v1/health`.
@@ -170,7 +199,8 @@ En local basta `npm run db:seed`: crea `demo@example.com` con la contraseña `de
 - `docker compose up --build`: los Dockerfiles se han probado paso a paso fuera de Docker y el CI construye la imagen de la API, pero el arranque conjunto no se ha ejecutado.
 - La migración inicial se escribió a mano siguiendo el formato de Prisma y se aplica bien en Supabase. Falta confirmar que `npm run db:migrate` responde que no hay cambios; si crea una migración nueva, hay una diferencia entre la migración y `schema.prisma` y esa migración nueva la corrige.
 - Los dos proyectos se han compilado en local con `vercel build`, y la función resultante responde contra un PostgreSQL local. Falta el despliegue real: la región, el reenvío de `/api` entre los dos proyectos y el cierre de conexiones sin uso.
-- Qué cabecera lleva a la API la IP del visitante a través del reenvío (amenaza T-27), antes de implantar el límite de intentos.
+- Que la IP de los eventos de seguridad sea la del visitante a través del reenvío (amenaza T-27): pasos en «Límite de intentos e IP del visitante».
+- El primer evento real en Sentry y sus alertas, cuando estén los DSN.
 - Verificar el certificado de Supabase con `sslmode=verify-full` y su certificado raíz, previsto para el día 18.
 
 ## Fuentes

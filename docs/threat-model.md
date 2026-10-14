@@ -50,7 +50,7 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 | --- | --- | --- | --- |
 | T-01 | Un usuario lee o modifica proyectos y generaciones de otro cambiando el id en la URL | Toda consulta filtra por el usuario en sesión; un recurso ajeno responde 404 | SEG-01, RNF-06 |
 | T-02 | Se añade un endpoint nuevo y queda sin autenticación por descuido | Autenticación global con lista explícita de rutas públicas | SEG-15 |
-| T-03 | Fuerza bruta o relleno de credenciales contra el login | Límite de intentos en autenticación; mensaje genérico que no revela si el email existe | SEG-07, RF-AUT-02 |
+| T-03 | Fuerza bruta o relleno de credenciales contra el login | Límite de logins fallidos por email (5) y por IP (20) en 15 minutos, contado en la base de datos y comprobado antes de verificar la contraseña; mensaje genérico que no revela si el email existe; cada bloqueo avisa en Sentry | SEG-07, SEG-09, RF-AUT-02 |
 | T-04 | Robo de un refresh token y uso en paralelo con el usuario legítimo | Rotación en cada uso; reutilizar uno ya usado revoca todas las sesiones; se guarda solo el hash | SEG-07, SEG-04 |
 | T-05 | Falsificación de tokens: algoritmo `none`, cambio de algoritmo o secreto débil | Algoritmo fijado, secretos aleatorios de 32 bytes o más y distintos para access y refresh | SEG-04 |
 | T-06 | Fuga de la base de datos con contraseñas recuperables | Hash con bcrypt o argon2 | SEG-04 |
@@ -74,7 +74,7 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 | T-24 | Un script inyectado roba el access token del almacenamiento del navegador | El access token vive solo en memoria y el refresh token en una cookie httpOnly | RF-AUT-03, SEG-05 |
 | T-25 | La API de datos automática de Supabase expone las tablas sin pasar por la API de DevPilot | La API de datos se desactiva en el proyecto de Supabase; solo se usa su PostgreSQL | SEG-02 |
 | T-26 | Una caché intermedia guarda y sirve a otro usuario una respuesta de la API | Todas las respuestas de la API llevan `Cache-Control: no-store` | SEG-02 |
-| T-27 | Alguien llama a la URL propia de la API, sin pasar por el frontend, para falsear su IP | La API solo confía en la IP que añade la plataforma, nunca en la que envía el cliente; pendiente de configurar y comprobar con el límite de intentos | SEG-07, SEG-09 |
+| T-27 | Alguien llama a la URL propia de la API, sin pasar por el frontend, para falsear su IP | Express confía en un solo salto (`trust proxy` a 1): la IP es la que añade la plataforma, nunca la que envía el cliente. Falta comprobar en producción que es la del visitante y no la del proyecto web ([deployment.md](deployment.md)); si no lo fuera, el límite por email sigue protegiendo cada cuenta | SEG-07, SEG-09 |
 | T-28 | Un despliegue de vista previa ejecuta código sin revisar contra la base de datos de producción | `DATABASE_URL` y los secretos JWT existen solo en el entorno de producción de Vercel; las vistas previas de la API no llegan a arrancar | SEG-02, RNF-05 |
 
 ## Riesgos aceptados

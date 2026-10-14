@@ -8,7 +8,12 @@ import { UpdateSpecification } from '../application/use-cases/UpdateSpecificatio
 import { GetGeneration } from '../application/use-cases/GetGeneration.js';
 import { TranslateSpecification } from '../application/use-cases/TranslateSpecification.js';
 import type { LLMProvider } from '../domain/providers/LLMProvider.js';
-import { FixedClock, InMemoryGenerationRepository, InMemoryProjectRepository } from './fakes.js';
+import {
+  FixedClock,
+  InMemoryGenerationRepository,
+  InMemoryProjectRepository,
+  InMemorySecurityLog,
+} from './fakes.js';
 import { InlineBackgroundTasks, ScriptedLLMProvider } from './llm.js';
 
 export interface GenerationFixtureOptions {
@@ -43,6 +48,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     reportFailure: (failure) => failures.push(failure.code),
   });
   const limits: DailyLimits = { perUser: 20, global: 200, ...options.limits };
+  const securityLog = new InMemorySecurityLog();
   const createGeneration = new CreateGeneration({
     projects,
     generations,
@@ -50,6 +56,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     background,
     clock,
     limits,
+    log: securityLog,
   });
 
   return {
@@ -60,6 +67,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     generations,
     waits,
     failures,
+    securityLog,
     createGeneration,
     getGeneration: new GetGeneration(generations, clock),
     answerClarification: new AnswerClarification({

@@ -20,6 +20,7 @@ import type { User } from '../domain/entities/User.js';
 import { DomainError } from '../domain/errors/DomainError.js';
 import type { Clock } from '../domain/providers/Clock.js';
 import type { PasswordHasher } from '../domain/providers/PasswordHasher.js';
+import type { SecurityEvent, SecurityLog } from '../domain/providers/SecurityLog.js';
 import type {
   IssuedAccessToken,
   IssuedRefreshToken,
@@ -27,7 +28,12 @@ import type {
   TokenSubject,
 } from '../domain/providers/TokenService.js';
 import type {
+  AttemptScope,
+  AuthAttemptRepository,
+} from '../domain/repositories/AuthAttemptRepository.js';
+import type {
   DashboardRepository,
+  DashboardScope,
   DashboardTotalsData,
 } from '../domain/repositories/DashboardRepository.js';
 import type {
@@ -569,8 +575,17 @@ export class InMemoryDashboardRepository implements DashboardRepository {
     this.generations = generations;
   }
 
-  totalsForUser(userId: string): Promise<DashboardTotalsData> {
-    const mine = this.generations.generations.filter((g) => g.userId === userId);
+  private inScope(userId: string, scope: DashboardScope) {
+    return this.generations.generations.filter(
+      (g) =>
+        g.userId === userId &&
+        g.createdAt >= scope.since &&
+        (!scope.projectId || g.projectId === scope.projectId),
+    );
+  }
+
+  totalsForUser(userId: string, scope: DashboardScope): Promise<DashboardTotalsData> {
+    const mine = this.inScope(userId, scope);
     const completed = mine.filter((g) => g.status === 'completed');
     const timed = completed.filter((g) => !g.isSample && g.usage.durationMs > 0);
     const completedByComplexity: DashboardTotalsData['completedByComplexity'] = {};
@@ -582,7 +597,7 @@ export class InMemoryDashboardRepository implements DashboardRepository {
     }
 
     return Promise.resolve({
-      projects: this.projects.projects.filter((project) => project.userId === userId).length,
+      projects: new Set(mine.map((g) => g.projectId)).size,
       generations: mine.length,
       features: mine.filter((g) => g.type === 'feature').length,
       bugs: mine.filter((g) => g.type === 'bug').length,
@@ -596,24 +611,65 @@ export class InMemoryDashboardRepository implements DashboardRepository {
     });
   }
 
-  topProjectsForUser(userId: string, limit: number): Promise<DashboardProject[]> {
+  topProjectsForUser(
+    userId: string,
+    scope: DashboardScope,
+    limit: number,
+  ): Promise<DashboardProject[]> {
+    const mine = this.inScope(userId, scope);
     const counted = this.projects.projects
       .filter((project) => project.userId === userId)
       .map((project) => ({
         projectId: project.id,
         name: project.name,
-        count: this.generations.forProject(project.id).length,
+        count: mine.filter((g) => g.projectId === project.id).length,
       }))
       .filter((project) => project.count > 0)
       .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     return Promise.resolve(counted.slice(0, limit));
   }
 
-  creationDatesForUser(userId: string, since: Date): Promise<Date[]> {
-    return Promise.resolve(
-      this.generations.generations
-        .filter((g) => g.userId === userId && g.createdAt >= since)
-        .map((g) => g.createdAt),
+  creationDatesForUser(userId: string, scope: DashboardScope): Promise<Date[]> {
+    return Promise.resolve(this.inScope(userId, scope).map((g) => g.createdAt));
+  }
+}
+
+/** Intentos de autenticación en memoria. */
+export class InMemoryAuthAttemptRepository implements AuthAttemptRepository {
+  readonly attempts: { scope: AttemptScope; key: string; at: Date }[] = [];
+
+  record(scope: AttemptScope, key: string, at: Date): Promise<void> {
+    this.attempts.push({ scope, key, at });
+    return Promise.resolve();
+  }
+
+  countSince(scope: AttemptScope, key: string, since: Date): Promise<number> {
+    return Promise.resolve(this.matching(scope, key, since).length);
+  }
+
+  oldestSince(scope: AttemptScope, key: string, since: Date): Promise<Date | null> {
+    const [oldest] = this.matching(scope, key, since).toSorted(
+      (a, b) => a.at.getTime() - b.at.getTime(),
     );
+    return Promise.resolve(oldest?.at ?? null);
+  }
+
+  clear(scope: AttemptScope, key: string): Promise<void> {
+    const kept = this.attempts.filter((a) => !(a.scope === scope && a.key === key));
+    this.attempts.splice(0, this.attempts.length, ...kept);
+    return Promise.resolve();
+  }
+
+  private matching(scope: AttemptScope, key: string, since: Date) {
+    return this.attempts.filter((a) => a.scope === scope && a.key === key && a.at >= since);
+  }
+}
+
+/** Guarda los eventos de seguridad para comprobarlos en los tests. */
+export class InMemorySecurityLog implements SecurityLog {
+  readonly events: SecurityEvent[] = [];
+
+  record(event: SecurityEvent): void {
+    this.events.push(event);
   }
 }

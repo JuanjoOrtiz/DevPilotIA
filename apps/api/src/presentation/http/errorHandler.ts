@@ -1,6 +1,7 @@
 import type { ApiError, ErrorCode } from '@devpilot/shared';
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { DomainError } from '../../domain/errors/DomainError.js';
+import type { ErrorReporter } from '../../domain/providers/ErrorReporter.js';
 
 const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
   VALIDATION_ERROR: 400,
@@ -12,6 +13,7 @@ const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
   SPECIFICATION_NOT_READY: 409,
   USER_QUOTA_EXCEEDED: 429,
   GLOBAL_QUOTA_EXCEEDED: 429,
+  TOO_MANY_ATTEMPTS: 429,
   // Fallos del modelo en una llamada que espera la respuesta, como una traducción.
   LLM_RATE_LIMITED: 429,
   LLM_CONTENT_BLOCKED: 422,
@@ -42,21 +44,33 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
 
 /**
  * Convierte cualquier error en el formato único de la API. Un error inesperado sale como
- * un 500 genérico: el detalle va al registro, nunca a la respuesta (SEG-10).
+ * un 500 genérico: el detalle va al registro y a Sentry, nunca a la respuesta (SEG-10).
  */
-export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
-  if (error instanceof DomainError) {
-    const status = STATUS_BY_CODE[error.code] ?? 500;
-    res.status(status).json(body(error.code, error.message, error.details));
-    return;
-  }
+export function createErrorHandler(reporter?: ErrorReporter): ErrorRequestHandler {
+  return (error, req, res, _next) => {
+    if (error instanceof DomainError) {
+      const status = STATUS_BY_CODE[error.code] ?? 500;
+      const retryAfter = error.details.retryAfterSeconds;
+      if (typeof retryAfter === 'number') res.setHeader('Retry-After', String(retryAfter));
+      res.status(status).json(body(error.code, error.message, error.details));
+      return;
+    }
 
-  const parserFailure = bodyParserFailure(error);
-  if (parserFailure) {
-    res.status(parserFailure.status).json(body('VALIDATION_ERROR', parserFailure.message));
-    return;
-  }
+    const parserFailure = bodyParserFailure(error);
+    if (parserFailure) {
+      res.status(parserFailure.status).json(body('VALIDATION_ERROR', parserFailure.message));
+      return;
+    }
 
-  console.error('Unexpected error', error);
-  res.status(500).json(body('INTERNAL_ERROR', 'Internal server error'));
-};
+    console.error('Unexpected error', error);
+    const userId: unknown = res.locals.userId;
+    // La ruta sin parámetros ni consulta: los ids no dicen nada útil y la consulta puede llevar texto.
+    reporter?.captureException(error, {
+      userId: typeof userId === 'string' ? userId : null,
+      route: `${req.method} ${req.baseUrl}${req.route?.path ?? ''}`,
+    });
+    res.status(500).json(body('INTERNAL_ERROR', 'Internal server error'));
+  };
+}
+
+export const errorHandler = createErrorHandler();

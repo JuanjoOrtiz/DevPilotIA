@@ -1,3 +1,4 @@
+import { AttemptLimiter } from '../application/services/AttemptLimiter.js';
 import { SessionIssuer } from '../application/services/SessionIssuer.js';
 import { GetCurrentUser } from '../application/use-cases/GetCurrentUser.js';
 import { LoginUser } from '../application/use-cases/LoginUser.js';
@@ -8,6 +9,8 @@ import {
   FakePasswordHasher,
   FakeTokenService,
   FixedClock,
+  InMemoryAuthAttemptRepository,
+  InMemorySecurityLog,
   InMemoryRefreshTokenRepository,
   InMemoryUserRepository,
 } from './fakes.js';
@@ -20,6 +23,12 @@ export function createAuthFixture() {
   const hasher = new FakePasswordHasher();
   const tokens = new FakeTokenService(clock);
   const sessions = new SessionIssuer(tokens, refreshTokens);
+  const attempts = new InMemoryAuthAttemptRepository();
+  const securityLog = new InMemorySecurityLog();
+  const protection = {
+    limiter: new AttemptLimiter(attempts, clock, securityLog),
+    log: securityLog,
+  };
 
   return {
     clock,
@@ -27,9 +36,19 @@ export function createAuthFixture() {
     refreshTokens,
     hasher,
     tokens,
-    registerUser: new RegisterUser(users, hasher, sessions),
-    loginUser: new LoginUser(users, hasher, sessions),
-    refreshSession: new RefreshSession({ users, refreshTokens, tokens, sessions, clock }),
+    attempts,
+    securityLog,
+    protection,
+    registerUser: new RegisterUser(users, hasher, sessions, undefined, protection),
+    loginUser: new LoginUser(users, hasher, sessions, protection),
+    refreshSession: new RefreshSession({
+      users,
+      refreshTokens,
+      tokens,
+      sessions,
+      clock,
+      log: securityLog,
+    }),
     logoutUser: new LogoutUser(refreshTokens, tokens, clock),
     getCurrentUser: new GetCurrentUser(users),
   };

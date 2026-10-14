@@ -1,0 +1,24 @@
+.filters {
+  display: flex;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex: 0 0 200px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* En pantallas estrechas, un filtro debajo del otro y a todo el ancho. */
+@media (max-width: 480px) {
+  .filters {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .field {
+    flex: 1 1 auto;
+  }
+}

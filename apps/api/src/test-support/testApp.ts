@@ -45,6 +45,7 @@ export function createTestApp(options: TestAppOptions = {}) {
             auth.hasher,
             new SessionIssuer(auth.tokens, auth.refreshTokens),
             new SampleProjectProvisioner(projects.repository, projects.generations, auth.clock),
+            auth.protection,
           ),
         }
       : auth,
@@ -59,6 +60,7 @@ export function createTestApp(options: TestAppOptions = {}) {
     tokens: auth.tokens,
     cookies: { secure: options.secureCookies ?? false },
     apiDocs: { enabled: options.apiDocs ?? false, version: 'test' },
+    securityLog: auth.securityLog,
   });
 
   return { app, auth, projects, generations, llm };

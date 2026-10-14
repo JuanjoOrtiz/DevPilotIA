@@ -325,3 +325,35 @@ describe('authentication by default', () => {
     ]);
   });
 });
+
+// RNF-04 y SEG-09
+describe('authentication protection over HTTP', () => {
+  it('answers 429 with Retry-After once an email has failed 5 times', async () => {
+    const { app } = createTestApp();
+    await request(app).post('/api/v1/auth/register').send(lucia);
+    for (let i = 0; i < 5; i += 1) {
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: lucia.email, password: 'not the password' });
+    }
+
+    const response = await request(app).post('/api/v1/auth/login').send(lucia);
+
+    expect(response.status).toBe(429);
+    expect(response.headers['retry-after']).toBe('900');
+    expect(apiErrorSchema.parse(response.body).error).toMatchObject({
+      code: 'TOO_MANY_ATTEMPTS',
+      details: { retryAfterSeconds: 900 },
+    });
+  });
+
+  it('records every request refused for lack of a valid token', async () => {
+    const { app, auth } = createTestApp();
+
+    await request(app).get('/api/v1/projects').set('Authorization', 'Bearer forged');
+
+    expect(auth.securityLog.events).toContainEqual(
+      expect.objectContaining({ type: 'access_denied', detail: 'GET /projects' }),
+    );
+  });
+});

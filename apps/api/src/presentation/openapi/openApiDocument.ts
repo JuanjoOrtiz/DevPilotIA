@@ -7,6 +7,7 @@ import {
   createGenerationRequestSchema,
   createProjectRequestSchema,
   currentUserResponseSchema,
+  dashboardQuerySchema,
   dashboardResponseSchema,
   exportGenerationQuerySchema,
   generationPageResponseSchema,
@@ -280,7 +281,8 @@ export const OPERATIONS: readonly OperationSpec[] = [
     method: 'get',
     path: '/dashboard/summary',
     tag: 'Dashboard',
-    summary: 'Indicators and chart series of the dashboard',
+    summary: 'Indicators and chart series of the dashboard, for a period and optionally a project',
+    query: dashboardQuerySchema,
     response: { status: 200, description: 'The summary', schema: dashboardResponseSchema },
   },
 ];

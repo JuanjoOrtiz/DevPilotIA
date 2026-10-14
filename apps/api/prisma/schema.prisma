@@ -115,3 +115,16 @@ model Generation {
   @@index([createdAt])
   @@map("generations")
 }
+
+// Intentos de autenticación, para limitarlos (RNF-04 y SEG-07). La clave (email o IP) se
+// guarda como hash SHA-256: la tabla no permite saber quién lo intentó.
+model AuthAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  scope     String
+  keyHash   String   @map("key_hash")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([scope, keyHash, createdAt])
+  @@index([createdAt])
+  @@map("auth_attempts")
+}
