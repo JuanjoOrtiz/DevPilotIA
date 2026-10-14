@@ -56,18 +56,18 @@ export function createAuthController(
   return {
     register: async (req, res) => {
       const input = parseBody(registerRequestSchema, req.body);
-      sendSession(res, 201, await useCases.registerUser.execute(input));
+      sendSession(res, 201, await useCases.registerUser.execute(input, { ip: req.ip ?? null }));
     },
 
     login: async (req, res) => {
       const input = parseBody(loginRequestSchema, req.body);
-      sendSession(res, 200, await useCases.loginUser.execute(input));
+      sendSession(res, 200, await useCases.loginUser.execute(input, { ip: req.ip ?? null }));
     },
 
     refresh: async (req, res) => {
       const refreshToken = readCookie(req.headers.cookie, REFRESH_COOKIE);
       try {
-        sendSession(res, 200, await useCases.refreshSession.execute(refreshToken));
+        sendSession(res, 200, await useCases.refreshSession.execute(refreshToken, req.ip ?? null));
       } catch (error) {
         // Una cookie que ya no vale se retira: el navegador deja de enviarla.
         clearRefreshCookie(res, cookies);

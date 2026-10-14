@@ -40,3 +40,10 @@
   flex-wrap: wrap;
   gap: 10px;
 }
+
+/* En móvil las acciones bajan bajo el título y ocupan todo el ancho. */
+@media (max-width: 480px) {
+  .actions {
+    width: 100%;
+  }
+}

@@ -5,7 +5,7 @@ import { ApiError } from '../../services/apiClient';
 import * as authService from '../../services/authService';
 import * as dashboardService from '../../services/dashboardService';
 import * as projectService from '../../services/projectService';
-import { dashboardSummary } from '../../test/fixtures';
+import { dashboardSummary, portal, reservas } from '../../test/fixtures';
 import { lucia, renderApp } from '../../test/renderApp';
 
 vi.mock('../../services/authService');
@@ -52,7 +52,7 @@ describe('the dashboard', () => {
     renderApp('/dashboard');
     await screen.findByRole('region', { name: 'Indicadores' });
 
-    expect(indicator('Proyectos')).toEqual(['3', 'en total']);
+    expect(indicator('Proyectos')).toEqual(['3', 'con actividad en el periodo']);
     expect(indicator('Generaciones')).toEqual(['25', '15 funcionalidades · 10 bugs']);
     expect(indicator('Completadas')[0]).toMatch(/^88\s%$/);
     expect(indicator('Completadas')[1]).toBe('22 de 25 · 3 fallidas');
@@ -66,7 +66,7 @@ describe('the dashboard', () => {
     expect(
       await screen.findByText('Del 13 de septiembre de 2026 al 12 de octubre de 2026'),
     ).toBeTruthy();
-    expect(screen.getByText('4 generaciones en los últimos 30 días')).toBeTruthy();
+    expect(screen.getByText('4 generaciones en el periodo')).toBeTruthy();
     expect(
       screen.getByRole('img', {
         name: 'Gráfica de barras: generaciones por día del 13 de septiembre de 2026 al 12 de octubre de 2026. Máximo de 3 el 23 de septiembre de 2026.',
@@ -130,5 +130,48 @@ describe('the dashboard', () => {
     expect(await screen.findByText('From September 13, 2026 to October 12, 2026')).toBeTruthy();
     expect(indicator('Completed')).toEqual(['88%', '22 of 25 · 3 failed']);
     expect(indicator('Generations')[1]).toBe('15 features · 10 bugs');
+  });
+
+  // RF-DAS-06
+  it('filters by period and project, and keeps the filter in the address', async () => {
+    vi.mocked(projectService.listProjects).mockResolvedValue([portal, reservas]);
+    api.getDashboardSummary.mockResolvedValue(dashboardSummary());
+    const { user } = renderApp('/dashboard');
+    await screen.findByRole('region', { name: 'Indicadores' });
+    expect(api.getDashboardSummary).toHaveBeenLastCalledWith({ days: 30 }, expect.anything());
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Periodo' }), 'Últimos 7 días');
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Proyecto' }),
+      'App de reservas',
+    );
+
+    expect(api.getDashboardSummary).toHaveBeenLastCalledWith(
+      { days: 7, projectId: reservas.id },
+      expect.anything(),
+    );
+  });
+
+  it('says so when the filter leaves nothing to show', async () => {
+    api.getDashboardSummary.mockResolvedValue(
+      dashboardSummary({
+        totals: {
+          projects: 0,
+          generations: 0,
+          features: 0,
+          bugs: 0,
+          completed: 0,
+          failed: 0,
+          completionRate: null,
+          averageDurationMs: null,
+        },
+      }),
+    );
+    renderApp('/dashboard?days=7');
+
+    expect(await screen.findByText('No hay generaciones en este periodo')).toBeTruthy();
+    expect((screen.getByRole('combobox', { name: 'Periodo' }) as HTMLSelectElement).value).toBe(
+      '7',
+    );
   });
 });

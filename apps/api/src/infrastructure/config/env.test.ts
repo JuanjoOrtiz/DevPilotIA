@@ -25,6 +25,9 @@ describe('loadEnv', () => {
       GENERATION_DAILY_LIMIT_PER_USER: 20,
       GENERATION_DAILY_LIMIT_GLOBAL: 200,
       API_DOCS_ENABLED: false,
+      AUTH_LOGIN_LIMIT_PER_EMAIL: 5,
+      AUTH_LOGIN_LIMIT_PER_IP: 20,
+      AUTH_REGISTER_LIMIT_PER_IP: 10,
     });
   });
 
@@ -51,6 +54,21 @@ describe('loadEnv', () => {
     expect(loadEnv({ ...valid, API_DOCS_ENABLED: 'true' }).API_DOCS_ENABLED).toBe(true);
     expect(loadEnv({ ...valid, API_DOCS_ENABLED: 'false' }).API_DOCS_ENABLED).toBe(false);
     expect(() => loadEnv({ ...valid, API_DOCS_ENABLED: 'yes' })).toThrow();
+  });
+
+  it('treats an empty variable as not set, as in a .env copied from .env.example', () => {
+    const env = loadEnv({ ...valid, GEMINI_API_KEY: '', SENTRY_DSN: '', PORT: '' });
+
+    expect(env.GEMINI_API_KEY).toBeUndefined();
+    expect(env.SENTRY_DSN).toBeUndefined();
+    expect(env.PORT).toBe(3000);
+  });
+
+  it('refuses a SENTRY_DSN that is not a URL', () => {
+    expect(loadEnv({ ...valid, SENTRY_DSN: 'https://key@o1.ingest.sentry.io/2' }).SENTRY_DSN).toBe(
+      'https://key@o1.ingest.sentry.io/2',
+    );
+    expect(() => loadEnv({ ...valid, SENTRY_DSN: 'not-a-dsn' })).toThrow(/SENTRY_DSN/);
   });
 
   it('refuses an invalid PORT', () => {

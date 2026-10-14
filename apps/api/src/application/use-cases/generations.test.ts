@@ -93,9 +93,10 @@ describe('CreateGeneration', () => {
 
   // RF-GEN-07 y SEG-13
   it('stops at the daily limit of the user and says when it resets', async () => {
-    const { createGeneration, generations, project } = await setUp(new ScriptedLLMProvider(), {
-      perUser: 2,
-    });
+    const { createGeneration, generations, project, securityLog } = await setUp(
+      new ScriptedLLMProvider(),
+      { perUser: 2 },
+    );
     generations.add(project);
     generations.add(project);
 
@@ -103,6 +104,10 @@ describe('CreateGeneration', () => {
 
     expect(error.code).toBe('USER_QUOTA_EXCEEDED');
     expect(error.details).toEqual({ limit: 2, resetsAt: '2026-10-12T00:00:00.000Z' });
+    // SEG-09
+    expect(securityLog.events).toEqual([
+      { type: 'limit_reached', userId: LUCIA, detail: 'generations:user' },
+    ]);
   });
 
   it('does not count the sample generation nor yesterday’s ones', async () => {

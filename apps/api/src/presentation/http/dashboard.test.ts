@@ -45,4 +45,18 @@ describe('GET /api/v1/dashboard/summary', () => {
     expect(response.status).toBe(401);
     expect(apiErrorSchema.parse(response.body).error.code).toBe('UNAUTHORIZED');
   });
+
+  // RF-DAS-06
+  it('answers 400 for a period that is not offered or a project id that is not a UUID', async () => {
+    const { app } = createTestApp();
+    const registered = await request(app).post('/api/v1/auth/register').send(lucia);
+    const authorization = `Bearer ${(registered.body as { accessToken: string }).accessToken}`;
+    const get = (query: string) =>
+      request(app).get(`/api/v1/dashboard/summary?${query}`).set('Authorization', authorization);
+
+    expect((await get('days=45')).status).toBe(400);
+    expect((await get('projectId=nope')).status).toBe(400);
+    const week = await get('days=7');
+    expect(dashboardResponseSchema.parse(week.body).summary.activity).toHaveLength(7);
+  });
 });

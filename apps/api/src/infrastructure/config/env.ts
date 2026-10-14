@@ -39,6 +39,12 @@ const envSchema = z.object({
   FAKE_LLM_LATENCY_MS: z.coerce.number().int().min(0).default(0),
   GENERATION_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(1).default(20),
   GENERATION_DAILY_LIMIT_GLOBAL: z.coerce.number().int().min(1).default(200),
+  // RNF-04: intentos de autenticación permitidos (logins fallidos cada 15 min, registros por hora).
+  AUTH_LOGIN_LIMIT_PER_EMAIL: z.coerce.number().int().min(1).default(5),
+  AUTH_LOGIN_LIMIT_PER_IP: z.coerce.number().int().min(1).default(20),
+  AUTH_REGISTER_LIMIT_PER_IP: z.coerce.number().int().min(1).default(10),
+  // RNF-15: sin DSN, Sentry queda desactivado (local y tests).
+  SENTRY_DSN: z.url().optional(),
   // SEG-17: Swagger UI y /api/openapi.json solo con el valor exacto `true`.
   API_DOCS_ENABLED: z
     .enum(['true', 'false'])
@@ -62,10 +68,13 @@ export class InvalidEnvError extends Error {
  * cortos (SEG-04) o una conexión sin cifrar a la base de datos (SEG-04).
  */
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
+  // Una variable vacía (`GEMINI_API_KEY=` en el .env copiado de .env.example) cuenta como
+  // no definida: toma su valor por defecto o falta, en vez de fallar por estar vacía.
+  const defined = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ''));
   const parsed = envSchema.safeParse({
-    ...source,
+    ...defined,
     // Vercel publica el commit desplegado en VERCEL_GIT_COMMIT_SHA.
-    APP_VERSION: source.APP_VERSION ?? source.VERCEL_GIT_COMMIT_SHA,
+    APP_VERSION: defined.APP_VERSION ?? defined.VERCEL_GIT_COMMIT_SHA,
   });
   if (!parsed.success) {
     throw new InvalidEnvError(

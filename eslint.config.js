@@ -30,6 +30,7 @@ const FRAMEWORKS = [
   'bcryptjs',
   'jose',
   '@vercel/*',
+  '@sentry/*',
 ];
 const DATA_ACCESS = ['@tanstack/react-query'];
 

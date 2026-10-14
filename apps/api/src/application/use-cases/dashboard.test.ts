@@ -40,8 +40,9 @@ describe('GetDashboardSummary', () => {
 
     const result = await summary.execute(LUCIA);
 
+    // Cuentan los proyectos con alguna generación en el periodo: el segundo no tiene.
     expect(result.totals).toEqual({
-      projects: 2,
+      projects: 1,
       generations: 5,
       features: 3,
       bugs: 2,
@@ -131,5 +132,46 @@ describe('GetDashboardSummary', () => {
       ['Proyecto 0', 3],
       ['Proyecto 3', 2],
     ]);
+  });
+
+  // RF-DAS-06
+  it('covers the chosen period: 7 days of activity and only what happened in them', async () => {
+    const { generations, projects, summary, daysAgo } = setUp();
+    const project = await projects.create(LUCIA, portal);
+    generations.add(project, { createdAt: daysAgo(2) });
+    generations.add(project, { createdAt: daysAgo(10) });
+
+    const result = await summary.execute(LUCIA, { days: 7 });
+
+    expect(result.activity).toHaveLength(7);
+    expect(result.activity[0]?.date).toBe('2026-10-05');
+    expect(result.totals.generations).toBe(1);
+  });
+
+  it('narrows everything to one project', async () => {
+    const { generations, projects, summary } = setUp();
+    const portalProject = await projects.create(LUCIA, portal);
+    const other = await projects.create(LUCIA, { ...portal, name: 'App de reservas' });
+    generations.add(portalProject, { complexity: 'S' });
+    generations.add(other, { complexity: 'L', type: 'bug' });
+    generations.add(other, { complexity: 'L' });
+
+    const result = await summary.execute(LUCIA, { days: 30, projectId: other.id });
+
+    expect(result.totals).toMatchObject({ projects: 1, generations: 2, bugs: 1 });
+    expect(result.complexity).toContainEqual({ size: 'L', count: 2 });
+    expect(result.complexity).toContainEqual({ size: 'S', count: 0 });
+    expect(result.projects).toEqual([{ projectId: other.id, name: 'App de reservas', count: 2 }]);
+  });
+
+  it("shows nothing for someone else's project", async () => {
+    const { generations, projects, summary } = setUp();
+    const theirs = await projects.create(MARCOS, portal);
+    generations.add(theirs);
+
+    const result = await summary.execute(LUCIA, { days: 30, projectId: theirs.id });
+
+    expect(result.totals.generations).toBe(0);
+    expect(result.projects).toEqual([]);
   });
 });

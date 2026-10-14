@@ -1,5 +1,6 @@
 import type { RequestHandler, Response } from 'express';
 import { DomainError } from '../../domain/errors/DomainError.js';
+import type { SecurityLog } from '../../domain/providers/SecurityLog.js';
 import type { TokenService } from '../../domain/providers/TokenService.js';
 
 export interface PublicRoute {
@@ -17,6 +18,8 @@ const BEARER = /^Bearer (\S+)$/;
 export function createAuthentication(
   tokens: TokenService,
   publicRoutes: readonly PublicRoute[],
+  /** SEG-09: cada petición rechazada por falta de un token válido queda registrada. */
+  log?: SecurityLog,
 ): RequestHandler {
   const isPublic = (method: string, path: string) =>
     publicRoutes.some((route) => route.method === method && route.path === path);
@@ -30,6 +33,11 @@ export function createAuthentication(
     const token = BEARER.exec(req.headers.authorization ?? '')?.[1];
     const subject = token ? await tokens.verifyAccessToken(token) : null;
     if (!subject) {
+      log?.record({
+        type: 'access_denied',
+        ip: req.ip ?? null,
+        detail: `${req.method} ${req.path}`,
+      });
       next(new DomainError('UNAUTHORIZED', 'Authentication is required'));
       return;
     }

@@ -167,3 +167,25 @@ describe('authentication against PostgreSQL', () => {
     expect((await refresh(cookiePair(registered))).status).toBe(401);
   });
 });
+
+// RNF-04: el límite de intentos se cuenta en la base de datos, no en memoria.
+describe('login attempt limit against PostgreSQL', () => {
+  it('blocks an email after 5 failed logins and stores only hashes', async () => {
+    const email = `limit-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.test`;
+    await request(app)
+      .post('/api/v1/auth/register')
+      .send({ name: 'Lucía Ferrer', email, password: 'correct horse battery' });
+    for (let i = 0; i < 5; i += 1) {
+      await request(app).post('/api/v1/auth/login').send({ email, password: 'wrong password' });
+    }
+
+    const blocked = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email, password: 'correct horse battery' });
+
+    expect(blocked.status).toBe(429);
+    const stored = await prisma.authAttempt.findMany({ where: { scope: 'login' } });
+    expect(JSON.stringify(stored)).not.toContain(email);
+    await prisma.user.deleteMany({ where: { email } });
+  });
+});
