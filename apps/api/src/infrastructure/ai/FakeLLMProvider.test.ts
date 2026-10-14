@@ -1,6 +1,11 @@
 import { finalModelResponseSchema, firstModelResponseSchema } from '@devpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { buildRequest } from '../../application/services/GenerationPrompt.js';
+import {
+  buildTranslationRequest,
+  structureProblems,
+} from '../../application/services/TranslationPrompt.js';
+import { sampleSpecification } from '../../test-support/llm.js';
 import { portal } from '../../test-support/projectFixture.js';
 import { FakeLLMProvider } from './FakeLLMProvider.js';
 
@@ -39,5 +44,15 @@ describe('FakeLLMProvider', () => {
     const result = await llm.generate(request('Exportar pedidos a CSV', 'specification'));
 
     expect(finalModelResponseSchema.safeParse(JSON.parse(result.text)).success).toBe(true);
+  });
+
+  it('marks a translation with the language and keeps the structure', async () => {
+    const result = await llm.generate(
+      buildTranslationRequest(sampleSpecification, 'en', { timeoutMs: 1000 }),
+    );
+    const { specification } = finalModelResponseSchema.parse(JSON.parse(result.text));
+
+    expect(specification.title).toBe(`[EN] ${sampleSpecification.title}`);
+    expect(structureProblems(sampleSpecification, specification)).toEqual([]);
   });
 });

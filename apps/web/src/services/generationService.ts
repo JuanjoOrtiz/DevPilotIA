@@ -1,12 +1,15 @@
 import {
   generationResponseSchema,
+  translationResponseSchema,
   type AnswerClarificationRequest,
   type CreateGenerationRequest,
   type GenerationDetail,
   type SpecLanguage,
+  type Specification,
 } from '@devpilot/shared';
 import i18n from '../i18n';
-import { apiRequest } from './apiClient';
+import { apiDownload, apiRequest } from './apiClient';
+import { saveFile } from './download';
 
 /** La especificación se escribe en el idioma que tiene la interfaz al pedirla. */
 function currentLanguage(): SpecLanguage {
@@ -55,4 +58,33 @@ export async function answerClarification(
     },
   );
   return generation;
+}
+
+/**
+ * RF-EXP-01: descarga la especificación vigente en Markdown. Los títulos del fichero van
+ * en el idioma de la interfaz.
+ */
+export async function exportGeneration(generationId: string): Promise<void> {
+  const query = new URLSearchParams({ format: 'md', language: currentLanguage() });
+  const file = await apiDownload(
+    `/generations/${encodeURIComponent(generationId)}/export?${query.toString()}`,
+    'specification.md',
+  );
+  saveFile(file.content, file.fileName);
+}
+
+/**
+ * La especificación en otro idioma. La API la traduce con el modelo la primera vez y la
+ * guarda, así que las siguientes peticiones responden al momento.
+ */
+export async function getTranslation(
+  generationId: string,
+  language: SpecLanguage,
+  signal?: AbortSignal,
+): Promise<Specification> {
+  const { translation } = await apiRequest(
+    `/generations/${encodeURIComponent(generationId)}/translation?language=${language}`,
+    { schema: translationResponseSchema, ...(signal ? { signal } : {}) },
+  );
+  return translation.specification;
 }

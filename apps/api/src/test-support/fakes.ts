@@ -4,12 +4,14 @@ import type {
   ClarificationAnswer,
   ClarifyingQuestion,
   ErrorCode,
+  SpecLanguage,
   Specification,
 } from '@devpilot/shared';
 import type {
   Generation,
   GenerationSummary,
   GenerationUsage,
+  SpecTranslation,
 } from '../domain/entities/Generation.js';
 import type { Project, ProjectOverview } from '../domain/entities/Project.js';
 import type { RefreshToken } from '../domain/entities/RefreshToken.js';
@@ -23,6 +25,10 @@ import type {
   TokenService,
   TokenSubject,
 } from '../domain/providers/TokenService.js';
+import type {
+  DashboardRepository,
+  DashboardTotalsData,
+} from '../domain/repositories/DashboardRepository.js';
 import type {
   GenerationPage,
   GenerationRepository,
@@ -198,6 +204,7 @@ export class InMemoryGenerationRepository implements GenerationRepository {
     generationId: string,
     answers: ClarificationAnswer[],
     at: Date,
+    language: SpecLanguage,
   ): Promise<boolean> {
     const generation = this.owned(userId, generationId);
     if (generation?.status !== 'needs_clarification') return Promise.resolve(false);
@@ -205,8 +212,25 @@ export class InMemoryGenerationRepository implements GenerationRepository {
       status: 'generating',
       clarificationAnswers: structuredClone(answers),
       answeredAt: at,
+      language,
     });
     return Promise.resolve(true);
+  }
+
+  saveTranslation(
+    userId: string,
+    generationId: string,
+    language: SpecLanguage,
+    translation: SpecTranslation,
+  ): Promise<void> {
+    const generation = this.owned(userId, generationId);
+    if (generation) {
+      generation.translations = {
+        ...generation.translations,
+        [language]: structuredClone(translation),
+      };
+    }
+    return Promise.resolve();
   }
 
   complete(
@@ -254,8 +278,11 @@ export class InMemoryGenerationRepository implements GenerationRepository {
   add(
     project: Pick<Project, 'id' | 'userId'>,
     overrides: Partial<Generation> = {},
+    usage: Partial<GenerationUsage> = {},
   ): GenerationSummary {
-    return summaryOf(this.store(project, overrides));
+    const stored = this.store(project, overrides);
+    stored.usage = { ...stored.usage, ...usage };
+    return summaryOf(stored);
   }
 
   /** Lo que se ha acumulado de una generación: modelo, intentos y tokens. */
@@ -295,6 +322,8 @@ export class InMemoryGenerationRepository implements GenerationRepository {
       clarificationAnswers: null,
       aiSpec: null,
       editedSpec: null,
+      language: 'es',
+      translations: {},
       editedAt: null,
       answeredAt: null,
       completedAt: null,
@@ -478,5 +507,51 @@ export class FakeTokenService implements TokenService {
     if (!subject || !token.startsWith(`${kind}-`)) return null;
     if (subject.expiresAt <= this.clock.now()) return null;
     return { userId: subject.userId };
+  }
+}
+
+/** Los agregados del dashboard calculados sobre los dobles de proyectos y generaciones. */
+export class InMemoryDashboardRepository implements DashboardRepository {
+  private readonly projects: InMemoryProjectRepository;
+  private readonly generations: InMemoryGenerationRepository;
+
+  constructor(projects: InMemoryProjectRepository, generations: InMemoryGenerationRepository) {
+    this.projects = projects;
+    this.generations = generations;
+  }
+
+  totalsForUser(userId: string): Promise<DashboardTotalsData> {
+    const mine = this.generations.generations.filter((g) => g.userId === userId);
+    const completed = mine.filter((g) => g.status === 'completed');
+    const timed = completed.filter((g) => !g.isSample && g.usage.durationMs > 0);
+    const completedByComplexity: DashboardTotalsData['completedByComplexity'] = {};
+    for (const generation of completed) {
+      if (generation.complexity) {
+        completedByComplexity[generation.complexity] =
+          (completedByComplexity[generation.complexity] ?? 0) + 1;
+      }
+    }
+
+    return Promise.resolve({
+      projects: this.projects.projects.filter((project) => project.userId === userId).length,
+      generations: mine.length,
+      features: mine.filter((g) => g.type === 'feature').length,
+      bugs: mine.filter((g) => g.type === 'bug').length,
+      completed: completed.length,
+      failed: mine.filter((g) => g.status === 'failed').length,
+      averageDurationMs:
+        timed.length > 0
+          ? timed.reduce((sum, g) => sum + g.usage.durationMs, 0) / timed.length
+          : null,
+      completedByComplexity,
+    });
+  }
+
+  creationDatesForUser(userId: string, since: Date): Promise<Date[]> {
+    return Promise.resolve(
+      this.generations.generations
+        .filter((g) => g.userId === userId && g.createdAt >= since)
+        .map((g) => g.createdAt),
+    );
   }
 }

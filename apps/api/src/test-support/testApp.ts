@@ -1,7 +1,9 @@
 import type { Express } from 'express';
 import { CheckHealth } from '../application/use-cases/CheckHealth.js';
+import { GetDashboardSummary } from '../application/use-cases/GetDashboardSummary.js';
 import { createApp } from '../presentation/http/app.js';
 import { createAuthFixture } from './authFixture.js';
+import { InMemoryDashboardRepository } from './fakes.js';
 import { createGenerationFixture } from './generationFixture.js';
 import { ScriptedLLMProvider } from './llm.js';
 import { createProjectFixture } from './projectFixture.js';
@@ -31,6 +33,12 @@ export function createTestApp(options: TestAppOptions = {}) {
     auth,
     projects,
     generations,
+    dashboard: {
+      getDashboardSummary: new GetDashboardSummary(
+        new InMemoryDashboardRepository(projects.repository, projects.generations),
+        auth.clock,
+      ),
+    },
     tokens: auth.tokens,
     cookies: { secure: options.secureCookies ?? false },
   });

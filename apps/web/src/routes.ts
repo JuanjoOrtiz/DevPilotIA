@@ -3,6 +3,7 @@ export const ROUTES = {
   home: '/',
   login: '/login',
   register: '/register',
+  dashboard: '/dashboard',
   projects: '/projects',
   newProject: '/projects/new',
   project: (projectId: string) => `/projects/${projectId}`,

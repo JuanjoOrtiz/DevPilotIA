@@ -4,6 +4,10 @@ import type { CheckHealth } from '../../application/use-cases/CheckHealth.js';
 import type { TokenService } from '../../domain/providers/TokenService.js';
 import { createAuthController, type AuthUseCases } from '../controllers/authController.js';
 import {
+  createDashboardController,
+  type DashboardUseCases,
+} from '../controllers/dashboardController.js';
+import {
   createGenerationController,
   type GenerationUseCases,
 } from '../controllers/generationController.js';
@@ -19,6 +23,7 @@ export interface AppDependencies {
   auth: AuthUseCases;
   projects: ProjectUseCases;
   generations: GenerationUseCases;
+  dashboard: DashboardUseCases;
   tokens: TokenService;
   cookies: CookieSettings;
 }
@@ -42,6 +47,7 @@ export function createApp(dependencies: AppDependencies): Express {
   const auth = createAuthController(dependencies.auth, dependencies.cookies);
   const projects = createProjectController(dependencies.projects);
   const generations = createGenerationController(dependencies.generations);
+  const dashboard = createDashboardController(dependencies.dashboard);
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -71,6 +77,10 @@ export function createApp(dependencies: AppDependencies): Express {
   v1.post('/projects/:id/generations', generations.create);
   v1.get('/generations/:id', generations.get);
   v1.post('/generations/:id/answers', generations.answer);
+  v1.get('/generations/:id/export', generations.export);
+  v1.get('/generations/:id/translation', generations.translation);
+
+  v1.get('/dashboard/summary', dashboard.summary);
 
   app.use(API_PREFIX, v1);
 

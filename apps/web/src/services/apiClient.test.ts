@@ -2,6 +2,7 @@ import { healthResponseSchema, type SessionResponse } from '@devpilot/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
+  apiDownload,
   apiRequest,
   onSessionExpired,
   renewSession,
@@ -140,6 +141,48 @@ describe('apiRequest', () => {
       code: 'INVALID_CREDENTIALS',
     });
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('apiDownload', () => {
+  const markdown = (headers: Record<string, string>) =>
+    new Response('# Título\n', { status: 200, headers });
+
+  it('returns the file with the name the API proposes', async () => {
+    setAccessToken('token');
+    fetchMock.mockResolvedValueOnce(
+      markdown({
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="titulo.md"',
+      }),
+    );
+
+    const file = await apiDownload('/generations/1/export', 'specification.md');
+
+    expect(file.fileName).toBe('titulo.md');
+    expect(await file.content.text()).toBe('# Título\n');
+    expect(authorization(0)).toBe('Bearer token');
+  });
+
+  it('falls back to the given name without Content-Disposition', async () => {
+    fetchMock.mockResolvedValueOnce(markdown({ 'Content-Type': 'text/markdown' }));
+
+    const file = await apiDownload('/generations/1/export', 'specification.md');
+
+    expect(file.fileName).toBe('specification.md');
+  });
+
+  it('turns an API error into an ApiError', async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(409, {
+        error: { code: 'SPECIFICATION_NOT_READY', message: 'Not ready', details: {} },
+      }),
+    );
+
+    await expect(apiDownload('/generations/1/export', 'x.md')).rejects.toMatchObject({
+      code: 'SPECIFICATION_NOT_READY',
+      status: 409,
+    });
   });
 });
 

@@ -90,6 +90,8 @@ export const generationDetailSchema = z.object({
   clarificationAnswers: z.array(clarificationAnswerSchema).nullable(),
   /** La versión vigente: la editada si existe y, si no, la de la IA. */
   specification: specificationSchema.nullable(),
+  /** Idioma en que está escrita la especificación: el de la interfaz al generarla. */
+  language: specLanguageSchema,
   title: z.string().nullable(),
   complexity: complexitySchema.nullable(),
   isEdited: z.boolean(),
@@ -108,3 +110,13 @@ export const quotaErrorDetailsSchema = z.object({
   resetsAt: z.iso.datetime(),
 });
 export type QuotaErrorDetails = z.infer<typeof quotaErrorDetailsSchema>;
+
+/** Parámetros de `GET /generations/:id/translation`. */
+export const translationQuerySchema = z.object({ language: specLanguageSchema });
+export type TranslationQuery = z.infer<typeof translationQuerySchema>;
+
+/** La especificación vigente en otro idioma. Se traduce una vez y se guarda. */
+export const translationResponseSchema = z.object({
+  translation: z.object({ language: specLanguageSchema, specification: specificationSchema }),
+});
+export type TranslationResponse = z.infer<typeof translationResponseSchema>;

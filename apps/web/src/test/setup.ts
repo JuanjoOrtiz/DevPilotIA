@@ -8,3 +8,13 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
     this.removeAttribute('open');
   };
 }
+
+// jsdom no mide nada ni tiene ResizeObserver. Las gráficas de Recharts lo usan para
+// ajustarse a su contenedor; en los tests se pintan con su tamaño inicial.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

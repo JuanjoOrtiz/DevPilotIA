@@ -16,7 +16,8 @@
     "test:integration": "prisma generate && vitest run --config vitest.integration.config.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma generate && tsx --env-file-if-exists=../../.env src/seed.ts"
   },
   "dependencies": {
     "@devpilot/shared": "^0.1.0",

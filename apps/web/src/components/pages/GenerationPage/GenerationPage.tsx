@@ -3,21 +3,28 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import {
   useAnswerClarification,
+  useExportGeneration,
   useGeneration,
   useRetryGeneration,
+  useSpecificationTranslation,
 } from '../../../features/ai-analysis/generationQueries';
 import { generationFailureMessage } from '../../../features/ai-analysis/quotaMessage';
 import { toSubmitFailure } from '../../../features/forms/submitFailure';
 import { useProject } from '../../../features/projects/projectQueries';
 import { useDateFormat } from '../../../hooks/useDateFormat';
+import { useSpecLanguage } from '../../../hooks/useSpecLanguage';
 import { errorMessageKey, isNotFound, queryErrorKey } from '../../../i18n/messages';
 import { ROUTES } from '../../../routes';
+import { Alert } from '../../atoms/Alert/Alert';
+import { Button } from '../../atoms/Button/Button';
+import { Icon } from '../../atoms/Icon/Icon';
 import { LinkButton } from '../../atoms/LinkButton/LinkButton';
 import { Breadcrumbs } from '../../molecules/Breadcrumbs/Breadcrumbs';
 import { EmptyState } from '../../molecules/EmptyState/EmptyState';
 import { ErrorPanel } from '../../molecules/ErrorPanel/ErrorPanel';
 import { LoadingPanel } from '../../molecules/LoadingPanel/LoadingPanel';
 import { PageHeader } from '../../molecules/PageHeader/PageHeader';
+import { TranslationNotice } from '../../molecules/TranslationNotice/TranslationNotice';
 import { ClarificationForm } from '../../organisms/ClarificationForm/ClarificationForm';
 import { GenerationFailure } from '../../organisms/GenerationFailure/GenerationFailure';
 import { GenerationProgress } from '../../organisms/GenerationProgress/GenerationProgress';
@@ -67,8 +74,35 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
   const project = useProject(generation.projectId);
   const answer = useAnswerClarification(generation.id);
   const retry = useRetryGeneration();
+  const exportFile = useExportGeneration(generation.id);
+  const language = useSpecLanguage();
+  const translation = useSpecificationTranslation(generation, language);
 
-  const title = generation.title ?? t(`history.status.${generation.status}`);
+  // Mientras llega la traducción, o si falla, se ve la especificación original.
+  const specification = translation.data ?? generation.specification;
+  const title =
+    specification?.title ?? generation.title ?? t(`history.status.${generation.status}`);
+
+  function translationNotice() {
+    if (translation.isFetching) {
+      return (
+        <TranslationNotice state="translating" message={t('generation.translation.translating')} />
+      );
+    }
+    if (translation.isError) {
+      return (
+        <TranslationNotice
+          state="failed"
+          message={t('generation.translation.failed', {
+            reason: t(queryErrorKey(translation.error)),
+          })}
+          retryLabel={t('common.retry')}
+          onRetry={() => void translation.refetch()}
+        />
+      );
+    }
+    return null;
+  }
   const projectName = project.data?.name;
 
   function main() {
@@ -104,8 +138,11 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
           />
         );
       case 'completed':
-        return generation.specification ? (
-          <SpecificationView specification={generation.specification} type={generation.type} />
+        return specification ? (
+          <>
+            {translationNotice()}
+            <SpecificationView specification={specification} type={generation.type} />
+          </>
         ) : null;
     }
   }
@@ -114,6 +151,21 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
     <>
       <PageHeader
         title={title}
+        actions={
+          generation.status === 'completed' &&
+          generation.specification && (
+            <Button
+              variant="secondary"
+              disabled={exportFile.isPending}
+              onClick={() => exportFile.mutate()}
+            >
+              <Icon name="download" />
+              {exportFile.isPending
+                ? t('generation.export.exporting')
+                : t('generation.export.markdown')}
+            </Button>
+          )
+        }
         breadcrumbs={
           <Breadcrumbs
             label={t('common.breadcrumbs')}
@@ -127,6 +179,11 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
           />
         }
       />
+      {exportFile.isError && (
+        <Alert>
+          {t('generation.export.failed', { reason: t(queryErrorKey(exportFile.error)) })}
+        </Alert>
+      )}
       <FormPageLayout aside={<GenerationRequest generation={generation} />}>
         {main()}
       </FormPageLayout>
