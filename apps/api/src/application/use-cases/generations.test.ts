@@ -179,6 +179,8 @@ describe('clarifying questions', () => {
         { questionId: 'q2', answer: '' },
       ],
       specification: sampleSpecification,
+      // La especificación queda en el idioma de la respuesta, no en el de la petición.
+      language: 'en',
     });
   });
 

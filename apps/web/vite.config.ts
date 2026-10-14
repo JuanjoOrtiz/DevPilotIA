@@ -21,7 +21,17 @@ export default defineConfig({
       output: {
         // Las librerías cambian mucho menos que la aplicación: en su propio fichero, el
         // navegador las conserva en caché entre un despliegue y el siguiente.
-        codeSplitting: { groups: [{ name: 'vendor', test: /node_modules/ }] },
+        // Las gráficas van aparte: solo las descarga quien abre el dashboard.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'charts',
+              test: /node_modules[\\/](recharts|victory-vendor|d3-[^\\/]+|@reduxjs|react-redux|redux|immer|reselect|es-toolkit|decimal\.js-light|eventemitter3)[\\/]/,
+              priority: 1,
+            },
+            { name: 'vendor', test: /node_modules/ },
+          ],
+        },
       },
     },
   },

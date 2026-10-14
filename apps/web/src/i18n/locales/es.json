@@ -9,6 +9,7 @@
   },
   "nav": {
     "main": "Principal",
+    "dashboard": "Dashboard",
     "projects": "Proyectos"
   },
   "common": {
@@ -19,6 +20,47 @@
     "required": "(obligatorio)",
     "counter": "{{current}} / {{max}}",
     "breadcrumbs": "Ruta"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "period": "Del {{from}} al {{to}}",
+    "loading": "Cargando el dashboard…",
+    "empty": {
+      "title": "Todavía no hay generaciones",
+      "description": "Crea un proyecto y genera tu primera especificación: aquí verás tu actividad.",
+      "action": "Ir a proyectos"
+    },
+    "stats": {
+      "label": "Indicadores",
+      "projects": "Proyectos",
+      "projectsDetail": "en total",
+      "generations": "Generaciones",
+      "features_one": "{{count}} funcionalidad",
+      "features_other": "{{count}} funcionalidades",
+      "bugs_one": "{{count}} bug",
+      "bugs_other": "{{count}} bugs",
+      "completed": "Completadas",
+      "completedDetail_one": "{{completed}} de {{total}} · {{count}} fallida",
+      "completedDetail_other": "{{completed}} de {{total}} · {{count}} fallidas",
+      "averageTime": "Tiempo medio de generación",
+      "averageTimeDetail": "sobre las completadas",
+      "noValue": "—"
+    },
+    "activity": {
+      "title": "Generaciones por día",
+      "description_one": "{{count}} generación en los últimos 30 días",
+      "description_other": "{{count}} generaciones en los últimos 30 días",
+      "chart": "Gráfica de barras: generaciones por día del {{from}} al {{to}}. Máximo de {{max}} el {{day}}.",
+      "chartEmpty": "Gráfica de barras: ninguna generación del {{from}} al {{to}}.",
+      "tooltip_one": "{{count}} generación",
+      "tooltip_other": "{{count}} generaciones"
+    },
+    "complexity": {
+      "title": "Complejidad estimada",
+      "description_one": "{{count}} generación completada",
+      "description_other": "{{count}} generaciones completadas",
+      "chart": "Gráfica de barras por complejidad: {{values}}."
+    }
   },
   "auth": {
     "login": {
@@ -190,6 +232,15 @@
   "generation": {
     "newTitle": "Nueva generación",
     "loading": "Cargando generación…",
+    "export": {
+      "markdown": "Exportar a Markdown",
+      "exporting": "Exportando…",
+      "failed": "No se pudo exportar: {{reason}}"
+    },
+    "translation": {
+      "translating": "Traduciendo la especificación al español…",
+      "failed": "No se pudo traducir la especificación: {{reason}} Se muestra en el idioma en que se generó."
+    },
     "form": {
       "type": "Tipo",
       "inputText": "Descripción",
@@ -334,6 +385,7 @@
     "EMAIL_ALREADY_REGISTERED": "Ya existe una cuenta con este email.",
     "NOT_FOUND": "No hemos encontrado lo que buscas.",
     "GENERATION_NOT_AWAITING_ANSWERS": "Esta generación ya no espera respuestas. Recarga la página para ver su estado.",
+    "SPECIFICATION_NOT_READY": "La especificación todavía no está lista para exportar.",
     "USER_QUOTA_EXCEEDED": "Has alcanzado tu límite de generaciones de hoy.",
     "GLOBAL_QUOTA_EXCEEDED": "El servicio ha alcanzado su límite de generaciones de hoy.",
     "LLM_RATE_LIMITED": "El modelo está recibiendo demasiadas peticiones. Inténtalo de nuevo en unos minutos.",

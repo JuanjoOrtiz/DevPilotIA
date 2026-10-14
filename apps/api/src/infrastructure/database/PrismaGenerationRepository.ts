@@ -6,10 +6,17 @@ import {
   type ClarificationAnswer,
   type ClarifyingQuestion,
   type ErrorCode,
+  type SpecLanguage,
   type Specification,
+  specLanguageSchema,
 } from '@devpilot/shared';
 import { z } from 'zod';
-import type { Generation, GenerationUsage } from '../../domain/entities/Generation.js';
+import type {
+  Generation,
+  GenerationUsage,
+  SpecTranslation,
+  SpecTranslations,
+} from '../../domain/entities/Generation.js';
 import type {
   GenerationPage,
   GenerationRepository,
@@ -35,6 +42,10 @@ const SUMMARY = {
 
 const questionsSchema = z.array(clarifyingQuestionSchema);
 const answersSchema = z.array(clarificationAnswerSchema);
+const translationsSchema = z.partialRecord(
+  specLanguageSchema,
+  z.object({ source: z.string(), specification: specificationSchema }),
+);
 
 /**
  * Lee un JSON de la base de datos con su esquema. Lo guardado ya se validó al escribirlo;
@@ -62,6 +73,8 @@ function toGeneration(row: GenerationRow): Generation {
     clarificationAnswers: readJson(answersSchema, row.clarificationAnswers),
     aiSpec: readJson(specificationSchema, row.aiSpec),
     editedSpec: readJson(specificationSchema, row.editedSpec),
+    language: specLanguageSchema.catch('es').parse(row.language),
+    translations: (readJson(translationsSchema, row.translations) ?? {}) as SpecTranslations,
     editedAt: row.editedAt,
     answeredAt: row.answeredAt,
     completedAt: row.completedAt,
@@ -142,13 +155,35 @@ export class PrismaGenerationRepository implements GenerationRepository {
     generationId: string,
     answers: ClarificationAnswer[],
     at: Date,
+    language: SpecLanguage,
   ): Promise<boolean> {
     // El estado va en la condición del UPDATE: de dos envíos a la vez, solo uno cambia la fila.
     const { count } = await this.prisma.generation.updateMany({
       where: { id: generationId, project: { userId }, status: 'needs_clarification' },
-      data: { status: 'generating', clarificationAnswers: answers, answeredAt: at },
+      data: { status: 'generating', clarificationAnswers: answers, answeredAt: at, language },
     });
     return count === 1;
+  }
+
+  async saveTranslation(
+    userId: string,
+    generationId: string,
+    language: SpecLanguage,
+    translation: SpecTranslation,
+  ): Promise<void> {
+    // Lectura y escritura en una transacción: dos traducciones a la vez no se pisan.
+    await this.prisma.$transaction(async (tx) => {
+      const row = await tx.generation.findFirst({
+        where: { id: generationId, project: { userId } },
+        select: { translations: true },
+      });
+      if (!row) return;
+      const current = readJson(translationsSchema, row.translations) ?? {};
+      await tx.generation.update({
+        where: { id: generationId },
+        data: { translations: { ...current, [language]: translation } },
+      });
+    });
   }
 
   async complete(

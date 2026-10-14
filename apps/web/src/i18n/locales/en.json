@@ -9,6 +9,7 @@
   },
   "nav": {
     "main": "Main",
+    "dashboard": "Dashboard",
     "projects": "Projects"
   },
   "common": {
@@ -19,6 +20,47 @@
     "required": "(required)",
     "counter": "{{current}} / {{max}}",
     "breadcrumbs": "Breadcrumb"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "period": "From {{from}} to {{to}}",
+    "loading": "Loading the dashboard…",
+    "empty": {
+      "title": "No generations yet",
+      "description": "Create a project and generate your first specification: your activity will show up here.",
+      "action": "Go to projects"
+    },
+    "stats": {
+      "label": "Indicators",
+      "projects": "Projects",
+      "projectsDetail": "in total",
+      "generations": "Generations",
+      "features_one": "{{count}} feature",
+      "features_other": "{{count}} features",
+      "bugs_one": "{{count}} bug",
+      "bugs_other": "{{count}} bugs",
+      "completed": "Completed",
+      "completedDetail_one": "{{completed}} of {{total}} · {{count}} failed",
+      "completedDetail_other": "{{completed}} of {{total}} · {{count}} failed",
+      "averageTime": "Average generation time",
+      "averageTimeDetail": "over completed ones",
+      "noValue": "—"
+    },
+    "activity": {
+      "title": "Generations per day",
+      "description_one": "{{count}} generation in the last 30 days",
+      "description_other": "{{count}} generations in the last 30 days",
+      "chart": "Bar chart: generations per day from {{from}} to {{to}}. Peak of {{max}} on {{day}}.",
+      "chartEmpty": "Bar chart: no generations from {{from}} to {{to}}.",
+      "tooltip_one": "{{count}} generation",
+      "tooltip_other": "{{count}} generations"
+    },
+    "complexity": {
+      "title": "Estimated complexity",
+      "description_one": "{{count}} completed generation",
+      "description_other": "{{count}} completed generations",
+      "chart": "Bar chart by complexity: {{values}}."
+    }
   },
   "auth": {
     "login": {
@@ -190,6 +232,15 @@
   "generation": {
     "newTitle": "New generation",
     "loading": "Loading generation…",
+    "export": {
+      "markdown": "Export to Markdown",
+      "exporting": "Exporting…",
+      "failed": "Could not export: {{reason}}"
+    },
+    "translation": {
+      "translating": "Translating the specification into English…",
+      "failed": "The specification could not be translated: {{reason}} It is shown in the language it was generated in."
+    },
     "form": {
       "type": "Type",
       "inputText": "Description",
@@ -334,6 +385,7 @@
     "EMAIL_ALREADY_REGISTERED": "An account with this email already exists.",
     "NOT_FOUND": "We could not find what you are looking for.",
     "GENERATION_NOT_AWAITING_ANSWERS": "This generation is no longer waiting for answers. Reload the page to see its status.",
+    "SPECIFICATION_NOT_READY": "The specification is not ready to export yet.",
     "USER_QUOTA_EXCEEDED": "You have reached your generation limit for today.",
     "GLOBAL_QUOTA_EXCEEDED": "The service has reached its generation limit for today.",
     "LLM_RATE_LIMITED": "The model is receiving too many requests. Try again in a few minutes.",

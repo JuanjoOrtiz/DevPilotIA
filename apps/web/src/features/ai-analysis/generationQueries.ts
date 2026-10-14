@@ -2,6 +2,7 @@ import type {
   AnswerClarificationRequest,
   CreateGenerationRequest,
   GenerationDetail,
+  SpecLanguage,
 } from '@devpilot/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as generationService from '../../services/generationService';
@@ -12,7 +13,29 @@ export const POLL_INTERVAL_MS = 2_000;
 
 export const generationKeys = {
   detail: (generationId: string) => ['generations', 'detail', generationId] as const,
+  translation: (generationId: string, language: SpecLanguage, edited: boolean) =>
+    ['generations', 'translation', generationId, language, edited] as const,
 };
+
+/**
+ * La especificación en el idioma de la interfaz, si no es el suyo. Solo se pide con la
+ * especificación ya generada; una vez traducida no cambia, así que no se vuelve a pedir.
+ * Sin reintentos automáticos: cada intento es una llamada al modelo.
+ */
+export function useSpecificationTranslation(generation: GenerationDetail, language: SpecLanguage) {
+  const needed =
+    generation.status === 'completed' &&
+    generation.specification !== null &&
+    generation.language !== language;
+
+  return useQuery({
+    queryKey: generationKeys.translation(generation.id, language, generation.isEdited),
+    queryFn: ({ signal }) => generationService.getTranslation(generation.id, language, signal),
+    enabled: needed,
+    staleTime: Infinity,
+    retry: false,
+  });
+}
 
 /**
  * Una generación. Mientras está en `generating` se vuelve a pedir cada 2 segundos; en
@@ -72,5 +95,12 @@ export function useAnswerClarification(generationId: string) {
     // La respuesta ya trae la generación en `generating`: la consulta empieza a sondear.
     onSuccess: (generation) =>
       queryClient.setQueryData(generationKeys.detail(generationId), generation),
+  });
+}
+
+/** RF-EXP-01: descarga la especificación vigente en Markdown. */
+export function useExportGeneration(generationId: string) {
+  return useMutation({
+    mutationFn: () => generationService.exportGeneration(generationId),
   });
 }

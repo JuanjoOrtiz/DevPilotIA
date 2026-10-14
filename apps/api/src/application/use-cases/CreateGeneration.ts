@@ -68,11 +68,12 @@ export class CreateGeneration {
       });
     }
 
-    // El idioma no se guarda: solo decide cómo escribe el modelo en esta generación.
+    // El idioma se guarda: es el de la especificación y decide cuándo hay que traducirla.
     const generation = await generations.create(projectId, {
       type: input.type,
       inputText: input.inputText,
       additionalContext: input.additionalContext,
+      language: input.language,
     });
 
     background.run(() =>

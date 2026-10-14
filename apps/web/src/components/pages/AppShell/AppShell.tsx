@@ -29,6 +29,9 @@ export function AppShell() {
           onSignOut={() => void logout()}
           languageSwitch={<LanguageSwitch {...language} />}
         >
+          <SidebarLink to={ROUTES.dashboard} icon={<Icon name="grid" />}>
+            {t('nav.dashboard')}
+          </SidebarLink>
           <SidebarLink to={ROUTES.projects} icon={<Icon name="folder" />}>
             {t('nav.projects')}
           </SidebarLink>

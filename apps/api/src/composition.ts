@@ -9,7 +9,9 @@ import { CheckHealth } from './application/use-cases/CheckHealth.js';
 import { CreateGeneration } from './application/use-cases/CreateGeneration.js';
 import { CreateProject } from './application/use-cases/CreateProject.js';
 import { DeleteProject } from './application/use-cases/DeleteProject.js';
+import { ExportGeneration } from './application/use-cases/ExportGeneration.js';
 import { GetCurrentUser } from './application/use-cases/GetCurrentUser.js';
+import { GetDashboardSummary } from './application/use-cases/GetDashboardSummary.js';
 import { GetGeneration } from './application/use-cases/GetGeneration.js';
 import { GetProject } from './application/use-cases/GetProject.js';
 import { ListProjectGenerations } from './application/use-cases/ListProjectGenerations.js';
@@ -18,6 +20,7 @@ import { LoginUser } from './application/use-cases/LoginUser.js';
 import { LogoutUser } from './application/use-cases/LogoutUser.js';
 import { RefreshSession } from './application/use-cases/RefreshSession.js';
 import { RegisterUser } from './application/use-cases/RegisterUser.js';
+import { TranslateSpecification } from './application/use-cases/TranslateSpecification.js';
 import { UpdateProject } from './application/use-cases/UpdateProject.js';
 import type { BackgroundTasks } from './domain/providers/BackgroundTasks.js';
 import type { LLMProvider } from './domain/providers/LLMProvider.js';
@@ -25,6 +28,7 @@ import type { PasswordHasher } from './domain/providers/PasswordHasher.js';
 import { FakeLLMProvider } from './infrastructure/ai/FakeLLMProvider.js';
 import { GeminiProvider } from './infrastructure/ai/GeminiProvider.js';
 import type { Env } from './infrastructure/config/env.js';
+import { PrismaDashboardRepository } from './infrastructure/database/PrismaDashboardRepository.js';
 import { PrismaDatabaseHealthProbe } from './infrastructure/database/PrismaDatabaseHealthProbe.js';
 import { PrismaGenerationRepository } from './infrastructure/database/PrismaGenerationRepository.js';
 import { PrismaProjectRepository } from './infrastructure/database/PrismaProjectRepository.js';
@@ -83,8 +87,9 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
   );
   const sessions = new SessionIssuer(tokens, refreshTokens);
   const background = options.background ?? new WaitUntilBackgroundTasks();
+  const llm = options.llm ?? createLLMProvider(env);
   const runner = new GenerationRunner({
-    llm: options.llm ?? createLLMProvider(env),
+    llm,
     generations,
     clock,
     timeouts: { attemptMs: env.LLM_ATTEMPT_TIMEOUT_MS, totalMs: env.GENERATION_TIMEOUT_MS },
@@ -129,6 +134,15 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
         background,
         clock,
       }),
+      exportGeneration: new ExportGeneration(generations),
+      translateSpecification: new TranslateSpecification({
+        generations,
+        llm,
+        attemptMs: env.LLM_ATTEMPT_TIMEOUT_MS,
+      }),
+    },
+    dashboard: {
+      getDashboardSummary: new GetDashboardSummary(new PrismaDashboardRepository(prisma), clock),
     },
     tokens,
     // En local se trabaja por HTTP y una cookie Secure no llegaría a guardarse.

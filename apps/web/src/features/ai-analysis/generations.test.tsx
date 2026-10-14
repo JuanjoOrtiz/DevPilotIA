@@ -209,6 +209,84 @@ describe('a generation', () => {
   });
 });
 
+// La especificación sigue el idioma de la interfaz.
+describe('translating a generation', () => {
+  const english = { ...specification, title: 'Export the order history to CSV' };
+
+  it('translates the specification when the interface switches language', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.getTranslation.mockResolvedValue(english);
+    const { user } = renderApp(PAGE_PATH);
+    await screen.findByRole('heading', { level: 1, name: specification.title });
+    expect(api.getTranslation).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'EN' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: english.title })).toBeTruthy();
+    expect(api.getTranslation).toHaveBeenCalledWith(GENERATION.id, 'en', expect.anything());
+
+    await user.click(screen.getByRole('button', { name: 'ES' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: specification.title }),
+    ).toBeTruthy();
+    expect(api.getTranslation).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the original and offers to try again when the translation fails', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.getTranslation
+      .mockRejectedValueOnce(new ApiError('LLM_UNAVAILABLE', 503))
+      .mockResolvedValue(english);
+    const { user } = renderApp(PAGE_PATH);
+    await screen.findByRole('heading', { level: 1, name: specification.title });
+
+    await user.click(screen.getByRole('button', { name: 'EN' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('The specification could not be translated');
+    expect(screen.getByRole('heading', { level: 1, name: specification.title })).toBeTruthy();
+
+    await user.click(within(alert).getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('heading', { level: 1, name: english.title })).toBeTruthy();
+  });
+});
+
+// RF-EXP-01
+describe('exporting a generation', () => {
+  it('downloads the specification in Markdown', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.exportGeneration.mockResolvedValue(undefined);
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Exportar a Markdown' }));
+
+    expect(api.exportGeneration).toHaveBeenCalledWith(GENERATION.id);
+  });
+
+  it('says why the file could not be downloaded', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    api.exportGeneration.mockRejectedValue(new ApiError('NETWORK_ERROR'));
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Exportar a Markdown' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'No se pudo exportar: No se pudo contactar con el servidor. Comprueba tu conexión e inténtalo de nuevo.',
+    );
+  });
+
+  it('is not offered while there is no specification', async () => {
+    api.getGeneration.mockResolvedValue(
+      generationDetail({ status: 'failed', errorCode: 'LLM_TIMEOUT', specification: null }),
+    );
+    renderApp(PAGE_PATH);
+
+    await screen.findByRole('button', { name: 'Reintentar' });
+
+    expect(screen.queryByRole('button', { name: 'Exportar a Markdown' })).toBeNull();
+  });
+});
+
 // RF-HIS-03
 describe('the project history', () => {
   it('opens a generation from its title', async () => {

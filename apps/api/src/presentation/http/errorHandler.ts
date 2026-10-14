@@ -9,8 +9,15 @@ const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
   NOT_FOUND: 404,
   EMAIL_ALREADY_REGISTERED: 409,
   GENERATION_NOT_AWAITING_ANSWERS: 409,
+  SPECIFICATION_NOT_READY: 409,
   USER_QUOTA_EXCEEDED: 429,
   GLOBAL_QUOTA_EXCEEDED: 429,
+  // Fallos del modelo en una llamada que espera la respuesta, como una traducción.
+  LLM_RATE_LIMITED: 429,
+  LLM_CONTENT_BLOCKED: 422,
+  LLM_INVALID_RESPONSE: 502,
+  LLM_UNAVAILABLE: 503,
+  LLM_TIMEOUT: 504,
 };
 
 function body(code: ErrorCode, message: string, details: Record<string, unknown> = {}): ApiError {

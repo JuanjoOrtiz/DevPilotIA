@@ -1,9 +1,19 @@
-import { apiErrorSchema, generationResponseSchema, projectResponseSchema } from '@devpilot/shared';
+import {
+  apiErrorSchema,
+  generationResponseSchema,
+  projectResponseSchema,
+  translationResponseSchema,
+} from '@devpilot/shared';
 import type { Express } from 'express';
 import request, { type Response } from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { lucia } from '../../test-support/authFixture.js';
-import { questionsReply, ScriptedLLMProvider, specificationReply } from '../../test-support/llm.js';
+import {
+  questionsReply,
+  sampleSpecification,
+  ScriptedLLMProvider,
+  specificationReply,
+} from '../../test-support/llm.js';
 import { portal } from '../../test-support/projectFixture.js';
 import { createTestApp } from '../../test-support/testApp.js';
 
@@ -176,5 +186,118 @@ describe('POST /api/v1/generations/:id/answers', () => {
     const response = await session.post(`/api/v1/generations/${id}/answers`, { skip: false });
 
     expect(response.status).toBe(400);
+  });
+});
+
+// RF-EXP-01
+describe('GET /api/v1/generations/:id/export', () => {
+  async function completed() {
+    const context = await setUp(new ScriptedLLMProvider([specificationReply()]));
+    const created = await context.session.post(
+      `/api/v1/projects/${context.project.id}/generations`,
+      exportRequest,
+    );
+    await context.generations.background.settle();
+    return { ...context, id: generationOf(created).id };
+  }
+
+  it('downloads the specification as a Markdown file', async () => {
+    const { session, id } = await completed();
+
+    const response = await session.get(`/api/v1/generations/${id}/export?format=md&language=en`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toBe('text/markdown; charset=utf-8');
+    expect(response.headers['content-disposition']).toBe(
+      'attachment; filename="exportar-el-historial-de-pedidos-a-csv.md"',
+    );
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.text).toContain('## Technical description');
+  });
+
+  it('defaults to Markdown with Spanish headings', async () => {
+    const { session, id } = await completed();
+
+    const response = await session.get(`/api/v1/generations/${id}/export`);
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('## Descripción técnica');
+  });
+
+  it('answers 400 for a format it does not know', async () => {
+    const { session, id } = await completed();
+
+    const response = await session.get(`/api/v1/generations/${id}/export?format=pdf`);
+
+    expect(response.status).toBe(400);
+    expect(errorCode(response)).toBe('VALIDATION_ERROR');
+  });
+
+  it('answers 409 while the generation has no specification', async () => {
+    const { session, project, generations } = await setUp(
+      new ScriptedLLMProvider([questionsReply()]),
+    );
+    const created = await session.post(`/api/v1/projects/${project.id}/generations`, exportRequest);
+    await generations.background.settle();
+
+    const response = await session.get(`/api/v1/generations/${generationOf(created).id}/export`);
+
+    expect(response.status).toBe(409);
+    expect(errorCode(response)).toBe('SPECIFICATION_NOT_READY');
+  });
+
+  it("answers 404 for someone else's generation", async () => {
+    const { app, id } = await completed();
+    const other = await signIn(app, marcos);
+
+    const response = await other.get(`/api/v1/generations/${id}/export`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('answers 401 without a session', async () => {
+    const { app } = createTestApp();
+
+    const response = await request(app).get(`/api/v1/generations/${UNKNOWN_ID}/export`);
+
+    expect(response.status).toBe(401);
+  });
+});
+
+describe('GET /api/v1/generations/:id/translation', () => {
+  it('answers with the specification in the requested language', async () => {
+    const llm = new ScriptedLLMProvider([specificationReply()]);
+    const { session, project, generations } = await setUp(llm);
+    const created = await session.post(`/api/v1/projects/${project.id}/generations`, {
+      ...exportRequest,
+      language: 'es',
+    });
+    await generations.background.settle();
+    llm.reply(specificationReply({ ...sampleSpecification, title: 'Export orders to CSV' }));
+
+    const response = await session.get(
+      `/api/v1/generations/${generationOf(created).id}/translation?language=en`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(translationResponseSchema.parse(response.body).translation).toMatchObject({
+      language: 'en',
+      specification: { title: 'Export orders to CSV' },
+    });
+  });
+
+  it('answers 400 without a known language and 503 when the model is down', async () => {
+    const llm = new ScriptedLLMProvider([specificationReply()]);
+    const { session, project, generations } = await setUp(llm);
+    const created = await session.post(`/api/v1/projects/${project.id}/generations`, exportRequest);
+    await generations.background.settle();
+    const path = `/api/v1/generations/${generationOf(created).id}/translation`;
+
+    expect((await session.get(`${path}?language=fr`)).status).toBe(400);
+
+    llm.reply({ error: 'LLM_UNAVAILABLE' }, { error: 'LLM_UNAVAILABLE' });
+    const down = await session.get(`${path}?language=en`);
+    expect(down.status).toBe(503);
+    expect(errorCode(down)).toBe('LLM_UNAVAILABLE');
   });
 });

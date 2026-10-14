@@ -116,17 +116,10 @@ interface RequestOptions<Schema extends z.ZodType | undefined> {
 type Result<Schema> = Schema extends z.ZodType ? z.infer<Schema> : undefined;
 
 /**
- * Petición a la API con la respuesta validada. Si el access token ha caducado, renueva
- * la sesión y repite la petición una vez, sin que quien llama se entere (RF-AUT-03).
+ * Envía la petición con el access token. Si ha caducado, renueva la sesión y la repite
+ * una vez, sin que quien llama se entere (RF-AUT-03). Una respuesta de error se lanza.
  */
-export async function apiRequest<Schema extends z.ZodType | undefined = undefined>(
-  path: string,
-  options: RequestOptions<Schema> = {},
-): Promise<Result<Schema>> {
-  const init: RequestInit = { method: options.method ?? 'GET' };
-  if (options.body !== undefined) init.body = JSON.stringify(options.body);
-  if (options.signal) init.signal = options.signal;
-
+async function sendWithSession(path: string, init: RequestInit): Promise<Response> {
   let response = await send(path, init);
 
   if (response.status === 401 && accessToken !== null) {
@@ -139,11 +132,39 @@ export async function apiRequest<Schema extends z.ZodType | undefined = undefine
   }
 
   if (!response.ok) throw await toApiError(response);
+  return response;
+}
+
+/** Petición a la API con la respuesta validada con su esquema. */
+export async function apiRequest<Schema extends z.ZodType | undefined = undefined>(
+  path: string,
+  options: RequestOptions<Schema> = {},
+): Promise<Result<Schema>> {
+  const init: RequestInit = { method: options.method ?? 'GET' };
+  if (options.body !== undefined) init.body = JSON.stringify(options.body);
+  if (options.signal) init.signal = options.signal;
+
+  const response = await sendWithSession(path, init);
   if (!options.schema) return undefined as Result<Schema>;
 
   const parsed = options.schema.safeParse(await response.json().catch(() => null));
   if (!parsed.success) throw new ApiError('UNEXPECTED_RESPONSE', response.status);
   return parsed.data as Result<Schema>;
+}
+
+/** Un fichero que devuelve la API, con el nombre que propone `Content-Disposition`. */
+export interface DownloadedFile {
+  fileName: string;
+  content: Blob;
+}
+
+const FILE_NAME = /filename="([^"]+)"/;
+
+/** Descarga un fichero de la API con la misma sesión que el resto de peticiones. */
+export async function apiDownload(path: string, fallbackName: string): Promise<DownloadedFile> {
+  const response = await sendWithSession(path, { method: 'GET' });
+  const fileName = FILE_NAME.exec(response.headers.get('Content-Disposition') ?? '')?.[1];
+  return { fileName: fileName ?? fallbackName, content: await response.blob() };
 }
 
 /** Solo para tests: deja el módulo como recién cargado. */

@@ -5,6 +5,7 @@ import type {
   ErrorCode,
   GenerationStatus,
   GenerationType,
+  SpecLanguage,
   Specification,
 } from '@devpilot/shared';
 
@@ -32,9 +33,37 @@ export interface Generation extends GenerationSummary {
   clarificationAnswers: ClarificationAnswer[] | null;
   aiSpec: Specification | null;
   editedSpec: Specification | null;
+  /** Idioma en que escribió el modelo. */
+  language: SpecLanguage;
+  /** Traducciones guardadas de la especificación vigente. */
+  translations: SpecTranslations;
   /** Cuándo respondió el usuario a las preguntas: desde entonces vuelve a generarse. */
   answeredAt: Date | null;
   completedAt: Date | null;
+}
+
+/** Una traducción guardada y de qué versión de la especificación salió. */
+export interface SpecTranslation {
+  /** `ai` o la fecha de la edición traducida: si cambia, la traducción ya no vale. */
+  source: string;
+  specification: Specification;
+}
+
+export type SpecTranslations = Partial<Record<SpecLanguage, SpecTranslation>>;
+
+/** Qué versión de la especificación es la vigente, para saber si una traducción sigue valiendo. */
+export function specificationSource(generation: Pick<Generation, 'editedAt'>): string {
+  return generation.editedAt?.toISOString() ?? 'ai';
+}
+
+/** La especificación vigente en un idioma: la original, una traducción vigente o nada. */
+export function specificationIn(
+  generation: Generation,
+  language: SpecLanguage,
+): Specification | null {
+  if (language === generation.language) return currentSpecification(generation);
+  const translation = generation.translations[language];
+  return translation?.source === specificationSource(generation) ? translation.specification : null;
 }
 
 /** Lo que cuesta una o varias llamadas al modelo. Se acumula entre las dos fases. */

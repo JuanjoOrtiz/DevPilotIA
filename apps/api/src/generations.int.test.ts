@@ -3,6 +3,7 @@ import {
   generationResponseSchema,
   projectResponseSchema,
   sessionResponseSchema,
+  translationResponseSchema,
 } from '@devpilot/shared';
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -157,5 +158,28 @@ describe('generations against PostgreSQL', () => {
     ).generation;
 
     expect(read).toMatchObject({ status: 'failed', errorCode: 'LLM_TIMEOUT' });
+  });
+
+  it('stores the language and the translation of the specification', async () => {
+    const session = await signIn();
+    const created = await session.post(`/api/v1/projects/${session.project.id}/generations`, {
+      ...longRequest,
+      language: 'en',
+    });
+    const { id } = generationResponseSchema.parse(created.body).generation;
+    await background.settle();
+
+    const read = generationResponseSchema.parse(
+      (await session.get(`/api/v1/generations/${id}`)).body,
+    );
+    expect(read.generation.language).toBe('en');
+
+    const translated = translationResponseSchema.parse(
+      (await session.get(`/api/v1/generations/${id}/translation?language=es`)).body,
+    );
+    expect(translated.translation.specification.title.startsWith('[SP] ')).toBe(true);
+
+    const row = await prisma.generation.findUniqueOrThrow({ where: { id } });
+    expect(row.translations).toMatchObject({ es: { source: 'ai' } });
   });
 });

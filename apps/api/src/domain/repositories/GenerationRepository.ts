@@ -3,9 +3,15 @@ import type {
   ClarifyingQuestion,
   ErrorCode,
   GenerationType,
+  SpecLanguage,
   Specification,
 } from '@devpilot/shared';
-import type { Generation, GenerationSummary, GenerationUsage } from '../entities/Generation.js';
+import type {
+  Generation,
+  GenerationSummary,
+  GenerationUsage,
+  SpecTranslation,
+} from '../entities/Generation.js';
 
 export interface PageRequest {
   /** Empieza en 1. */
@@ -23,6 +29,8 @@ export interface NewGeneration {
   type: GenerationType;
   inputText: string;
   additionalContext: string | null;
+  /** Idioma en que escribirá el modelo. */
+  language: SpecLanguage;
 }
 
 /**
@@ -55,7 +63,16 @@ export interface GenerationRepository {
     generationId: string,
     answers: ClarificationAnswer[],
     at: Date,
+    language: SpecLanguage,
   ): Promise<boolean>;
+
+  /** Guarda la traducción a un idioma, sustituyendo la que hubiera. */
+  saveTranslation(
+    userId: string,
+    generationId: string,
+    language: SpecLanguage,
+    translation: SpecTranslation,
+  ): Promise<void>;
 
   complete(
     generationId: string,

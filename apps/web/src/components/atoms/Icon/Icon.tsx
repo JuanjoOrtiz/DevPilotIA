@@ -16,6 +16,23 @@ const SHAPES = {
       <path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z" />
     ),
   },
+  grid: {
+    viewBox: '0 0 16 16',
+    strokeWidth: 1.5,
+    paths: (
+      <>
+        <rect x="2" y="2" width="5" height="5" rx="1" />
+        <rect x="9" y="2" width="5" height="5" rx="1" />
+        <rect x="2" y="9" width="5" height="5" rx="1" />
+        <rect x="9" y="9" width="5" height="5" rx="1" />
+      </>
+    ),
+  },
+  download: {
+    viewBox: '0 0 16 16',
+    strokeWidth: 1.5,
+    paths: <path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" />,
+  },
   search: {
     viewBox: '0 0 16 16',
     strokeWidth: 1.5,
