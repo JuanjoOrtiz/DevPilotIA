@@ -36,11 +36,11 @@ De Supabase se usa solo su PostgreSQL. La autenticación, el almacenamiento y la
 
 4. Copia la cadena de conexión: botón «Connect», pestaña «Direct», opción «Session pooler» (puerto 5432). En el panel es de solo lectura; pégala en un editor y haz tres cambios:
 
-   | Supabase la da así | Tiene que quedar así |
-   | --- | --- |
-   | `postgres.abcdefghijklmnop` | `prisma.abcdefghijklmnop` |
-   | `[YOUR-PASSWORD]` | la contraseña del paso 2, sin corchetes |
-   | termina en `/postgres` | termina en `/postgres?sslmode=require&uselibpqcompat=true` |
+   | Supabase la da así          | Tiene que quedar así                                       |
+   | --------------------------- | ---------------------------------------------------------- |
+   | `postgres.abcdefghijklmnop` | `prisma.abcdefghijklmnop`                                  |
+   | `[YOUR-PASSWORD]`           | la contraseña del paso 2, sin corchetes                    |
+   | termina en `/postgres`      | termina en `/postgres?sslmode=require&uselibpqcompat=true` |
 
    El resultado tiene esta forma, con el identificador y el host de tu proyecto:
 
@@ -71,15 +71,15 @@ Esa cadena es un secreto: va en tu terminal y en el panel de Vercel, nunca en el
 2. En «Root Directory» elige `apps/api`. No cambies los comandos de instalación ni de compilación.
 3. En «Environment Variables» añade estas cinco y pulsa «Deploy»:
 
-   | Variable | Valor |
-   | --- | --- |
-   | `DATABASE_URL` | La cadena de Supabase |
-   | `JWT_ACCESS_SECRET` | El resultado de `openssl rand -base64 48` |
+   | Variable             | Valor                                                |
+   | -------------------- | ---------------------------------------------------- |
+   | `DATABASE_URL`       | La cadena de Supabase                                |
+   | `JWT_ACCESS_SECRET`  | El resultado de `openssl rand -base64 48`            |
    | `JWT_REFRESH_SECRET` | Otro resultado distinto de `openssl rand -base64 48` |
-   | `LLM_PROVIDER` | `gemini` |
-   | `GEMINI_API_KEY` | La clave de Google AI Studio |
+   | `LLM_PROVIDER`       | `gemini`                                             |
+   | `GEMINI_API_KEY`     | La clave de Google AI Studio                         |
 
-   Opcionales: `GEMINI_MODEL` (por defecto, `gemini-flash-latest`), `GENERATION_DAILY_LIMIT_PER_USER` (20) y `GENERATION_DAILY_LIMIT_GLOBAL` (200). Ajusta el tope global a la cuota diaria gratuita del modelo elegido, que se consulta en Google AI Studio: una generación con preguntas hace dos llamadas, y cada reintento, una más.
+   Opcionales: `GEMINI_MODEL` (por defecto, `gemini-3.5-flash-lite`: una versión fija y no un alias como `gemini-flash-latest`, que Google cambia sin aviso y que en octubre de 2026 respondía 503 por saturación; los modelos 2.5 ya no existen), `GENERATION_DAILY_LIMIT_PER_USER` (20) y `GENERATION_DAILY_LIMIT_GLOBAL` (200). Ajusta el tope global a la cuota diaria gratuita del modelo elegido, que se consulta en Google AI Studio: una generación con preguntas hace dos llamadas, y cada reintento, una más.
 
    No añadas `NODE_ENV`. En Vercel la API arranca siempre en modo producción (`loadVercelEnv` en `index.ts`), y con `NODE_ENV=production` en el panel `npm ci` deja fuera las dependencias de desarrollo y la compilación falla.
 

@@ -31,7 +31,7 @@ const envSchema = z.object({
   /** `gemini` en producción; `fake` responde sin red ni clave (local y CI). */
   LLM_PROVIDER: z.enum(['gemini', 'fake']).default('fake'),
   GEMINI_API_KEY: z.string().min(1).optional(),
-  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
+  GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash-lite'),
   LLM_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1024).max(65536).default(8192),
   LLM_ATTEMPT_TIMEOUT_MS: z.coerce.number().int().min(1000).default(20_000),
   GENERATION_TIMEOUT_MS: z.coerce.number().int().min(1000).default(45_000),
