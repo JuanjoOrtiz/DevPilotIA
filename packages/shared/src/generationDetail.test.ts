@@ -22,7 +22,17 @@ describe('createGenerationRequestSchema', () => {
       type: 'bug',
       inputText: 'El login falla con contraseñas que llevan tildes',
       additionalContext: null,
+      language: 'es',
     });
+  });
+
+  it('takes the language of the interface and accepts only Spanish or English', () => {
+    const base = { type: 'feature', inputText: 'Quiero exportar el historial de pedidos a CSV' };
+
+    expect(createGenerationRequestSchema.parse({ ...base, language: 'en' }).language).toBe('en');
+    expect(createGenerationRequestSchema.safeParse({ ...base, language: 'fr' }).success).toBe(
+      false,
+    );
   });
 
   it('rejects descriptions shorter than 20 or longer than 4,000 characters', () => {
@@ -62,8 +72,12 @@ describe('answerClarificationRequestSchema', () => {
         { questionId: 'q1', answer: 'Solo en Safari' },
         { questionId: 'q2', answer: '' },
       ],
+      language: 'es',
     });
-    expect(answerClarificationRequestSchema.parse({ skip: true })).toEqual({ skip: true });
+    expect(answerClarificationRequestSchema.parse({ skip: true, language: 'en' })).toEqual({
+      skip: true,
+      language: 'en',
+    });
   });
 
   it('rejects an answer over 500 characters and a body with neither shape', () => {

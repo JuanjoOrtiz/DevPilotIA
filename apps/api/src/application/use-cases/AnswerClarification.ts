@@ -1,5 +1,5 @@
 import type {
-  AnswerClarificationRequest,
+  AnswerClarificationInput,
   ClarificationAnswer,
   GenerationDetail,
 } from '@devpilot/shared';
@@ -34,7 +34,7 @@ export class AnswerClarification {
   async execute(
     userId: string,
     generationId: string,
-    request: AnswerClarificationRequest,
+    request: AnswerClarificationInput,
   ): Promise<GenerationDetail> {
     const { projects, generations, runner, background, clock } = this.deps;
 
@@ -82,6 +82,7 @@ export class AnswerClarification {
           type: generation.type,
           inputText: generation.inputText,
           additionalContext: generation.additionalContext,
+          language: request.language,
           clarifications: { questions, answers },
         },
         'specification',

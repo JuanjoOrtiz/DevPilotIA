@@ -14,6 +14,14 @@ import {
 } from './specification.js';
 import { fieldError } from './validation.js';
 
+/**
+ * Idioma en que se escribe la especificación: el de la interfaz en el momento de pedirla,
+ * no el del texto del usuario. Así una pantalla en inglés nunca muestra contenido en español.
+ */
+export const SPEC_LANGUAGES = ['es', 'en'] as const;
+export const specLanguageSchema = z.enum(SPEC_LANGUAGES);
+export type SpecLanguage = z.infer<typeof specLanguageSchema>;
+
 /** Límites de la entrada de una generación (RF-GEN-01 y SEG-13). */
 export const GENERATION_INPUT_LIMITS = {
   inputMin: 20,
@@ -36,6 +44,7 @@ export const createGenerationRequestSchema = z.object({
     .optional()
     // Un contexto vacío equivale a no darlo.
     .transform((value) => (value ? value : null)),
+  language: specLanguageSchema.default('es'),
 });
 export type CreateGenerationRequest = z.input<typeof createGenerationRequestSchema>;
 export type CreateGenerationInput = z.output<typeof createGenerationRequestSchema>;
@@ -54,16 +63,18 @@ const answer = z.object({
  */
 export const answerClarificationRequestSchema = z.union(
   [
-    z.object({ skip: z.literal(true) }).strict(),
+    z.object({ skip: z.literal(true), language: specLanguageSchema.default('es') }).strict(),
     z
       .object({
         answers: z.array(answer).max(CLARIFICATION_LIMITS.maxQuestions),
+        language: specLanguageSchema.default('es'),
       })
       .strict(),
   ],
   fieldError('ANSWERS_INVALID'),
 );
-export type AnswerClarificationRequest = z.infer<typeof answerClarificationRequestSchema>;
+export type AnswerClarificationRequest = z.input<typeof answerClarificationRequestSchema>;
+export type AnswerClarificationInput = z.output<typeof answerClarificationRequestSchema>;
 
 /** Una generación completa, tal y como la devuelve `GET /generations/:id`. */
 export const generationDetailSchema = z.object({

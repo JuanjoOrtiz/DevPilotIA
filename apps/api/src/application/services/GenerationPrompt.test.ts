@@ -7,6 +7,7 @@ const input: PromptInput = {
   type: 'bug',
   inputText: 'El login falla cuando la contraseña lleva tildes',
   additionalContext: null,
+  language: 'es',
 };
 
 function data(prompt: string): unknown {
@@ -21,9 +22,25 @@ describe('buildRequest', () => {
 
     expect(request.system).toBe(SYSTEM_INSTRUCTIONS);
     expect(data(request.prompt)).toEqual({
+      outputLanguage: 'Spanish',
       project: portal,
       request: { type: 'bug', description: input.inputText, additionalContext: null },
     });
+  });
+
+  // La especificación sale en el idioma de la interfaz, no en el del texto del usuario.
+  it('asks for the language of the interface, whatever the language of the request', () => {
+    const english = buildRequest(
+      { ...input, language: 'en' },
+      { shape: 'questions-or-specification', timeoutMs: 1000 },
+    );
+
+    expect(data(english.prompt)).toMatchObject({
+      outputLanguage: 'English',
+      request: { description: input.inputText },
+    });
+    expect(english.system).toContain('"outputLanguage"');
+    expect(english.system).not.toContain('English');
   });
 
   it('sends only the context of the project, never its owner or ids', () => {

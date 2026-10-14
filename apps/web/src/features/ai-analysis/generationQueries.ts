@@ -36,7 +36,7 @@ export function useCreateGeneration(projectId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateGenerationRequest) =>
+    mutationFn: (input: Omit<CreateGenerationRequest, 'language'>) =>
       generationService.createGeneration(projectId, input),
     onSuccess: (generation) => {
       queryClient.setQueryData(generationKeys.detail(generation.id), generation);
