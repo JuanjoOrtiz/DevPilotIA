@@ -11,8 +11,6 @@ function unsupportedKeys(schema: GeminiSchema): string[] {
     'propertyOrdering',
     'required',
     'items',
-    'minItems',
-    'maxItems',
   ]);
   const own = Object.keys(schema).filter((key) => !allowed.has(key));
   const nested = [
@@ -26,6 +24,14 @@ describe('responseSchemaFor', () => {
   it('uses only the keys Gemini accepts', () => {
     expect(unsupportedKeys(responseSchemaFor('questions-or-specification'))).toEqual([]);
     expect(unsupportedKeys(responseSchemaFor('specification'))).toEqual([]);
+  });
+
+  // Gemini 3.x rechaza con un 400 un esquema que limita el número de elementos.
+  it('never limits the number of items of a list', () => {
+    const text = JSON.stringify(responseSchemaFor('questions-or-specification'));
+
+    expect(text).not.toContain('minItems');
+    expect(text).not.toContain('maxItems');
   });
 
   it('lets the first call choose and forces a specification in the second', () => {
