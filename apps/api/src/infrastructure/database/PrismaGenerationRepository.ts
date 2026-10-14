@@ -21,9 +21,10 @@ import type {
   GenerationPage,
   GenerationRepository,
   NewGeneration,
+  NewSampleGeneration,
   PageRequest,
 } from '../../domain/repositories/GenerationRepository.js';
-import type { Generation as GenerationRow } from './generated/client.js';
+import { Prisma, type Generation as GenerationRow } from './generated/client.js';
 import type { PrismaClient } from './prismaClient.js';
 
 /** Las columnas del historial. La especificación (JSON) no se lee para pintar una lista. */
@@ -129,6 +130,56 @@ export class PrismaGenerationRepository implements GenerationRepository {
       data: { projectId, ...data, durationMs: 0, inputTokens: 0, outputTokens: 0 },
     });
     return toGeneration(row);
+  }
+
+  async createSample(projectId: string, sample: NewSampleGeneration): Promise<Generation> {
+    const { specification, createdAt, ...data } = sample;
+    const row = await this.prisma.generation.create({
+      data: {
+        projectId,
+        ...data,
+        status: 'completed',
+        aiSpec: specification,
+        title: specification.title,
+        complexity: specification.complexity.size,
+        isSample: true,
+        createdAt,
+        completedAt: createdAt,
+        durationMs: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+      },
+    });
+    return toGeneration(row);
+  }
+
+  async saveEdit(
+    userId: string,
+    generationId: string,
+    specification: Specification,
+    language: SpecLanguage,
+    at: Date,
+  ): Promise<boolean> {
+    // La versión de la IA (ai_spec) no se toca: RF-EDI-03 podrá restaurarla.
+    const { count } = await this.prisma.generation.updateMany({
+      where: { id: generationId, project: { userId }, status: 'completed' },
+      data: {
+        editedSpec: specification,
+        editedAt: at,
+        title: specification.title,
+        complexity: specification.complexity.size,
+        language,
+        translations: Prisma.DbNull,
+      },
+    });
+    return count === 1;
+  }
+
+  async deleteForUser(userId: string, generationId: string): Promise<boolean> {
+    const { count } = await this.prisma.generation.deleteMany({
+      where: { id: generationId, project: { userId } },
+    });
+    return count === 1;
   }
 
   async findForUser(userId: string, generationId: string): Promise<Generation | null> {

@@ -120,3 +120,18 @@ export const translationResponseSchema = z.object({
   translation: z.object({ language: specLanguageSchema, specification: specificationSchema }),
 });
 export type TranslationResponse = z.infer<typeof translationResponseSchema>;
+
+/**
+ * `PATCH /generations/:id` (RF-EDI-01 y 02): la especificación editada, que se valida con
+ * el mismo esquema que la respuesta de la IA. El idioma es el de la versión que se editó.
+ */
+export const updateSpecificationRequestSchema = z
+  .object({ specification: specificationSchema, language: specLanguageSchema })
+  .strict();
+export type UpdateSpecificationRequest = z.infer<typeof updateSpecificationRequestSchema>;
+
+/** `POST /generations/:id/regenerate` (RF-GEN-06): el idioma en que escribirá el modelo. */
+export const regenerateRequestSchema = z
+  .object({ language: specLanguageSchema.default('es') })
+  .strict();
+export type RegenerateRequest = z.input<typeof regenerateRequestSchema>;

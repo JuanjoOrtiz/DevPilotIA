@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { complexitySchema } from './generation.js';
+import { fieldError } from './validation.js';
 
 /**
  * Límites de la especificación (docs/ai-contract.md). El mismo esquema valida la respuesta
@@ -28,7 +29,13 @@ export const CLARIFICATION_LIMITS = {
   answer: 500,
 } as const;
 
-const text = (max: number = SPEC_LIMITS.text) => z.string().trim().min(1).max(max);
+// Los motivos de error son códigos de FIELD_ERRORS: el editor los traduce (RF-EDI-02).
+const text = (max: number = SPEC_LIMITS.text) =>
+  z
+    .string(fieldError('TEXT_REQUIRED'))
+    .trim()
+    .min(1, fieldError('TEXT_REQUIRED'))
+    .max(max, fieldError('TEXT_TOO_LONG'));
 
 export const SEVERITIES = ['low', 'medium', 'high'] as const;
 export const severitySchema = z.enum(SEVERITIES);
@@ -48,7 +55,9 @@ export const specificationSchema = z.object({
   schemaVersion: z.literal(1),
   title: text(SPEC_LIMITS.title),
   /** Lo que la IA ha asumido sin que el usuario lo dijera (RF-GEN-10). */
-  assumptions: z.array(text(SPEC_LIMITS.shortText)).max(SPEC_LIMITS.assumptions),
+  assumptions: z
+    .array(text(SPEC_LIMITS.shortText))
+    .max(SPEC_LIMITS.assumptions, fieldError('TOO_MANY_ITEMS')),
   technicalDescription: text(),
   userStories: z
     .array(
@@ -58,15 +67,15 @@ export const specificationSchema = z.object({
         soThat: text(SPEC_LIMITS.shortText),
         acceptanceCriteria: z
           .array(text(SPEC_LIMITS.shortText))
-          .min(1)
-          .max(SPEC_LIMITS.acceptanceCriteria),
+          .min(1, fieldError('LIST_REQUIRED'))
+          .max(SPEC_LIMITS.acceptanceCriteria, fieldError('TOO_MANY_ITEMS')),
       }),
     )
-    .min(1)
-    .max(SPEC_LIMITS.userStories),
+    .min(1, fieldError('LIST_REQUIRED'))
+    .max(SPEC_LIMITS.userStories, fieldError('TOO_MANY_ITEMS')),
   tasks: z.object({
-    frontend: z.array(taskSchema).max(SPEC_LIMITS.tasks),
-    backend: z.array(taskSchema).max(SPEC_LIMITS.tasks),
+    frontend: z.array(taskSchema).max(SPEC_LIMITS.tasks, fieldError('TOO_MANY_ITEMS')),
+    backend: z.array(taskSchema).max(SPEC_LIMITS.tasks, fieldError('TOO_MANY_ITEMS')),
   }),
   risks: z
     .array(
@@ -76,18 +85,23 @@ export const specificationSchema = z.object({
         mitigation: text(SPEC_LIMITS.shortText),
       }),
     )
-    .max(SPEC_LIMITS.risks),
-  edgeCases: z.array(text(SPEC_LIMITS.shortText)).max(SPEC_LIMITS.edgeCases),
+    .max(SPEC_LIMITS.risks, fieldError('TOO_MANY_ITEMS')),
+  edgeCases: z
+    .array(text(SPEC_LIMITS.shortText))
+    .max(SPEC_LIMITS.edgeCases, fieldError('TOO_MANY_ITEMS')),
   testCases: z
     .array(
       z.object({
         title: text(SPEC_LIMITS.title),
         type: testTypeSchema,
-        steps: z.array(text(SPEC_LIMITS.shortText)).min(1).max(SPEC_LIMITS.steps),
+        steps: z
+          .array(text(SPEC_LIMITS.shortText))
+          .min(1, fieldError('LIST_REQUIRED'))
+          .max(SPEC_LIMITS.steps, fieldError('TOO_MANY_ITEMS')),
         expectedResult: text(SPEC_LIMITS.shortText),
       }),
     )
-    .max(SPEC_LIMITS.testCases),
+    .max(SPEC_LIMITS.testCases, fieldError('TOO_MANY_ITEMS')),
   complexity: z.object({
     size: complexitySchema,
     rationale: text(SPEC_LIMITS.shortText),

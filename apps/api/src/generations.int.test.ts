@@ -50,6 +50,7 @@ async function signIn() {
   const { accessToken } = sessionResponseSchema.parse(registered.body);
   const authorization = `Bearer ${accessToken}`;
   const session = {
+    authorization,
     get: (path: string) => request(app).get(path).set('Authorization', authorization),
     post: (path: string, body: object) =>
       request(app).post(path).set('Authorization', authorization).send(body),
@@ -181,5 +182,43 @@ describe('generations against PostgreSQL', () => {
 
     const row = await prisma.generation.findUniqueOrThrow({ where: { id } });
     expect(row.translations).toMatchObject({ es: { source: 'ai' } });
+  });
+
+  it('edits, exports, regenerates and deletes a generation in the database', async () => {
+    const session = await signIn();
+    const created = await session.post(
+      `/api/v1/projects/${session.project.id}/generations`,
+      longRequest,
+    );
+    const { id } = generationResponseSchema.parse(created.body).generation;
+    await background.settle();
+    const original = generationResponseSchema.parse(
+      (await session.get(`/api/v1/generations/${id}`)).body,
+    ).generation.specification;
+    if (!original) throw new Error('The generation has no specification');
+
+    const edited = await request(app)
+      .patch(`/api/v1/generations/${id}`)
+      .set('Authorization', session.authorization)
+      .send({ specification: { ...original, title: 'Título editado' }, language: 'es' });
+    expect(generationResponseSchema.parse(edited.body).generation).toMatchObject({
+      title: 'Título editado',
+      isEdited: true,
+    });
+    const row = await prisma.generation.findUniqueOrThrow({ where: { id } });
+    expect(row.aiSpec).toMatchObject({ title: original.title });
+
+    const json = await session.get(`/api/v1/generations/${id}/export?format=json`);
+    expect(json.body).toMatchObject({ title: 'Título editado' });
+
+    const regenerated = await session.post(`/api/v1/generations/${id}/regenerate`, {});
+    expect(regenerated.status).toBe(202);
+    await background.settle();
+
+    const removed = await request(app)
+      .delete(`/api/v1/generations/${id}`)
+      .set('Authorization', session.authorization);
+    expect(removed.status).toBe(204);
+    expect(await prisma.generation.count({ where: { projectId: session.project.id } })).toBe(1);
   });
 });

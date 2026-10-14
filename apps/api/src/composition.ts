@@ -2,12 +2,14 @@
 // Crea las implementaciones de infrastructure y las inyecta en los casos de uso.
 // No arranca nada: de eso se encargan main.ts (servidor) e index.ts (Vercel).
 import type { Express } from 'express';
+import { SampleProjectProvisioner } from './application/services/SampleProjectProvisioner.js';
 import { SessionIssuer } from './application/services/SessionIssuer.js';
 import { GenerationRunner } from './application/services/GenerationRunner.js';
 import { AnswerClarification } from './application/use-cases/AnswerClarification.js';
 import { CheckHealth } from './application/use-cases/CheckHealth.js';
 import { CreateGeneration } from './application/use-cases/CreateGeneration.js';
 import { CreateProject } from './application/use-cases/CreateProject.js';
+import { DeleteGeneration } from './application/use-cases/DeleteGeneration.js';
 import { DeleteProject } from './application/use-cases/DeleteProject.js';
 import { ExportGeneration } from './application/use-cases/ExportGeneration.js';
 import { GetCurrentUser } from './application/use-cases/GetCurrentUser.js';
@@ -19,9 +21,11 @@ import { ListProjects } from './application/use-cases/ListProjects.js';
 import { LoginUser } from './application/use-cases/LoginUser.js';
 import { LogoutUser } from './application/use-cases/LogoutUser.js';
 import { RefreshSession } from './application/use-cases/RefreshSession.js';
+import { RegenerateGeneration } from './application/use-cases/RegenerateGeneration.js';
 import { RegisterUser } from './application/use-cases/RegisterUser.js';
 import { TranslateSpecification } from './application/use-cases/TranslateSpecification.js';
 import { UpdateProject } from './application/use-cases/UpdateProject.js';
+import { UpdateSpecification } from './application/use-cases/UpdateSpecification.js';
 import type { BackgroundTasks } from './domain/providers/BackgroundTasks.js';
 import type { LLMProvider } from './domain/providers/LLMProvider.js';
 import type { PasswordHasher } from './domain/providers/PasswordHasher.js';
@@ -97,10 +101,27 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
     reportFailure: (failure) => console.warn('Generation failed', failure),
   });
 
+  const createGeneration = new CreateGeneration({
+    projects,
+    generations,
+    runner,
+    background,
+    clock,
+    limits: {
+      perUser: env.GENERATION_DAILY_LIMIT_PER_USER,
+      global: env.GENERATION_DAILY_LIMIT_GLOBAL,
+    },
+  });
+
   const app = createApp({
     checkHealth: new CheckHealth(new PrismaDatabaseHealthProbe(prisma), env.APP_VERSION),
     auth: {
-      registerUser: new RegisterUser(users, hasher, sessions),
+      registerUser: new RegisterUser(
+        users,
+        hasher,
+        sessions,
+        new SampleProjectProvisioner(projects, generations, clock),
+      ),
       loginUser: new LoginUser(users, hasher, sessions),
       refreshSession: new RefreshSession({ users, refreshTokens, tokens, sessions, clock }),
       logoutUser: new LogoutUser(refreshTokens, tokens, clock),
@@ -115,17 +136,7 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
       listProjectGenerations: new ListProjectGenerations(projects, generations),
     },
     generations: {
-      createGeneration: new CreateGeneration({
-        projects,
-        generations,
-        runner,
-        background,
-        clock,
-        limits: {
-          perUser: env.GENERATION_DAILY_LIMIT_PER_USER,
-          global: env.GENERATION_DAILY_LIMIT_GLOBAL,
-        },
-      }),
+      createGeneration,
       getGeneration: new GetGeneration(generations, clock),
       answerClarification: new AnswerClarification({
         projects,
@@ -135,6 +146,9 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
         clock,
       }),
       exportGeneration: new ExportGeneration(generations),
+      updateSpecification: new UpdateSpecification(generations, clock),
+      deleteGeneration: new DeleteGeneration(generations),
+      regenerateGeneration: new RegenerateGeneration(generations, createGeneration),
       translateSpecification: new TranslateSpecification({
         generations,
         llm,

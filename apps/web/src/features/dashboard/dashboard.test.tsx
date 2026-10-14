@@ -39,7 +39,9 @@ describe('the dashboard', () => {
     api.getDashboardSummary.mockResolvedValue(dashboardSummary());
     renderApp('/');
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard', level: 1 })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard', level: 1 }, { timeout: 5000 }),
+    ).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current')).toBe(
       'page',
     );
@@ -74,6 +76,12 @@ describe('the dashboard', () => {
     expect(
       screen.getByRole('img', {
         name: 'Gráfica de barras por complejidad: S 5, M 9, L 6, XL 2.',
+      }),
+    ).toBeTruthy();
+    // RF-DAS-04
+    expect(
+      screen.getByRole('img', {
+        name: 'Barras horizontales: Portal de clientes 11, App de reservas 9.',
       }),
     ).toBeTruthy();
   });

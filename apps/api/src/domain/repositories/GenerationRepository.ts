@@ -33,6 +33,12 @@ export interface NewGeneration {
   language: SpecLanguage;
 }
 
+/** Una generación de ejemplo, ya completada, creada desde un fichero del repositorio. */
+export interface NewSampleGeneration extends NewGeneration {
+  specification: Specification;
+  createdAt: Date;
+}
+
 /**
  * Las lecturas y los cambios que pide el usuario filtran por él además de por el
  * recurso: lo ajeno se comporta como lo que no existe (RNF-06). Los que terminan una
@@ -65,6 +71,25 @@ export interface GenerationRepository {
     at: Date,
     language: SpecLanguage,
   ): Promise<boolean>;
+
+  /** Crea una generación de ejemplo completada (RF-PRO-06). No cuenta para los límites. */
+  createSample(projectId: string, sample: NewSampleGeneration): Promise<Generation>;
+
+  /**
+   * Guarda la versión editada de una generación completada (RF-EDI-02) sin tocar la de la
+   * IA. Descarta las traducciones guardadas. Devuelve `false` si no existe, no es del
+   * usuario o no está completada.
+   */
+  saveEdit(
+    userId: string,
+    generationId: string,
+    specification: Specification,
+    language: SpecLanguage,
+    at: Date,
+  ): Promise<boolean>;
+
+  /** Elimina una generación (RF-HIS-04). Devuelve `false` si no existe o no es del usuario. */
+  deleteForUser(userId: string, generationId: string): Promise<boolean>;
 
   /** Guarda la traducción a un idioma, sustituyendo la que hubiera. */
   saveTranslation(

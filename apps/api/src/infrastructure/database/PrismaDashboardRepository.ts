@@ -1,4 +1,4 @@
-import type { Complexity } from '@devpilot/shared';
+import type { Complexity, DashboardProject } from '@devpilot/shared';
 import type {
   DashboardRepository,
   DashboardTotalsData,
@@ -62,6 +62,20 @@ export class PrismaDashboardRepository implements DashboardRepository {
       averageDurationMs: duration._avg.durationMs ?? null,
       completedByComplexity,
     };
+  }
+
+  async topProjectsForUser(userId: string, limit: number): Promise<DashboardProject[]> {
+    const rows = await this.prisma.project.findMany({
+      where: { userId, generations: { some: {} } },
+      select: { id: true, name: true, _count: { select: { generations: true } } },
+      orderBy: [{ generations: { _count: 'desc' } }, { name: 'asc' }],
+      take: limit,
+    });
+    return rows.map((row) => ({
+      projectId: row.id,
+      name: row.name,
+      count: row._count.generations,
+    }));
   }
 
   async creationDatesForUser(userId: string, since: Date): Promise<Date[]> {

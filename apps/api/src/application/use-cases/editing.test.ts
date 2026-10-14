@@ -1,0 +1,210 @@
+import { specificationSchema, type Specification } from '@devpilot/shared';
+import { describe, expect, it } from 'vitest';
+import { DomainError } from '../../domain/errors/DomainError.js';
+import { lucia } from '../../test-support/authFixture.js';
+import {
+  FakePasswordHasher,
+  FakeTokenService,
+  FixedClock,
+  InMemoryGenerationRepository,
+  InMemoryProjectRepository,
+  InMemoryRefreshTokenRepository,
+  InMemoryUserRepository,
+} from '../../test-support/fakes.js';
+import { createGenerationFixture } from '../../test-support/generationFixture.js';
+import {
+  sampleSpecification,
+  ScriptedLLMProvider,
+  specificationReply,
+} from '../../test-support/llm.js';
+import { portal } from '../../test-support/projectFixture.js';
+import { SAMPLE_SPECIFICATION } from '../samples/sampleProject.js';
+import { SampleProjectProvisioner } from '../services/SampleProjectProvisioner.js';
+import { SessionIssuer } from '../services/SessionIssuer.js';
+import { RegisterUser } from './RegisterUser.js';
+
+const LUCIA = 'user-lucia';
+const MARCOS = 'user-marcos';
+
+async function setUp(llm = new ScriptedLLMProvider()) {
+  const fixture = createGenerationFixture({ llm });
+  const project = await fixture.projects.create(LUCIA, portal);
+  const { id } = fixture.generations.add(project, { aiSpec: sampleSpecification });
+  return { ...fixture, llm, project, id };
+}
+
+async function rejection(promise: Promise<unknown>): Promise<DomainError> {
+  const error = await promise.then(
+    () => undefined,
+    (reason: unknown) => reason,
+  );
+  if (!(error instanceof DomainError)) throw new Error('Expected a DomainError');
+  return error;
+}
+
+const edited: Specification = {
+  ...sampleSpecification,
+  title: 'Exportar pedidos y facturas a CSV',
+  complexity: { size: 'L', rationale: 'Ahora también facturas' },
+  edgeCases: [],
+};
+
+// RF-EDI-01 y 02
+describe('UpdateSpecification', () => {
+  it('stores the edited version, keeps the original and marks it as edited', async () => {
+    const { updateSpecification, generations, clock, id } = await setUp();
+
+    const result = await updateSpecification.execute(LUCIA, id, {
+      specification: edited,
+      language: 'es',
+    });
+
+    expect(result).toMatchObject({
+      specification: edited,
+      title: edited.title,
+      complexity: 'L',
+      isEdited: true,
+    });
+    const stored = generations.generations.find((g) => g.id === id);
+    expect(stored?.aiSpec).toEqual(sampleSpecification);
+    expect(stored?.editedAt).toEqual(clock.now());
+  });
+
+  it('records the language of the edited version and drops old translations', async () => {
+    const { updateSpecification, generations, id } = await setUp();
+    const stored = generations.generations.find((g) => g.id === id);
+    if (stored) stored.translations = { en: { source: 'ai', specification: sampleSpecification } };
+
+    const result = await updateSpecification.execute(LUCIA, id, {
+      specification: edited,
+      language: 'en',
+    });
+
+    expect(result.language).toBe('en');
+    expect(stored?.translations).toEqual({});
+  });
+
+  it('refuses a generation without specification and hides the ones of others', async () => {
+    const { updateSpecification, generations, project, id } = await setUp();
+    const failed = generations.add(project, { status: 'failed', errorCode: 'LLM_TIMEOUT' });
+    const request = { specification: edited, language: 'es' as const };
+
+    expect((await rejection(updateSpecification.execute(LUCIA, failed.id, request))).code).toBe(
+      'SPECIFICATION_NOT_READY',
+    );
+    expect((await rejection(updateSpecification.execute(MARCOS, id, request))).code).toBe(
+      'NOT_FOUND',
+    );
+  });
+});
+
+// RF-HIS-04
+describe('DeleteGeneration', () => {
+  it("deletes the user's generation and answers not found for the rest", async () => {
+    const { deleteGeneration, generations, id } = await setUp();
+
+    expect((await rejection(deleteGeneration.execute(MARCOS, id))).code).toBe('NOT_FOUND');
+    await deleteGeneration.execute(LUCIA, id);
+
+    expect(generations.generations).toHaveLength(0);
+    expect((await rejection(deleteGeneration.execute(LUCIA, id))).code).toBe('NOT_FOUND');
+  });
+});
+
+// RF-GEN-06
+describe('RegenerateGeneration', () => {
+  it('creates a new generation with the same input and keeps the old one', async () => {
+    const { regenerateGeneration, generations, background, project, llm } = await setUp(
+      new ScriptedLLMProvider([specificationReply()]),
+    );
+    const source = generations.add(project, {
+      type: 'bug',
+      inputText: 'El login falla cuando la contraseña lleva tildes',
+      additionalContext: 'Solo en iOS',
+    });
+
+    const created = await regenerateGeneration.execute(LUCIA, source.id, 'en');
+    await background.settle();
+
+    expect(created).toMatchObject({
+      status: 'generating',
+      type: 'bug',
+      inputText: 'El login falla cuando la contraseña lleva tildes',
+      additionalContext: 'Solo en iOS',
+      language: 'en',
+    });
+    expect(created.id).not.toBe(source.id);
+    expect(generations.generations).toHaveLength(3);
+    expect(llm.requests[0]?.prompt).toContain('"outputLanguage": "English"');
+  });
+
+  it('counts against the daily limit like any other generation', async () => {
+    const fixture = createGenerationFixture({ limits: { perUser: 1 } });
+    const project = await fixture.projects.create(LUCIA, portal);
+    const { id } = fixture.generations.add(project);
+
+    expect((await rejection(fixture.regenerateGeneration.execute(LUCIA, id, 'es'))).code).toBe(
+      'USER_QUOTA_EXCEEDED',
+    );
+  });
+});
+
+// RF-PRO-06
+describe('the sample project of a new account', () => {
+  function register(provisioner?: { provision: (userId: string) => Promise<void> }) {
+    const clock = new FixedClock();
+    const users = new InMemoryUserRepository(clock);
+    const generations = new InMemoryGenerationRepository(clock);
+    const projects = new InMemoryProjectRepository(clock, generations);
+    const sessions = new SessionIssuer(
+      new FakeTokenService(clock),
+      new InMemoryRefreshTokenRepository(),
+    );
+    const registerUser = new RegisterUser(
+      users,
+      new FakePasswordHasher(),
+      sessions,
+      provisioner ?? new SampleProjectProvisioner(projects, generations, clock),
+    );
+    return { registerUser, projects, generations };
+  }
+
+  it('creates a project with a completed sample generation, without the model', async () => {
+    const { registerUser, projects, generations } = register();
+
+    const session = await registerUser.execute(lucia);
+
+    const [project] = await projects.listForUser(session.user.id);
+    expect(project?.generationCount).toBe(1);
+    const [sample] = generations.generations;
+    expect(sample).toMatchObject({ status: 'completed', isSample: true, language: 'es' });
+    expect(await generations.countForUserSince(session.user.id, new Date(0))).toBe(0);
+  });
+
+  it('still opens the session if the sample cannot be created', async () => {
+    const { registerUser } = register({ provision: () => Promise.reject(new Error('boom')) });
+
+    const session = await registerUser.execute(lucia);
+
+    expect(session.accessToken).toBeTruthy();
+  });
+
+  it('stores a sample specification that passes the public schema', () => {
+    expect(specificationSchema.safeParse(SAMPLE_SPECIFICATION).success).toBe(true);
+  });
+});
+
+// RF-EXP-02
+describe('exporting to JSON', () => {
+  it('writes the current specification with its schema version', async () => {
+    const { exportGeneration, id } = await setUp();
+
+    const file = await exportGeneration.execute(LUCIA, id, { format: 'json', language: 'es' });
+
+    expect(file.fileName).toBe('exportar-el-historial-de-pedidos-a-csv.json');
+    expect(file.contentType).toBe('application/json; charset=utf-8');
+    const parsed = specificationSchema.parse(JSON.parse(file.content));
+    expect(parsed).toEqual(sampleSpecification);
+    expect(parsed.schemaVersion).toBe(1);
+  });
+});

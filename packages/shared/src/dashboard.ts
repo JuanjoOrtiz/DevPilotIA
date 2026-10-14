@@ -29,12 +29,20 @@ export type DashboardDay = z.infer<typeof dashboardDaySchema>;
 export const dashboardComplexitySchema = z.object({ size: complexitySchema, count });
 export type DashboardComplexity = z.infer<typeof dashboardComplexitySchema>;
 
+/** Proyectos que más generaciones tienen (RF-DAS-04). */
+export const DASHBOARD_TOP_PROJECTS = 5;
+
+export const dashboardProjectSchema = z.object({ projectId: z.uuid(), name: z.string(), count });
+export type DashboardProject = z.infer<typeof dashboardProjectSchema>;
+
 export const dashboardSummarySchema = z.object({
   totals: dashboardTotalsSchema,
   /** Un elemento por día, del más antiguo a hoy, también los días sin actividad. */
   activity: z.array(dashboardDaySchema).length(DASHBOARD_ACTIVITY_DAYS),
   /** Siempre S, M, L y XL, en ese orden. */
   complexity: z.array(dashboardComplexitySchema),
+  /** Hasta cinco proyectos, de más a menos generaciones; sin los que no tienen ninguna. */
+  projects: z.array(dashboardProjectSchema).max(DASHBOARD_TOP_PROJECTS),
 });
 export type DashboardSummary = z.infer<typeof dashboardSummarySchema>;
 

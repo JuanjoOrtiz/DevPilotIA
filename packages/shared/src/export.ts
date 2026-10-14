@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { specLanguageSchema } from './generationDetail.js';
 
-/** Formatos de exportación de una especificación. JSON llega con RF-EXP-02. */
-export const EXPORT_FORMATS = ['md'] as const;
+/** Formatos de exportación de una especificación (RF-EXP-01 y 02). */
+export const EXPORT_FORMATS = ['md', 'json'] as const;
 export const exportFormatSchema = z.enum(EXPORT_FORMATS);
 export type ExportFormat = z.infer<typeof exportFormatSchema>;
 
