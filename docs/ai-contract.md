@@ -84,7 +84,7 @@ Las seis secciones que ve el usuario (RF-GEN-02) son: descripción técnica, his
 | Contexto del proyecto | Nombre (80 caracteres), descripción (500), convenciones (2.000) y hasta 15 etiquetas de stack de 30 caracteres; lo añade el servidor, no el cliente |
 | Respuestas a las preguntas aclaratorias | Hasta 500 caracteres cada una; se pueden dejar en blanco o saltar todas con `skip: true` |
 
-El idioma de la especificación generada sigue al idioma del texto que escribe el usuario.
+La especificación, y también las preguntas aclaratorias, se escriben en el idioma que tiene la interfaz al pedirlas (`language`: `es` o `en`), sea cual sea el idioma en que escribe el usuario. Así una pantalla en inglés nunca mezcla contenido en español. Una especificación ya generada no cambia de idioma al cambiar la interfaz: es texto guardado.
 
 ## Flujo de una generación
 
