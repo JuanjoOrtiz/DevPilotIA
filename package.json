@@ -23,7 +23,8 @@
     "build": "npm run build -w @devpilot/shared && npm run build -w @devpilot/api && npm run build -w @devpilot/web",
     "db:generate": "npm run db:generate -w @devpilot/api",
     "db:migrate": "npm run db:migrate -w @devpilot/api",
-    "db:deploy": "npm run db:deploy -w @devpilot/api"
+    "db:deploy": "npm run db:deploy -w @devpilot/api",
+    "db:seed": "npm run build -w @devpilot/shared && npm run db:seed -w @devpilot/api"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

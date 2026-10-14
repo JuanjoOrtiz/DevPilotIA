@@ -63,7 +63,13 @@ export class AnswerClarification {
       answer: given.find((answer) => answer.questionId === question.id)?.answer ?? '',
     }));
 
-    const saved = await generations.saveAnswers(userId, generationId, answers, clock.now());
+    const saved = await generations.saveAnswers(
+      userId,
+      generationId,
+      answers,
+      clock.now(),
+      request.language,
+    );
     if (!saved) {
       throw new DomainError(
         'GENERATION_NOT_AWAITING_ANSWERS',

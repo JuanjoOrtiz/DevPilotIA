@@ -1,5 +1,6 @@
 import type {
   ClarifyingQuestion,
+  DashboardSummary,
   GenerationDetail,
   GenerationPageResponse,
   GenerationSummary,
@@ -103,12 +104,43 @@ export function generationDetail(overrides: Partial<GenerationDetail> = {}): Gen
     clarifyingQuestions: null,
     clarificationAnswers: null,
     specification,
+    language: 'es',
     title: specification.title,
     complexity: 'M',
     isEdited: false,
     isSample: false,
     createdAt: '2026-10-12T12:00:00.000Z',
     completedAt: '2026-10-12T12:00:20.000Z',
+    ...overrides,
+  };
+}
+
+/** 30 días del 13 de septiembre al 12 de octubre, con actividad en dos de ellos. */
+export function dashboardSummary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
+  const activity = Array.from({ length: 30 }, (_, index) => ({
+    date: new Date(Date.UTC(2026, 8, 13 + index)).toISOString().slice(0, 10),
+    count: 0,
+  }));
+  activity[10] = { date: '2026-09-23', count: 3 };
+  activity[29] = { date: '2026-10-12', count: 1 };
+  return {
+    totals: {
+      projects: 3,
+      generations: 25,
+      features: 15,
+      bugs: 10,
+      completed: 22,
+      failed: 3,
+      completionRate: 0.88,
+      averageDurationMs: 12_400,
+    },
+    activity,
+    complexity: [
+      { size: 'S', count: 5 },
+      { size: 'M', count: 9 },
+      { size: 'L', count: 6 },
+      { size: 'XL', count: 2 },
+    ],
     ...overrides,
   };
 }

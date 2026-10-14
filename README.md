@@ -12,7 +12,7 @@ Con Docker, todo en un comando:
 docker compose up --build
 ```
 
-Abre <http://localhost:8080> y crea una cuenta. Tras entrar verás tus proyectos: crea el primero para darle contexto a la IA.
+Abre <http://localhost:8080> y crea una cuenta. Tras entrar verás el dashboard; desde «Proyectos» crea el primero para darle contexto a la IA.
 
 Para desarrollar sin Docker hace falta Node 22 y un PostgreSQL, que puede ser el del propio Compose:
 
@@ -21,6 +21,7 @@ cp .env.example .env
 npm install
 docker compose up -d db
 npm run db:deploy
+npm run db:seed   # opcional: datos de ejemplo para demo@example.com / devpilot-demo
 npm run dev:api   # en una terminal: http://localhost:3000
 npm run dev:web   # en otra: http://localhost:5173
 ```

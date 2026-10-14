@@ -1,7 +1,9 @@
 import { GenerationRunner, type Wait } from '../application/services/GenerationRunner.js';
 import { AnswerClarification } from '../application/use-cases/AnswerClarification.js';
 import { CreateGeneration, type DailyLimits } from '../application/use-cases/CreateGeneration.js';
+import { ExportGeneration } from '../application/use-cases/ExportGeneration.js';
 import { GetGeneration } from '../application/use-cases/GetGeneration.js';
+import { TranslateSpecification } from '../application/use-cases/TranslateSpecification.js';
 import type { LLMProvider } from '../domain/providers/LLMProvider.js';
 import { FixedClock, InMemoryGenerationRepository, InMemoryProjectRepository } from './fakes.js';
 import { InlineBackgroundTasks, ScriptedLLMProvider } from './llm.js';
@@ -63,5 +65,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
       background,
       clock,
     }),
+    exportGeneration: new ExportGeneration(generations),
+    translateSpecification: new TranslateSpecification({ generations, llm, attemptMs: 20_000 }),
   };
 }

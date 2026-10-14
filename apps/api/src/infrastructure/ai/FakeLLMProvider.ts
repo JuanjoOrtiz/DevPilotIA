@@ -23,11 +23,32 @@ export interface FakeLLMOptions {
   latencyMs?: number;
 }
 
-/** Lee los datos que GenerationPrompt pone entre `<data>` y `</data>`. */
-function readData(prompt: string): PromptData {
+interface TranslationData {
+  outputLanguage: string;
+  specification: Specification;
+}
+
+/** Lee los datos que GenerationPrompt o TranslationPrompt ponen entre `<data>` y `</data>`. */
+function readData(prompt: string): PromptData | TranslationData {
   const match = /<data>\n([\s\S]*?)\n<\/data>/.exec(prompt);
   if (!match?.[1]) throw new Error('The prompt has no <data> block');
-  return JSON.parse(match[1]) as PromptData;
+  return JSON.parse(match[1]) as PromptData | TranslationData;
+}
+
+/**
+ * «Traducción» simulada: marca los textos principales con el idioma, sin tocar la
+ * estructura. Basta para ver en local que la interfaz cambia de versión.
+ */
+function translate({ outputLanguage, specification }: TranslationData): Specification {
+  const tag = `[${outputLanguage.slice(0, 2).toUpperCase()}]`;
+  const mark = (text: string, max: number) => `${tag} ${text}`.slice(0, max);
+  return {
+    ...specification,
+    title: mark(specification.title, 120),
+    technicalDescription: mark(specification.technicalDescription, 4000),
+    assumptions: specification.assumptions.map((text) => mark(text, 600)),
+    edgeCases: specification.edgeCases.map((text) => mark(text, 600)),
+  };
 }
 
 const SPANISH = /[áéíóúñ¿¡]|\b(el|la|los|las|que|de|para|con|una?)\b/i;
@@ -148,7 +169,11 @@ export class FakeLLMProvider implements LLMProvider {
   async generate(request: LLMRequest): Promise<LLMResult> {
     if (this.latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, this.latencyMs));
 
-    const data = readData(request.prompt);
+    const read = readData(request.prompt);
+    if ('specification' in read) {
+      return this.result(request, { kind: 'specification', specification: translate(read) });
+    }
+    const data = read;
     const ask =
       request.shape === 'questions-or-specification' &&
       data.request.description.length < FAKE_QUESTIONS_BELOW;
@@ -156,6 +181,13 @@ export class FakeLLMProvider implements LLMProvider {
     const response: FirstModelResponse | FinalModelResponse = ask
       ? { kind: 'questions', questions: questions(data.request.description) }
       : { kind: 'specification', specification: specification(data) };
+    return this.result(request, response);
+  }
+
+  private result(
+    request: LLMRequest,
+    response: FirstModelResponse | FinalModelResponse,
+  ): LLMResult {
     const text = JSON.stringify(response);
 
     return {

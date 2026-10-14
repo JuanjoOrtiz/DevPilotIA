@@ -45,6 +45,7 @@ export function toGenerationDetailDto(generation: Generation): GenerationDetail 
     clarifyingQuestions: generation.clarifyingQuestions,
     clarificationAnswers: generation.clarificationAnswers,
     specification: currentSpecification(generation),
+    language: generation.language,
     title: generation.title,
     complexity: generation.complexity,
     isEdited: generation.editedAt !== null,

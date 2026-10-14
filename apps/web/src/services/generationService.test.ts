@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../i18n';
-import { apiRequest } from './apiClient';
-import { answerClarification, createGeneration } from './generationService';
+import { apiDownload, apiRequest } from './apiClient';
+import { saveFile } from './download';
+import { answerClarification, createGeneration, exportGeneration } from './generationService';
 
-vi.mock('./apiClient', () => ({ apiRequest: vi.fn() }));
+vi.mock('./apiClient', () => ({ apiRequest: vi.fn(), apiDownload: vi.fn() }));
+vi.mock('./download', () => ({ saveFile: vi.fn() }));
 
 const request = vi.mocked(apiRequest);
+const download = vi.mocked(apiDownload);
 const body = () => request.mock.calls.at(-1)?.[1]?.body;
 
 beforeEach(() => {
@@ -43,5 +46,22 @@ describe('generation requests', () => {
     await answerClarification('g1', { skip: true });
 
     expect(body()).toEqual({ skip: true, language: 'en' });
+  });
+});
+
+// RF-EXP-01
+describe('exportGeneration', () => {
+  it('downloads the Markdown with the headings in the language of the interface', async () => {
+    const content = new Blob(['# Título']);
+    download.mockResolvedValue({ fileName: 'titulo.md', content });
+    await i18n.changeLanguage('en');
+
+    await exportGeneration('g1');
+
+    expect(download).toHaveBeenCalledWith(
+      '/generations/g1/export?format=md&language=en',
+      'specification.md',
+    );
+    expect(saveFile).toHaveBeenCalledWith(content, 'titulo.md');
   });
 });

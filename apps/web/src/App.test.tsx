@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from './i18n';
 import { ApiError } from './services/apiClient';
 import * as authService from './services/authService';
+import * as dashboardService from './services/dashboardService';
 import * as projectService from './services/projectService';
-import { portal } from './test/fixtures';
+import { dashboardSummary, portal } from './test/fixtures';
 import { lucia, renderApp } from './test/renderApp';
 
 vi.mock('./services/authService');
+vi.mock('./services/dashboardService');
 vi.mock('./services/projectService');
 
 const auth = vi.mocked(authService);
@@ -15,6 +17,7 @@ const auth = vi.mocked(authService);
 beforeEach(async () => {
   await i18n.changeLanguage('es');
   vi.mocked(projectService.listProjects).mockResolvedValue([portal]);
+  vi.mocked(dashboardService.getDashboardSummary).mockResolvedValue(dashboardSummary());
   auth.restoreSession.mockResolvedValue(null);
   auth.logout.mockResolvedValue(undefined);
 });
@@ -25,7 +28,8 @@ afterEach(() => {
 });
 
 const loginHeading = () => screen.findByRole('heading', { name: 'Iniciar sesión' });
-const homeHeading = () => screen.findByRole('heading', { name: 'Proyectos', level: 1 });
+const homeHeading = () => screen.findByRole('heading', { name: 'Dashboard', level: 1 });
+const projectsHeading = () => screen.findByRole('heading', { name: 'Proyectos', level: 1 });
 
 // RF-AUT-05: sin sesión se redirige al login.
 describe('routes without a session', () => {
@@ -135,7 +139,7 @@ describe('routes with a session', () => {
     renderApp('/');
 
     expect(await homeHeading()).toBeTruthy();
-    expect(await screen.findByRole('link', { name: 'Portal de clientes' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Indicadores' })).toBeTruthy();
     expect(screen.getByText('Lucía Ferrer')).toBeTruthy();
     expect(auth.login).not.toHaveBeenCalled();
   });
@@ -176,25 +180,26 @@ describe('routes with a session', () => {
     expect(container.querySelector('img')).toBeNull();
   });
 
-  it('sends an address that does not exist to the projects', async () => {
+  it('sends an address that does not exist to the dashboard', async () => {
     renderApp('/dashboard/unknown');
 
     expect(await homeHeading()).toBeTruthy();
   });
 
   it('marks the current section in the navigation', async () => {
-    renderApp('/');
-    await homeHeading();
+    renderApp('/projects');
+    await projectsHeading();
 
     const link = screen.getByRole('link', { name: 'Proyectos' });
 
     expect(link.getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current')).toBeNull();
   });
 
   // RNF-14
   it('switches the interface to English', async () => {
-    const { user } = renderApp('/');
-    await homeHeading();
+    const { user } = renderApp('/projects');
+    await projectsHeading();
 
     await user.click(screen.getByRole('button', { name: 'EN' }));
 

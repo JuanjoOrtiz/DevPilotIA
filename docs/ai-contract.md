@@ -113,6 +113,16 @@ Cada generación registra modelo, número de intentos, duración y tokens consum
 
 El texto literal de las instrucciones del sistema está en `SYSTEM_INSTRUCTIONS` de `apps/api/src/application/services/GenerationPrompt.ts`. Los datos del usuario y del proyecto van en un bloque `<data>` serializado como JSON, con `<` escapado: ningún texto puede cerrar el bloque y hacerse pasar por instrucción. La salida estructurada usa `responseSchema` de la Gemini API, generado a partir del mismo esquema Zod.
 
+## Traducción
+
+Al cambiar el idioma de la interfaz, la especificación ya generada se traduce con el mismo proveedor (`GET /generations/:id/translation`).
+
+- Instrucciones fijas propias (`TranslationPrompt.ts`): la especificación va como dato entre `<data>` y `</data>`, igual que la petición del usuario, y cualquier orden que contenga se traduce como un texto más.
+- La respuesta se valida con el mismo esquema que una generación y, además, debe conservar la estructura: el mismo número de elementos en cada lista y los mismos `complexity.size`, `severity` y `type`.
+- Una llamada de hasta 20 s; un reintento si el proveedor está caído y otro, con los problemas encontrados, si la respuesta no vale. Tras un 429 no se espera: se responde el error y la interfaz ofrece reintentar.
+- Los fallos responden con el código del proveedor: `LLM_RATE_LIMITED` (429), `LLM_CONTENT_BLOCKED` (422), `LLM_INVALID_RESPONSE` (502), `LLM_UNAVAILABLE` (503) y `LLM_TIMEOUT` (504).
+- La traducción se guarda y no se repite. No cuenta para los límites diarios.
+
 ## Límites
 
 | Límite | Valor |
@@ -140,6 +150,7 @@ Al alcanzar un límite se explica cuándo se reinicia (RF-GEN-07).
 | Respuesta que no cumple el esquema | Un reintento; después, generación fallida | `LLM_INVALID_RESPONSE` |
 | Contenido bloqueado por los filtros del proveedor | Generación fallida, sin reintento | `LLM_CONTENT_BLOCKED` |
 | Proveedor caído o error 5xx | Un reintento; después, generación fallida | `LLM_UNAVAILABLE` |
+| Exportar una generación que todavía no tiene especificación | Respuesta 409 | `SPECIFICATION_NOT_READY` |
 | Generación en `generating` durante más de 2 minutos | Se marca como fallida al consultarla y al arrancar la API (cubre reinicios e instancias interrumpidas a mitad) | `LLM_TIMEOUT` |
 
 Los errores del proveedor se traducen a errores de dominio en la capa de infraestructura. El frontend muestra un mensaje distinto por código y ofrece reintentar cuando tiene sentido; el reintento reenvía la misma entrada por `POST /projects/:id/generations` y crea una generación nueva. Cada generación que falla por causa del proveedor se envía a Sentry con su código de error, el modelo y el número de intentos.

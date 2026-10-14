@@ -137,6 +137,23 @@ DATABASE_URL='cadena-de-supabase' npm run db:deploy   # en producción
 
 Cada migración debe ser compatible con la versión de la API que está desplegada.
 
+## Datos de demostración en producción
+
+El seed carga 3 proyectos y 25 generaciones en **una cuenta ya registrada**; en producción nunca crea usuarios (SEG-16). Detalles en `docs/architecture.md`, «Datos de demostración (seed)».
+
+1. Regístrate en la aplicación desplegada con la cuenta que vas a usar en la demostración.
+2. Desde la raíz del repositorio, con la cadena de Supabase del paso 4 del apartado 1:
+
+   ```bash
+   DATABASE_URL='cadena-de-supabase' SEED_EMAIL='tu-email' npm run db:seed
+   ```
+
+   Debe terminar con «Seed (production): 3 projects and 25 generations for an existing account.». Si el email no tiene cuenta, falla sin crear nada.
+
+Se puede repetir: borra los tres proyectos de ejemplo de esa cuenta y los vuelve a crear con fechas de los últimos 30 días, así que conviene ejecutarlo de nuevo el día antes de la demostración. No toca tus otros proyectos.
+
+En local basta `npm run db:seed`: crea `demo@example.com` con la contraseña `devpilot-demo` si no existe.
+
 ## Límites del plan gratuito que afectan a la entrega
 
 - **Supabase pausa el proyecto tras una semana sin actividad**, y reactivarlo es manual, desde su panel. Si entre la entrega y la evaluación pasan más de siete días sin visitas, la aplicación aparecerá con «Base de datos no disponible». Conviene entrar al menos una vez por semana o programar una visita automática a `/api/v1/health`.

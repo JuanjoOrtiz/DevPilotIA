@@ -182,7 +182,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 
 ## API REST
 
-20 endpoints bajo `/api/v1`. Todos salvo registro, login, refresh y health exigen un access token válido.
+21 endpoints bajo `/api/v1`. Todos salvo registro, login, refresh y health exigen un access token válido.
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -204,11 +204,12 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | POST | /generations/:id/answers | Envía las respuestas a las preguntas aclaratorias, o `skip: true` para generar sin responder; solo en `needs_clarification`; responde 202 |
 | POST | /generations/:id/regenerate | Crea una generación nueva con la misma entrada; responde 202 |
 | DELETE | /generations/:id | Elimina una generación |
-| GET | /generations/:id/export | Descarga con `format=md` o `format=json` |
-| GET | /dashboard/summary | Indicadores y series para las gráficas, con `from`, `to` y `projectId` |
+| GET | /generations/:id/export | Descarga la especificación vigente con `format=md` (JSON con RF-EXP-02) y `language=es\|en` para los títulos del fichero; 409 `SPECIFICATION_NOT_READY` si aún no hay especificación |
+| GET | /generations/:id/translation | La especificación vigente en `language=es\|en`; la traduce con el modelo la primera vez y la guarda |
+| GET | /dashboard/summary | Indicadores, actividad de los últimos 30 días y reparto por complejidad; los filtros `from`, `to` y `projectId` llegan con RF-DAS-06 |
 | GET | /health | Comprobación de vida de la API y de la base de datos |
 
-La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, se activan con una variable de entorno y no cuentan entre los 20 endpoints.
+La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, se activan con una variable de entorno y no cuentan entre los 21 endpoints.
 
 Todos los errores comparten formato:
 
@@ -241,6 +242,30 @@ Todos los errores comparten formato:
 - **Pantallas estrechas.** La tabla del historial mide el ancho de su contenedor: cuando no caben las cinco columnas, cada generación se pinta como una tarjeta, sin desplazamiento lateral.
 
 Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están implementados. Abrir una generación (RF-HIS-03) llega con el visor de la especificación.
+
+## Dashboard y exportación
+
+- **Agregados en la base de datos.** `GET /dashboard/summary` cuenta filas con `groupBy` y `aggregate` de Prisma, siempre con el usuario en la condición; nunca lee las especificaciones. La actividad son las fechas de creación de los últimos 30 días, agrupadas por día UTC en el caso de uso, con los días sin generaciones a cero.
+- **Qué cuenta cada indicador.** Proyectos y generaciones son todos los del usuario. El porcentaje de completadas es completadas entre el total. El tiempo medio es la media de `duration_ms` (tiempo con el modelo) de las completadas que no son de ejemplo. La complejidad reparte solo las completadas.
+- **Sin datos.** Con cero generaciones, el dashboard muestra una invitación a ir a proyectos en lugar de gráficas vacías.
+- **Recharts aparte.** La página del dashboard y las librerías de gráficas se descargan en su propio fichero (`React.lazy` y el grupo `charts` de `vite.config.ts`): el resto de la aplicación no las carga.
+- **Exportación a Markdown.** La genera la API (`application/services/SpecificationMarkdown.ts`) a partir de la especificación vigente: la editada si existe y, si no, la de la IA. Lleva el título, los supuestos y las seis secciones; los criterios de aceptación y las tareas son listas de casillas (`- [ ]`). Los títulos de las secciones van en el idioma de la interfaz; el contenido, en el que se generó. El nombre del fichero es el título en ASCII, sin comillas, para que no pueda romper la cabecera `Content-Disposition`.
+
+## Idioma de la especificación
+
+- **Se escribe en el idioma de la interfaz.** Cada generación guarda en `language` el idioma en que escribió el modelo: el de la interfaz al pedirla o, si hubo preguntas, al responderlas.
+- **Se traduce al cambiar de idioma.** Si la interfaz está en otro idioma, la página de la generación pide `GET /generations/:id/translation`. La primera vez la API traduce la especificación vigente con el modelo (`TranslateSpecification`) y guarda el resultado en `translations`, por idioma; las siguientes responde con la guardada, sin llamar al modelo. Mientras llega, se ve la original con el aviso «Traduciendo…»; si falla, la original con el motivo y un botón para reintentar.
+- **Qué invalida una traducción.** Cada una guarda de qué versión salió (`ai` o la fecha de la edición). Si la especificación se edita, la traducción deja de valer y se vuelve a traducir al pedirla.
+- **Coste.** No cuenta para los límites diarios: como mucho hay una traducción por generación, idioma y edición. La exportación usa la traducción guardada del idioma pedido, si la hay.
+- **Qué no se traduce.** Lo que escribió el usuario (descripción, contexto y respuestas), las preguntas aclaratorias y los títulos de la lista del historial, que muestran el título original.
+
+## Datos de demostración (seed)
+
+`npm run db:seed` carga 3 proyectos y 25 generaciones repartidas en los últimos 30 días: funcionalidades y bugs, las cuatro complejidades, 20 completadas (3 con versión editada), 4 fallidas y 1 esperando respuestas. Las especificaciones están en `infrastructure/database/seed/sampleData.ts`, así que el seed no llama al modelo ni gasta cuota.
+
+- **Repetible.** Cada ejecución borra los proyectos de ejemplo de esa cuenta (por su nombre) y los vuelve a crear con fechas relativas al día en que se ejecuta. No toca ningún otro proyecto.
+- **Local.** Contra una base de datos local (`localhost`, `127.0.0.1` o el servicio `db` de Docker) crea, si no existe, el usuario `SEED_EMAIL` con la contraseña `SEED_PASSWORD`; por defecto, `demo@example.com` y `devpilot-demo`.
+- **Producción (SEG-16).** Contra cualquier otro servidor, o con `NODE_ENV=production`, nunca crea usuarios: exige `SEED_EMAIL` de una cuenta ya registrada y falla si no existe. Que el modo dependa también del servidor evita que olvidar `NODE_ENV` cree una cuenta con contraseña conocida en la base de datos real. Lo comprueban `seedMode.test.ts` y `seed.int.test.ts`.
 
 ## Mismo origen
 
