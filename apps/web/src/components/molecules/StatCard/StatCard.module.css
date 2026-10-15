@@ -3,22 +3,25 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  padding: 18px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 16px 20px 18px;
   background: var(--color-surface);
 }
 
 .label {
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: lowercase;
   color: var(--color-text-muted);
 }
 
 .value {
   margin: 0;
-  font-size: 32px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 500;
   line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
 

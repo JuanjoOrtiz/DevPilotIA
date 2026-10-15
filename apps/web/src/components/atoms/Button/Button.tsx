@@ -5,7 +5,10 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'dangerOutline'
 export type ButtonSize = 'md' | 'sm';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** `danger` confirma una acción destructiva; `dangerOutline` la ofrece. */
+  /**
+   * `danger` confirma una acción destructiva y `dangerOutline` la ofrece; las dos van en
+   * rojo con texto claro, y `dangerOutline` lleva además borde.
+   */
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** Ocupa todo el ancho disponible, como el botón de enviar de un formulario. */

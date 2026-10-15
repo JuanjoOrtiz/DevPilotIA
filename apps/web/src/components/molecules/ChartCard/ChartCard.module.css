@@ -17,8 +17,16 @@
 
 .title {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Un comentario de código: decorativo, los lectores de pantalla no lo leen. */
+.title::before {
+  content: '// ' / '';
+  color: var(--color-accent);
 }
 
 .description {

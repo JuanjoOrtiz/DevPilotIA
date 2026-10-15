@@ -35,7 +35,7 @@ export function GenerationActions({
   return (
     <div role="group" aria-label={t('generation.actions.label')} className={styles.actions}>
       {hasSpecification && (
-        <>
+        <div className={styles.toolbar}>
           <LinkButton to={editTo} variant="secondary">
             <Icon name="pencil" />
             {t('generation.actions.edit')}
@@ -58,7 +58,7 @@ export function GenerationActions({
             <Icon name="check" />
             {t('generation.export.copy')}
           </Button>
-        </>
+        </div>
       )}
       <Button variant="dangerOutline" disabled={busy !== null} onClick={onDelete}>
         <Icon name="trash" />

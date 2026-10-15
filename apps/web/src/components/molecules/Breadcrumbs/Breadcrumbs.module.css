@@ -6,8 +6,15 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--color-text-subtle);
+}
+
+/* La ruta se lee como un path: `~ / Proyectos / Portal de clientes`. */
+.list::before {
+  content: '~ /' / '';
+  color: var(--color-accent);
 }
 
 .item {
