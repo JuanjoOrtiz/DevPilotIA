@@ -58,6 +58,7 @@ Tres consecuencias de los planes gratuitos son requisitos:
 ├── packages/
 │   └── shared/              # esquemas Zod y tipos compartidos
 ├── docs/
+│   └── schemas/             # JSON Schema publicado de la exportación
 ├── .github/workflows/       # ci.yml, deploy.yml, release.yml
 ├── docker-compose.yml
 ├── .env.example
@@ -66,7 +67,7 @@ Tres consecuencias de los planes gratuitos son requisitos:
 └── README.es.md             # español
 ```
 
-`packages/shared` contiene los esquemas Zod de peticiones, respuestas y de la especificación, además de los códigos de error. Frontend y backend los importan desde ahí; de los mismos esquemas sale la especificación OpenAPI.
+`packages/shared` contiene los esquemas Zod de peticiones, respuestas y de la especificación, además de los códigos de error. Frontend y backend los importan desde ahí; de los mismos esquemas salen la especificación OpenAPI y el JSON Schema de la exportación (`npm run schemas -w @devpilot/shared`).
 
 ## Backend: Clean Architecture
 
@@ -168,12 +169,13 @@ Las mismas reglas están en `eslint.config.js`, junto con la que prohíbe `dange
 
 ## Modelo de datos
 
-Cuatro tablas: un usuario tiene muchos proyectos y un proyecto tiene muchas generaciones. Borrar un proyecto borra sus generaciones.
+Un usuario tiene muchos proyectos y un proyecto tiene muchas generaciones. Borrar un proyecto borra sus generaciones. Aparte, `auth_attempts` cuenta los intentos de autenticación y no se relaciona con ninguna otra tabla.
 
 | Entidad | Campos principales | Notas |
 | --- | --- | --- |
 | User | id, name, email, passwordHash, createdAt | Email único |
 | RefreshToken | id, userId, tokenHash, expiresAt, revokedAt | Se guarda el hash, nunca el token |
+| AuthAttempt | id, scope, keyHash, createdAt | `scope` es `login` o `register`; `keyHash` es el SHA-256 del email o de la IP, nunca el valor. Las filas de más de 24 h se borran al registrar una nueva |
 | Project | id, userId, name, description, techStack, conventions, createdAt, updatedAt | techStack es una lista de etiquetas |
 | Generation | id, projectId, type, inputText, additionalContext, status, errorCode, clarifyingQuestions, clarificationAnswers, aiSpec, editedSpec, title, complexity, model, attempts, durationMs, inputTokens, outputTokens, isSample, createdAt, completedAt, editedAt | aiSpec, editedSpec, clarifyingQuestions y clarificationAnswers son JSONB; title y complexity se copian fuera del JSON para listar y agregar sin leerlo; isSample marca la generación de ejemplo, que no cuenta para los límites de uso |
 
@@ -207,7 +209,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | DELETE | /generations/:id | Elimina una generación |
 | GET | /generations/:id/export | Descarga la especificación vigente con `format=md` o `format=json` y `language=es\|en` para los títulos del fichero; 409 `SPECIFICATION_NOT_READY` si aún no hay especificación |
 | GET | /generations/:id/translation | La especificación vigente en `language=es\|en`; la traduce con el modelo la primera vez y la guarda |
-| GET | /dashboard/summary | Indicadores, actividad de los últimos 30 días y reparto por complejidad; los filtros `from`, `to` y `projectId` llegan con RF-DAS-06 |
+| GET | /dashboard/summary | Indicadores, actividad por día y reparto por complejidad del periodo `days` (7, 30 o 90; por defecto, 30) y, con `projectId`, de un solo proyecto |
 | GET | /health | Comprobación de vida de la API y de la base de datos |
 
 La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, solo existen con `API_DOCS_ENABLED=true` (SEG-17) y no cuentan entre los 21 endpoints.
@@ -235,6 +237,43 @@ Todos los errores comparten formato:
 
 **Renovación sin carreras.** Como cada refresh token vale una sola vez, el frontend nunca lanza dos renovaciones a la vez: dentro de una pestaña comparten una misma petición y, entre pestañas, se turnan con un bloqueo del navegador (Web Locks). Sin eso, la API tomaría la segunda por un robo y cerraría todas las sesiones.
 
+**Límite de intentos (SEG-07, RNF-04).** `AttemptLimiter` cuenta en `auth_attempts`, nunca en memoria, porque cada petición puede caer en una instancia distinta de la función:
+
+| Endpoint | Clave | Límite por defecto | Ventana | Variable |
+| --- | --- | --- | --- | --- |
+| Login fallido | Email | 5 | 15 min | `AUTH_LOGIN_LIMIT_PER_EMAIL` |
+| Login fallido | IP | 20 | 15 min | `AUTH_LOGIN_LIMIT_PER_IP` |
+| Registro, cualquier resultado | IP | 10 | 60 min | `AUTH_REGISTER_LIMIT_PER_IP` |
+
+- Se comprueba antes de verificar la contraseña: bloqueado, el login no gasta bcrypt ni dice si la contraseña era buena.
+- Al superar un límite la API responde 429 `TOO_MANY_ATTEMPTS` con `retryAfterSeconds` en `details` y en la cabecera `Retry-After`, sin decir si el email existe. Un login correcto borra los fallos de ese email.
+- Por email se bloquea a quien prueba contraseñas contra una cuenta; por IP, a quien prueba muchas cuentas (relleno de credenciales) o crea cuentas en serie para gastar la cuota del LLM (T-11).
+
+**Registro de eventos de seguridad (SEG-09).** `ConsoleSecurityLog` escribe una línea JSON por evento en la salida de la función, que Vercel guarda en sus registros:
+
+```json
+{"kind":"security","event":"login_failed","at":"2026-10-15T09:12:03.120Z","userId":null,"ip":"203.0.113.7"}
+```
+
+| Evento | Cuándo | `detail` |
+| --- | --- | --- |
+| `login_failed` | Contraseña incorrecta o email sin cuenta (`userId` nulo) | — |
+| `refresh_token_reuse` | Se presenta un refresh token ya usado; además se revocan las sesiones y se avisa a Sentry | — |
+| `access_denied` | Petición a una ruta protegida sin access token válido | Método y ruta |
+| `limit_reached` | Se supera un límite de intentos o de generaciones; si es del login, avisa también a Sentry, sin la IP | `login:email`, `login:ip`, `register:ip`, `generations:user` o `generations:global` |
+
+Ninguna línea lleva contraseñas, tokens, emails ni el texto de una generación. Para encontrarlas en Vercel se filtra por `"kind":"security"`.
+
+## Monitorización de errores (Sentry)
+
+- **Solo con DSN (RNF-15).** La API inicia `@sentry/node` si existe `SENTRY_DSN`, y el frontend `@sentry/react` si existe `VITE_SENTRY_DSN`. Sin ellos no se envía nada: así funcionan el entorno local, Docker y los tests. Cada evento lleva el entorno y la versión (el commit de Vercel).
+- **Qué llega.** En la API, los errores que el manejador global convierte en 500, cada generación que falla por el proveedor (código, modelo e intentos), la reutilización de un refresh token y cada bloqueo del login por demasiados fallos. En el frontend, lo que captura el error boundary de React, que muestra una página para recargar, y los errores 5xx o de red sin controlar. Los errores esperados (validación, 401, 404, límites) no se envían.
+- **Privacidad (RNF-16).** `sendDefaultPii` desactivado y un filtro antes de enviar que quita la petición (cuerpo, cabeceras, cookies y consulta), los datos extra y todo lo del usuario salvo su id. No se guardan las migas de consola ni, en el navegador, las de los campos de texto. Sin Session Replay ni trazas (`tracesSampleRate` a 0), para no agotar los 5.000 eventos del plan gratuito.
+- **Ruta sin datos.** Un error de la API se agrupa por la ruta declarada (`GET /api/v1/generations/:id`), nunca por la URL con ids o consulta.
+- **Source maps.** El build del frontend los genera y los sube a Sentry solo si existen `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` y `SENTRY_PROJECT`; después los borra, así que nunca se publican. Sin esas variables, el build no genera source maps.
+- **Alertas.** El aviso por email de un error nuevo y la alerta de picos de `login_failed` se configuran en Sentry: ver [deployment.md](deployment.md).
+- **CSP.** `connect-src` admite `*.ingest.sentry.io` y `*.ingest.de.sentry.io` en `vercel.json` y en `nginx.conf`.
+
 ## Proyectos e historial
 
 - **Aislamiento por usuario.** Los repositorios de proyectos y generaciones reciben siempre el id del usuario en sesión y lo llevan a la condición de la consulta, también al editar y al borrar. Un proyecto de otra persona se comporta como uno que no existe: 404, con la misma respuesta (SEG-01 y RNF-06). El dueño de un proyecto sale del access token, nunca del cuerpo de la petición.
@@ -248,10 +287,11 @@ Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están 
 
 ## Dashboard y exportación
 
-- **Agregados en la base de datos.** `GET /dashboard/summary` cuenta filas con `groupBy` y `aggregate` de Prisma, siempre con el usuario en la condición; nunca lee las especificaciones. La actividad son las fechas de creación de los últimos 30 días, agrupadas por día UTC en el caso de uso, con los días sin generaciones a cero.
+- **Agregados en la base de datos.** `GET /dashboard/summary` cuenta filas con `groupBy` y `aggregate` de Prisma, siempre con el usuario en la condición; nunca lee las especificaciones. La actividad son las fechas de creación del periodo, agrupadas por día UTC en el caso de uso, con los días sin generaciones a cero.
+- **Filtros (RF-DAS-06).** El periodo (7, 30 o 90 días, hoy incluido) y el proyecto se validan con `dashboardQuerySchema` y se aplican a todos los indicadores. Un proyecto ajeno no da error: simplemente no tiene generaciones. En el frontend los filtros viven en la URL (`/dashboard?days=7&project=…`), así que una vista filtrada se puede recargar y compartir, y la consulta anterior se mantiene en pantalla mientras llega la nueva.
 - **Proyectos con más actividad (RF-DAS-04).** Los cinco con más generaciones, sin los que no tienen ninguna, en barras horizontales de HTML para que los nombres largos se lean enteros.
-- **Qué cuenta cada indicador.** Proyectos y generaciones son todos los del usuario. El porcentaje de completadas es completadas entre el total. El tiempo medio es la media de `duration_ms` (tiempo con el modelo) de las completadas que no son de ejemplo. La complejidad reparte solo las completadas.
-- **Sin datos.** Con cero generaciones, el dashboard muestra una invitación a ir a proyectos en lugar de gráficas vacías.
+- **Qué cuenta cada indicador.** Todo se limita al periodo y, si se elige, al proyecto. Proyectos son los que tienen alguna generación en el periodo. El porcentaje de completadas es completadas entre el total. El tiempo medio es la media de `duration_ms` (tiempo con el modelo) de las completadas que no son de ejemplo. La complejidad reparte solo las completadas.
+- **Sin datos.** Sin ninguna generación, el dashboard muestra una invitación a ir a proyectos en lugar de gráficas vacías; si es el filtro el que no deja ninguna, lo dice y mantiene los filtros a la vista.
 - **Recharts aparte.** La página del dashboard y las librerías de gráficas se descargan en su propio fichero (`React.lazy` y el grupo `charts` de `vite.config.ts`): el resto de la aplicación no las carga.
 - **Exportación a Markdown.** La genera la API (`application/services/SpecificationMarkdown.ts`) a partir de la especificación vigente: la editada si existe y, si no, la de la IA. Lleva el título, los supuestos y las seis secciones; los criterios de aceptación y las tareas son listas de casillas (`- [ ]`). Los títulos de las secciones van en el idioma de la interfaz; el contenido, en el que se generó. El nombre del fichero es el título en ASCII, sin comillas, para que no pueda romper la cabecera `Content-Disposition`.
 
@@ -262,7 +302,7 @@ Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están 
 - **Cambios sin guardar (RF-EDI-04).** Salir del editor con cambios pide confirmación, tanto al navegar dentro de la aplicación (`useBlocker`, que necesita el router de datos de `main.tsx`) como al cerrar o recargar la pestaña (`beforeunload`).
 - **Regenerar (RF-GEN-06).** Crea una generación nueva con la misma entrada y en el idioma de la interfaz; la anterior se conserva. Pasa por `CreateGeneration`, así que cuenta para los límites diarios.
 - **Eliminar (RF-HIS-04).** Pide confirmación y vuelve al proyecto.
-- **Exportar y copiar (RF-EXP-02 y 03).** El JSON es la especificación vigente tal cual, con `schemaVersion`. «Copiar Markdown» pide el Markdown a la API y lo copia con `ClipboardItem`, que Safari acepta aunque el texto llegue después del clic.
+- **Exportar y copiar (RF-EXP-02 y 03).** El JSON es un sobre con el contexto de la generación (proyecto, tipo, fechas, si está editada e idioma) y la especificación vigente tal cual, validado por un JSON Schema publicado en `docs/schemas/`: ver [ai-contract.md](ai-contract.md). «Copiar Markdown» pide el Markdown a la API y lo copia con `ClipboardItem`, que Safari acepta aunque el texto llegue después del clic.
 
 ## Proyecto de ejemplo
 
@@ -300,7 +340,7 @@ Consecuencias:
 - La cookie de refresh puede ser `SameSite=Strict`, porque nunca cruza de un sitio a otro.
 - Vercel puede guardar en caché lo que reenvía; por eso la API marca todas sus respuestas con `Cache-Control: no-store`.
 - En producción el frontend y la API son dos proyectos de Vercel. El de la API tiene además su propia URL pública, que el navegador nunca usa.
-- La API no recibe la conexión directa del visitante. Su IP llega en una cabecera que añade la plataforma; hay que comprobar cuál antes de limitar intentos por IP y de registrar eventos de seguridad (amenaza T-27).
+- La API no recibe la conexión directa del visitante. Express confía en un solo salto (`trust proxy` a 1): `req.ip` es la IP que añade el último proxy (Vercel o nginx) a `X-Forwarded-For`, nunca una que escriba el cliente. Con ella se limitan intentos y se registran los eventos de seguridad (amenaza T-27). Que en producción sea la del visitante, y no la del proyecto web que reenvía, se comprueba después de desplegar: ver [deployment.md](deployment.md).
 
 Decisión tomada el 10 de octubre de 2026. La alternativa descartada, dos dominios con `SameSite=None`, está en [threat-model.md](threat-model.md).
 

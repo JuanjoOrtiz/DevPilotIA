@@ -3,6 +3,7 @@ import {
   DASHBOARD_ACTIVITY_DAYS,
   DASHBOARD_TOP_PROJECTS,
   type DashboardDay,
+  type DashboardFilter,
   type DashboardSummary,
 } from '@devpilot/shared';
 import type { Clock } from '../../domain/providers/Clock.js';
@@ -16,7 +17,8 @@ function utcDay(date: Date): string {
 }
 
 /**
- * Indicadores y series del dashboard (RF-DAS-01 a 04). La actividad cubre los últimos
+ * Indicadores y series del dashboard (RF-DAS-01 a 04), del periodo y el proyecto que se
+ * elijan (RF-DAS-06): por defecto, los últimos 30 días de todos los proyectos. La actividad cubre los últimos
  * 30 días UTC, hoy incluido, con los días sin generaciones a cero.
  */
 export class GetDashboardSummary {
@@ -28,15 +30,20 @@ export class GetDashboardSummary {
     this.clock = clock;
   }
 
-  async execute(userId: string): Promise<DashboardSummary> {
+  async execute(
+    userId: string,
+    filter: DashboardFilter = { days: DASHBOARD_ACTIVITY_DAYS },
+  ): Promise<DashboardSummary> {
     const now = this.clock.now();
     const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-    const firstDay = new Date(today - (DASHBOARD_ACTIVITY_DAYS - 1) * DAY_MS);
+    const firstDay = new Date(today - (filter.days - 1) * DAY_MS);
+    // Un proyecto ajeno no da error: filtra por el usuario, así que todo sale a cero (RNF-06).
+    const scope = { since: firstDay, projectId: filter.projectId };
 
     const [totals, dates, projects] = await Promise.all([
-      this.dashboard.totalsForUser(userId),
-      this.dashboard.creationDatesForUser(userId, firstDay),
-      this.dashboard.topProjectsForUser(userId, DASHBOARD_TOP_PROJECTS),
+      this.dashboard.totalsForUser(userId, scope),
+      this.dashboard.creationDatesForUser(userId, scope),
+      this.dashboard.topProjectsForUser(userId, scope, DASHBOARD_TOP_PROJECTS),
     ]);
 
     const perDay = new Map<string, number>();
@@ -44,7 +51,7 @@ export class GetDashboardSummary {
       const day = utcDay(date);
       perDay.set(day, (perDay.get(day) ?? 0) + 1);
     }
-    const activity: DashboardDay[] = Array.from({ length: DASHBOARD_ACTIVITY_DAYS }, (_, i) => {
+    const activity: DashboardDay[] = Array.from({ length: filter.days }, (_, i) => {
       const date = utcDay(new Date(firstDay.getTime() + i * DAY_MS));
       return { date, count: perDay.get(date) ?? 0 };
     });

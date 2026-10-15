@@ -2,7 +2,9 @@
   "app": {
     "name": "DevPilot AI",
     "tagline": "From a task in plain language to a specification ready to implement.",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "crashed": "Something went wrong in the app. We have been notified; reload the page to carry on.",
+    "reload": "Reload the page"
   },
   "language": {
     "label": "Language"
@@ -25,6 +27,13 @@
     "title": "Dashboard",
     "period": "From {{from}} to {{to}}",
     "loading": "Loading the dashboard…",
+    "filters": {
+      "period": "Period",
+      "days_one": "Last day",
+      "days_other": "Last {{count}} days",
+      "project": "Project",
+      "allProjects": "All projects"
+    },
     "empty": {
       "title": "No generations yet",
       "description": "Create a project and generate your first specification: your activity will show up here.",
@@ -33,7 +42,7 @@
     "stats": {
       "label": "Indicators",
       "projects": "Projects",
-      "projectsDetail": "in total",
+      "projectsDetail": "active in the period",
       "generations": "Generations",
       "features_one": "{{count}} feature",
       "features_other": "{{count}} features",
@@ -48,8 +57,8 @@
     },
     "activity": {
       "title": "Generations per day",
-      "description_one": "{{count}} generation in the last 30 days",
-      "description_other": "{{count}} generations in the last 30 days",
+      "description_one": "{{count}} generation in the period",
+      "description_other": "{{count}} generations in the period",
       "chart": "Bar chart: generations per day from {{from}} to {{to}}. Peak of {{max}} on {{day}}.",
       "chartEmpty": "Bar chart: no generations from {{from}} to {{to}}.",
       "tooltip_one": "{{count}} generation",
@@ -65,6 +74,10 @@
       "title": "Generations per project",
       "description": "The most active projects",
       "chart": "Horizontal bars: {{values}}."
+    },
+    "emptyFiltered": {
+      "title": "No generations in this period",
+      "description": "Try a longer period or another project."
     }
   },
   "auth": {
@@ -470,6 +483,7 @@
     "SPECIFICATION_NOT_READY": "The specification is not ready to export yet.",
     "USER_QUOTA_EXCEEDED": "You have reached your generation limit for today.",
     "GLOBAL_QUOTA_EXCEEDED": "The service has reached its generation limit for today.",
+    "TOO_MANY_ATTEMPTS": "Too many attempts. Wait a few minutes before trying again.",
     "LLM_RATE_LIMITED": "The model is receiving too many requests. Try again in a few minutes.",
     "LLM_TIMEOUT": "The model took too long to respond. Try again.",
     "LLM_INVALID_RESPONSE": "The model returned a response that cannot be used. Try again.",

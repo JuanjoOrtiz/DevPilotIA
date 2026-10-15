@@ -2,6 +2,7 @@ import type { CreateGenerationInput, GenerationDetail } from '@devpilot/shared';
 import { DomainError } from '../../domain/errors/DomainError.js';
 import type { BackgroundTasks } from '../../domain/providers/BackgroundTasks.js';
 import type { Clock } from '../../domain/providers/Clock.js';
+import type { SecurityLog } from '../../domain/providers/SecurityLog.js';
 import type { GenerationRepository } from '../../domain/repositories/GenerationRepository.js';
 import type { ProjectRepository } from '../../domain/repositories/ProjectRepository.js';
 import { toGenerationDetailDto } from '../dto/GenerationDto.js';
@@ -21,6 +22,8 @@ export interface CreateGenerationDependencies {
   background: BackgroundTasks;
   clock: Clock;
   limits: DailyLimits;
+  /** SEG-09: alcanzar un límite diario queda registrado. */
+  log?: SecurityLog;
 }
 
 /** El día de los límites empieza a las 00:00 UTC. */
@@ -56,12 +59,14 @@ export class CreateGeneration {
     const resetsAt = new Date(dayStart.getTime() + DAY_MS).toISOString();
 
     if ((await generations.countForUserSince(userId, dayStart)) >= limits.perUser) {
+      this.deps.log?.record({ type: 'limit_reached', userId, detail: 'generations:user' });
       throw new DomainError('USER_QUOTA_EXCEEDED', 'Daily generation limit reached', {
         limit: limits.perUser,
         resetsAt,
       });
     }
     if ((await generations.countAllSince(dayStart)) >= limits.global) {
+      this.deps.log?.record({ type: 'limit_reached', userId, detail: 'generations:global' });
       throw new DomainError('GLOBAL_QUOTA_EXCEEDED', 'Daily service limit reached', {
         limit: limits.global,
         resetsAt,

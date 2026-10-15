@@ -30,6 +30,7 @@ const FRAMEWORKS = [
   'bcryptjs',
   'jose',
   '@vercel/*',
+  '@sentry/*',
 ];
 const DATA_ACCESS = ['@tanstack/react-query'];
 
@@ -55,7 +56,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.config.{js,ts}', 'apps/api/**/*.ts'],
+    files: ['**/*.config.{js,ts}', 'apps/api/**/*.ts', 'packages/*/scripts/**/*.mjs'],
     languageOptions: { globals: globals.node },
   },
 

@@ -209,7 +209,10 @@ describe('generations against PostgreSQL', () => {
     expect(row.aiSpec).toMatchObject({ title: original.title });
 
     const json = await session.get(`/api/v1/generations/${id}/export?format=json`);
-    expect(json.body).toMatchObject({ title: 'Título editado' });
+    expect(json.body).toMatchObject({
+      generation: { id, edited: true },
+      specification: { title: 'Título editado' },
+    });
 
     const regenerated = await session.post(`/api/v1/generations/${id}/regenerate`, {});
     expect(regenerated.status).toBe(202);

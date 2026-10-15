@@ -143,6 +143,20 @@ describe('TranslateSpecification', () => {
     expect(file.content).toContain('# Export the order history to CSV');
     expect(file.fileName).toBe('export-the-order-history-to-csv.md');
   });
+
+  it('exports the stored translation to JSON, saying its language', async () => {
+    const { translateSpecification, exportGeneration, id } = await setUp(
+      new ScriptedLLMProvider([specificationReply(english)]),
+    );
+    await translateSpecification.execute(LUCIA, id, 'en');
+
+    const file = await exportGeneration.execute(LUCIA, id, { format: 'json', language: 'en' });
+
+    expect(JSON.parse(file.content)).toMatchObject({
+      language: 'en',
+      specification: { title: 'Export the order history to CSV' },
+    });
+  });
 });
 
 describe('structureProblems', () => {

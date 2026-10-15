@@ -1,12 +1,32 @@
 import { z } from 'zod';
 import { complexitySchema } from './generation.js';
 
-/** Días que cubre la gráfica de actividad (RF-DAS-02), hoy incluido. */
+/** Días que cubre la gráfica de actividad por defecto (RF-DAS-02), hoy incluido. */
 export const DASHBOARD_ACTIVITY_DAYS = 30;
+
+/** Periodos que se pueden elegir en el dashboard (RF-DAS-06). */
+export const DASHBOARD_PERIODS = [7, 30, 90] as const;
+export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
+
+/** Parámetros de `GET /dashboard/summary`: el periodo en días y, si se quiere, un proyecto. */
+export const dashboardQuerySchema = z.object({
+  days: z.coerce
+    .number()
+    .refine((value): value is DashboardPeriod =>
+      (DASHBOARD_PERIODS as readonly number[]).includes(value),
+    )
+    .default(DASHBOARD_ACTIVITY_DAYS),
+  projectId: z.uuid().optional(),
+});
+export type DashboardQuery = z.input<typeof dashboardQuerySchema>;
+export type DashboardFilter = z.output<typeof dashboardQuerySchema>;
 
 const count = z.number().int().nonnegative();
 
-/** Indicadores resumen (RF-DAS-01). Las tasas y medias son `null` si no hay datos. */
+/**
+ * Indicadores resumen (RF-DAS-01) del periodo y del proyecto elegidos. `projects` son los
+ * proyectos con alguna generación en el periodo. Tasas y medias son `null` si no hay datos.
+ */
 export const dashboardTotalsSchema = z.object({
   projects: count,
   generations: count,
@@ -38,7 +58,10 @@ export type DashboardProject = z.infer<typeof dashboardProjectSchema>;
 export const dashboardSummarySchema = z.object({
   totals: dashboardTotalsSchema,
   /** Un elemento por día, del más antiguo a hoy, también los días sin actividad. */
-  activity: z.array(dashboardDaySchema).length(DASHBOARD_ACTIVITY_DAYS),
+  activity: z
+    .array(dashboardDaySchema)
+    .min(Math.min(...DASHBOARD_PERIODS))
+    .max(Math.max(...DASHBOARD_PERIODS)),
   /** Siempre S, M, L y XL, en ese orden. */
   complexity: z.array(dashboardComplexitySchema),
   /** Hasta cinco proyectos, de más a menos generaciones; sin los que no tienen ninguna. */

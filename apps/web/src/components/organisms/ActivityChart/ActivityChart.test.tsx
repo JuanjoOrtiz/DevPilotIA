@@ -16,7 +16,7 @@ describe('ActivityChart', () => {
     const activity = dashboardSummary().activity.map((day) => ({ ...day, count: 0 }));
     render(<ActivityChart activity={activity} />);
 
-    expect(screen.getByText('0 generaciones en los últimos 30 días')).toBeTruthy();
+    expect(screen.getByText('0 generaciones en el periodo')).toBeTruthy();
     expect(
       screen.getByRole('img', {
         name: 'Gráfica de barras: ninguna generación del 13 de septiembre de 2026 al 12 de octubre de 2026.',

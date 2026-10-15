@@ -1,5 +1,6 @@
 import { DomainError } from '../../domain/errors/DomainError.js';
 import type { Clock } from '../../domain/providers/Clock.js';
+import type { SecurityLog } from '../../domain/providers/SecurityLog.js';
 import type { TokenService } from '../../domain/providers/TokenService.js';
 import type { RefreshTokenRepository } from '../../domain/repositories/RefreshTokenRepository.js';
 import type { UserRepository } from '../../domain/repositories/UserRepository.js';
@@ -12,6 +13,8 @@ interface Dependencies {
   tokens: TokenService;
   sessions: SessionIssuer;
   clock: Clock;
+  /** SEG-09: la reutilización de un refresh token queda registrada y avisa. */
+  log?: SecurityLog;
 }
 
 /**
@@ -25,7 +28,7 @@ export class RefreshSession {
     this.deps = dependencies;
   }
 
-  async execute(refreshToken: string | undefined): Promise<Session> {
+  async execute(refreshToken: string | undefined, ip?: string | null): Promise<Session> {
     const { users, refreshTokens, tokens, sessions, clock } = this.deps;
 
     const subject = refreshToken ? await tokens.verifyRefreshToken(refreshToken) : null;
@@ -38,6 +41,7 @@ export class RefreshSession {
     const used = stored.revokedAt !== null || !(await refreshTokens.revokeIfActive(stored.id, now));
     if (used) {
       await refreshTokens.revokeAllForUser(stored.userId, now);
+      this.deps.log?.record({ type: 'refresh_token_reuse', userId: stored.userId, ip });
       throw unauthorized();
     }
     if (stored.expiresAt <= now) throw unauthorized();

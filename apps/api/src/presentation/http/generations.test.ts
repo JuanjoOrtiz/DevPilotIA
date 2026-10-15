@@ -370,6 +370,9 @@ describe('editing, regenerating and deleting a generation', () => {
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(response.headers['content-disposition']).toContain('.json"');
-    expect(response.body).toMatchObject({ schemaVersion: 1, title: sampleSpecification.title });
+    expect(response.body).toMatchObject({
+      exportVersion: 1,
+      specification: { schemaVersion: 1, title: sampleSpecification.title },
+    });
   });
 });

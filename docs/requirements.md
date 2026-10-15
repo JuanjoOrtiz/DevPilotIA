@@ -81,7 +81,7 @@ La interfaz se entrega en español e inglés, con selector de idioma. No hay cue
 | ID | Requisito | Criterio de aceptación |
 | --- | --- | --- |
 | RF-EXP-01 | Exportar a Markdown | Fichero .md con las seis secciones; tareas y criterios de aceptación como listas de casillas |
-| RF-EXP-02 | Exportar a JSON | El fichero cumple el esquema público e incluye su número de versión |
+| RF-EXP-02 | Exportar a JSON | El fichero cumple el esquema público, publicado como JSON Schema en `docs/schemas/` y enlazado desde el propio fichero, e incluye su número de versión y el contexto de la generación |
 | RF-EXP-03 | Copiar al portapapeles | Copia el Markdown y confirma con un aviso |
 | RF-EXP-04 | Exportar la versión vigente | Si la especificación fue editada, se exporta la versión editada |
 
@@ -94,7 +94,7 @@ La interfaz se entrega en español e inglés, con selector de idioma. No hay cue
 | RF-DAS-03 | Gráfica de complejidad | Reparto de las generaciones por complejidad estimada (S, M, L, XL) |
 | RF-DAS-04 | Gráfica por proyecto | Generaciones de los cinco proyectos con más actividad |
 | RF-DAS-05 | Gráfica por tipo | Proporción entre funcionalidades y bugs |
-| RF-DAS-06 | Filtros y estado vacío | Filtro por rango de fechas y por proyecto; sin datos se muestra una invitación a crear la primera generación |
+| RF-DAS-06 | Filtros y estado vacío | Filtro por periodo (últimos 7, 30 o 90 días) y por proyecto, guardados en la URL; sin datos se muestra una invitación a crear la primera generación |
 
 ## Requisitos no funcionales
 

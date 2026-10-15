@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
@@ -6,8 +7,33 @@ import { defineConfig } from 'vitest/config';
 // igual que en producción (Vercel) y en Docker (nginx). Por eso la API no necesita CORS.
 const apiTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
+// Versión desplegada: en Vercel, el SHA del commit. Sentry la usa para agrupar los errores.
+const version = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.APP_VERSION ?? 'dev';
+
+// RNF-15: los source maps se suben a Sentry en el build y se borran de lo que se publica.
+// Solo si están las tres variables; si no, ni se generan.
+const { SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT } = process.env;
+const uploadSourceMaps = Boolean(SENTRY_AUTH_TOKEN && SENTRY_ORG && SENTRY_PROJECT);
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    ...(uploadSourceMaps
+      ? [
+          sentryVitePlugin({
+            org: SENTRY_ORG,
+            project: SENTRY_PROJECT,
+            authToken: SENTRY_AUTH_TOKEN,
+            release: { name: version },
+            sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+            telemetry: false,
+          }),
+        ]
+      : []),
+  ],
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(version),
+  },
   resolve: {
     alias: {
       // El frontend consume el código fuente de shared: no hace falta compilarlo antes.
@@ -17,6 +43,7 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: uploadSourceMaps ? 'hidden' : false,
     rolldownOptions: {
       output: {
         // Las librerías cambian mucho menos que la aplicación: en su propio fichero, el

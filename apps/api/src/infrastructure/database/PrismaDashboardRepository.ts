@@ -1,9 +1,19 @@
 import type { Complexity, DashboardProject } from '@devpilot/shared';
 import type {
   DashboardRepository,
+  DashboardScope,
   DashboardTotalsData,
 } from '../../domain/repositories/DashboardRepository.js';
 import type { PrismaClient } from './prismaClient.js';
+
+/** Las generaciones del usuario que entran en el filtro del dashboard. */
+function generationsIn(userId: string, scope: DashboardScope) {
+  return {
+    project: { userId },
+    createdAt: { gte: scope.since },
+    ...(scope.projectId && { projectId: scope.projectId }),
+  };
+}
 
 /** Agregados del dashboard en la base de datos: se cuentan filas, no se leen especificaciones. */
 export class PrismaDashboardRepository implements DashboardRepository {
@@ -13,11 +23,17 @@ export class PrismaDashboardRepository implements DashboardRepository {
     this.prisma = prisma;
   }
 
-  async totalsForUser(userId: string): Promise<DashboardTotalsData> {
-    const mine = { project: { userId } };
+  async totalsForUser(userId: string, scope: DashboardScope): Promise<DashboardTotalsData> {
+    const mine = generationsIn(userId, scope);
 
     const [projects, byType, byStatus, duration, byComplexity] = await this.prisma.$transaction([
-      this.prisma.project.count({ where: { userId } }),
+      this.prisma.project.count({
+        where: {
+          userId,
+          ...(scope.projectId && { id: scope.projectId }),
+          generations: { some: { createdAt: { gte: scope.since } } },
+        },
+      }),
       this.prisma.generation.groupBy({
         by: ['type'],
         where: mine,
@@ -64,23 +80,35 @@ export class PrismaDashboardRepository implements DashboardRepository {
     };
   }
 
-  async topProjectsForUser(userId: string, limit: number): Promise<DashboardProject[]> {
-    const rows = await this.prisma.project.findMany({
-      where: { userId, generations: { some: {} } },
-      select: { id: true, name: true, _count: { select: { generations: true } } },
-      orderBy: [{ generations: { _count: 'desc' } }, { name: 'asc' }],
+  async topProjectsForUser(
+    userId: string,
+    scope: DashboardScope,
+    limit: number,
+  ): Promise<DashboardProject[]> {
+    const groups = await this.prisma.generation.groupBy({
+      by: ['projectId'],
+      where: generationsIn(userId, scope),
+      orderBy: { _count: { projectId: 'desc' } },
+      _count: { projectId: true },
       take: limit,
     });
-    return rows.map((row) => ({
-      projectId: row.id,
-      name: row.name,
-      count: row._count.generations,
-    }));
+    const names = await this.prisma.project.findMany({
+      where: { userId, id: { in: groups.map((group) => group.projectId) } },
+      select: { id: true, name: true },
+    });
+    const nameOf = new Map(names.map((project) => [project.id, project.name]));
+    return groups
+      .map((group) => ({
+        projectId: group.projectId,
+        name: nameOf.get(group.projectId) ?? '',
+        count: group._count.projectId,
+      }))
+      .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }
 
-  async creationDatesForUser(userId: string, since: Date): Promise<Date[]> {
+  async creationDatesForUser(userId: string, scope: DashboardScope): Promise<Date[]> {
     const rows = await this.prisma.generation.findMany({
-      where: { project: { userId }, createdAt: { gte: since } },
+      where: generationsIn(userId, scope),
       select: { createdAt: true },
     });
     return rows.map((row) => row.createdAt);

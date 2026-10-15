@@ -3,6 +3,7 @@
 // No arranca nada: de eso se encargan main.ts (servidor) e index.ts (Vercel).
 import type { Express } from 'express';
 import { SampleProjectProvisioner } from './application/services/SampleProjectProvisioner.js';
+import { AttemptLimiter } from './application/services/AttemptLimiter.js';
 import { SessionIssuer } from './application/services/SessionIssuer.js';
 import { GenerationRunner } from './application/services/GenerationRunner.js';
 import { AnswerClarification } from './application/use-cases/AnswerClarification.js';
@@ -32,6 +33,12 @@ import type { PasswordHasher } from './domain/providers/PasswordHasher.js';
 import { FakeLLMProvider } from './infrastructure/ai/FakeLLMProvider.js';
 import { GeminiProvider } from './infrastructure/ai/GeminiProvider.js';
 import type { Env } from './infrastructure/config/env.js';
+import { PrismaAuthAttemptRepository } from './infrastructure/database/PrismaAuthAttemptRepository.js';
+import { ConsoleSecurityLog } from './infrastructure/monitoring/ConsoleSecurityLog.js';
+import {
+  initSentry,
+  SentryErrorReporter,
+} from './infrastructure/monitoring/SentryErrorReporter.js';
 import { PrismaDashboardRepository } from './infrastructure/database/PrismaDashboardRepository.js';
 import { PrismaDatabaseHealthProbe } from './infrastructure/database/PrismaDatabaseHealthProbe.js';
 import { PrismaGenerationRepository } from './infrastructure/database/PrismaGenerationRepository.js';
@@ -92,13 +99,37 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
   const sessions = new SessionIssuer(tokens, refreshTokens);
   const background = options.background ?? new WaitUntilBackgroundTasks();
   const llm = options.llm ?? createLLMProvider(env);
+
+  // RNF-15: solo con DSN. Sin él no se envía nada y los errores van solo a la consola.
+  let errorReporter: SentryErrorReporter | undefined;
+  if (env.SENTRY_DSN) {
+    initSentry({ dsn: env.SENTRY_DSN, environment: env.NODE_ENV, release: env.APP_VERSION });
+    errorReporter = new SentryErrorReporter(background);
+  }
+  const securityLog = new ConsoleSecurityLog(clock, errorReporter);
+  const protection = {
+    limiter: new AttemptLimiter(new PrismaAuthAttemptRepository(prisma), clock, securityLog, {
+      loginPerEmail: env.AUTH_LOGIN_LIMIT_PER_EMAIL,
+      loginPerIp: env.AUTH_LOGIN_LIMIT_PER_IP,
+      registerPerIp: env.AUTH_REGISTER_LIMIT_PER_IP,
+    }),
+    log: securityLog,
+  };
   const runner = new GenerationRunner({
     llm,
     generations,
     clock,
     timeouts: { attemptMs: env.LLM_ATTEMPT_TIMEOUT_MS, totalMs: env.GENERATION_TIMEOUT_MS },
     wait: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
-    reportFailure: (failure) => console.warn('Generation failed', failure),
+    // Cada generación que falla por el proveedor llega a Sentry con su código y su modelo.
+    reportFailure: (failure) => {
+      console.warn('Generation failed', failure);
+      errorReporter?.captureMessage('Generation failed', {
+        code: failure.code,
+        model: failure.model,
+        attempts: String(failure.attempts),
+      });
+    },
   });
 
   const createGeneration = new CreateGeneration({
@@ -111,6 +142,7 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
       perUser: env.GENERATION_DAILY_LIMIT_PER_USER,
       global: env.GENERATION_DAILY_LIMIT_GLOBAL,
     },
+    log: securityLog,
   });
 
   const app = createApp({
@@ -121,9 +153,17 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
         hasher,
         sessions,
         new SampleProjectProvisioner(projects, generations, clock),
+        protection,
       ),
-      loginUser: new LoginUser(users, hasher, sessions),
-      refreshSession: new RefreshSession({ users, refreshTokens, tokens, sessions, clock }),
+      loginUser: new LoginUser(users, hasher, sessions, protection),
+      refreshSession: new RefreshSession({
+        users,
+        refreshTokens,
+        tokens,
+        sessions,
+        clock,
+        log: securityLog,
+      }),
       logoutUser: new LogoutUser(refreshTokens, tokens, clock),
       getCurrentUser: new GetCurrentUser(users),
     },
@@ -145,7 +185,7 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
         background,
         clock,
       }),
-      exportGeneration: new ExportGeneration(generations),
+      exportGeneration: new ExportGeneration(generations, projects, clock),
       updateSpecification: new UpdateSpecification(generations, clock),
       deleteGeneration: new DeleteGeneration(generations),
       regenerateGeneration: new RegenerateGeneration(generations, createGeneration),
@@ -162,6 +202,8 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
     // En local se trabaja por HTTP y una cookie Secure no llegaría a guardarse.
     cookies: { secure: env.NODE_ENV === 'production' },
     apiDocs: { enabled: env.API_DOCS_ENABLED, version: env.APP_VERSION },
+    securityLog,
+    ...(errorReporter && { errorReporter }),
   });
 
   return { app, database };

@@ -1,6 +1,8 @@
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { CheckHealth } from '../../application/use-cases/CheckHealth.js';
+import type { ErrorReporter } from '../../domain/providers/ErrorReporter.js';
+import type { SecurityLog } from '../../domain/providers/SecurityLog.js';
 import type { TokenService } from '../../domain/providers/TokenService.js';
 import { createAuthController, type AuthUseCases } from '../controllers/authController.js';
 import {
@@ -16,7 +18,7 @@ import { createProjectController, type ProjectUseCases } from '../controllers/pr
 import { createApiDocsRouter } from '../openapi/apiDocs.js';
 import { createAuthentication, type PublicRoute } from './authentication.js';
 import type { CookieSettings } from './cookies.js';
-import { errorHandler, notFoundHandler } from './errorHandler.js';
+import { createErrorHandler, notFoundHandler } from './errorHandler.js';
 
 /** Lo que necesita la capa HTTP. composition.ts lo construye y lo inyecta. */
 export interface AppDependencies {
@@ -29,6 +31,9 @@ export interface AppDependencies {
   cookies: CookieSettings;
   /** SEG-17: la especificación OpenAPI y Swagger UI solo existen si se activan. */
   apiDocs?: { enabled: boolean; version: string };
+  /** SEG-09 y RNF-15. Sin ellos (tests), no se registra ni se envía nada. */
+  securityLog?: SecurityLog;
+  errorReporter?: ErrorReporter;
 }
 
 export const API_PREFIX = '/api/v1';
@@ -53,6 +58,8 @@ export function createApp(dependencies: AppDependencies): Express {
   const dashboard = createDashboardController(dependencies.dashboard);
 
   app.disable('x-powered-by');
+  // Detrás de un único proxy (Vercel o nginx): req.ip es la IP del cliente que este añade.
+  app.set('trust proxy', 1);
   app.use(helmet());
   // Ninguna respuesta, tampoco las de error, se guarda en cachés intermedias ni en el navegador.
   app.use((_req, res, next) => {
@@ -62,7 +69,7 @@ export function createApp(dependencies: AppDependencies): Express {
   app.use(express.json({ limit: MAX_BODY_SIZE }));
 
   const v1 = express.Router();
-  v1.use(createAuthentication(dependencies.tokens, PUBLIC_ROUTES));
+  v1.use(createAuthentication(dependencies.tokens, PUBLIC_ROUTES, dependencies.securityLog));
 
   v1.get('/health', createHealthController(dependencies.checkHealth));
   v1.post('/auth/register', auth.register);
@@ -94,7 +101,7 @@ export function createApp(dependencies: AppDependencies): Express {
     app.use('/api', createApiDocsRouter(dependencies.apiDocs.version));
 
   app.use(notFoundHandler);
-  app.use(errorHandler);
+  app.use(createErrorHandler(dependencies.errorReporter));
 
   return app;
 }

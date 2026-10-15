@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { onSessionExpired } from '../../services/apiClient';
+import { setMonitoringUser } from '../../services/monitoring';
 import * as authService from '../../services/authService';
 
 export type SessionState =
@@ -69,6 +70,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => onSessionExpired(() => end('expired')), [end]);
+
+  // RNF-16: Sentry identifica al usuario solo por su id.
+  const userId = session.user?.id ?? null;
+  useEffect(() => setMonitoringUser(userId), [userId]);
 
   const start = useCallback(
     (user: User) => {
