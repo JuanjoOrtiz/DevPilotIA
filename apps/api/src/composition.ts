@@ -185,7 +185,7 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
         background,
         clock,
       }),
-      exportGeneration: new ExportGeneration(generations),
+      exportGeneration: new ExportGeneration(generations, projects, clock),
       updateSpecification: new UpdateSpecification(generations, clock),
       deleteGeneration: new DeleteGeneration(generations),
       regenerateGeneration: new RegenerateGeneration(generations, createGeneration),

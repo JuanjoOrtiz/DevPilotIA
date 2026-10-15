@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/JuanjoOrtiz/DevPilotIA/main/docs/schemas/specification-export.v1.schema.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://raw.githubusercontent.com/JuanjoOrtiz/DevPilotIA/main/docs/schemas/specification-export.v1.schema.json"
+    },
+    "exportVersion": { "type": "number", "const": 1 },
+    "exportedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+      "description": "Fecha de la exportación, en UTC"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["es", "en"],
+      "description": "Idioma en que está escrita la especificación"
+    },
+    "project": {
+      "type": "object",
+      "properties": { "name": { "type": "string", "minLength": 1 } },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "generation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["feature", "bug"],
+          "description": "Funcionalidad (`feature`) o bug (`bug`)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            },
+            { "type": "null" }
+          ]
+        },
+        "edited": {
+          "type": "boolean",
+          "description": "Si la especificación es la versión editada"
+        },
+        "editedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["id", "type", "createdAt", "completedAt", "edited", "editedAt"],
+      "additionalProperties": false
+    },
+    "specification": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number", "const": 1 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "assumptions": {
+          "maxItems": 6,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+        },
+        "technicalDescription": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "userStories": {
+          "minItems": 1,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "asA": { "type": "string", "minLength": 1, "maxLength": 600 },
+              "iWant": { "type": "string", "minLength": 1, "maxLength": 600 },
+              "soThat": { "type": "string", "minLength": 1, "maxLength": 600 },
+              "acceptanceCriteria": {
+                "minItems": 1,
+                "maxItems": 10,
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+              }
+            },
+            "required": ["asA", "iWant", "soThat", "acceptanceCriteria"],
+            "additionalProperties": false
+          }
+        },
+        "tasks": {
+          "type": "object",
+          "properties": {
+            "frontend": {
+              "maxItems": 15,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+                  "description": { "type": "string", "minLength": 1, "maxLength": 600 }
+                },
+                "required": ["title", "description"],
+                "additionalProperties": false
+              }
+            },
+            "backend": {
+              "maxItems": 15,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+                  "description": { "type": "string", "minLength": 1, "maxLength": 600 }
+                },
+                "required": ["title", "description"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["frontend", "backend"],
+          "additionalProperties": false
+        },
+        "risks": {
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string", "minLength": 1, "maxLength": 600 },
+              "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+              "mitigation": { "type": "string", "minLength": 1, "maxLength": 600 }
+            },
+            "required": ["description", "severity", "mitigation"],
+            "additionalProperties": false
+          }
+        },
+        "edgeCases": {
+          "maxItems": 12,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+        },
+        "testCases": {
+          "maxItems": 15,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "type": { "type": "string", "enum": ["unit", "integration", "e2e"] },
+              "steps": {
+                "minItems": 1,
+                "maxItems": 12,
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+              },
+              "expectedResult": { "type": "string", "minLength": 1, "maxLength": 600 }
+            },
+            "required": ["title", "type", "steps", "expectedResult"],
+            "additionalProperties": false
+          }
+        },
+        "complexity": {
+          "type": "object",
+          "properties": {
+            "size": { "type": "string", "enum": ["S", "M", "L", "XL"] },
+            "rationale": { "type": "string", "minLength": 1, "maxLength": 600 }
+          },
+          "required": ["size", "rationale"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "title",
+        "assumptions",
+        "technicalDescription",
+        "userStories",
+        "tasks",
+        "risks",
+        "edgeCases",
+        "testCases",
+        "complexity"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "$schema",
+    "exportVersion",
+    "exportedAt",
+    "language",
+    "project",
+    "generation",
+    "specification"
+  ],
+  "additionalProperties": false,
+  "title": "DevPilot AI: especificación exportada",
+  "description": "Una especificación técnica generada con DevPilot AI y el contexto de su generación."
+}

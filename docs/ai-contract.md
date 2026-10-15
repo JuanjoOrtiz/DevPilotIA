@@ -54,6 +54,34 @@ type Specification = {
 type Task = { title: string; description: string };
 ```
 
+## Exportación a JSON
+
+El fichero JSON exportado (RF-EXP-02) es un sobre con el contexto que conoce DevPilot y, dentro, la especificación tal cual, con su `schemaVersion`. Así queda separado lo que escribió la IA, o el usuario al editarla, de lo que añade la aplicación:
+
+```ts
+type SpecificationExport = {
+  $schema: 'https://raw.githubusercontent.com/JuanjoOrtiz/DevPilotIA/main/docs/schemas/specification-export.v1.schema.json';
+  exportVersion: 1;
+  exportedAt: string;               // ISO 8601, UTC
+  language: 'es' | 'en';            // idioma en que está escrita la especificación
+  project: { name: string };
+  generation: {
+    id: string;                     // UUID
+    type: 'feature' | 'bug';
+    createdAt: string;
+    completedAt: string | null;
+    edited: boolean;                // true si es la versión editada
+    editedAt: string | null;
+  };
+  specification: Specification;     // la vigente, como arriba
+};
+```
+
+- **Esquema público.** `docs/schemas/specification-export.v1.schema.json` es un JSON Schema 2020-12 generado desde el esquema Zod de `packages/shared` con `npm run schemas -w @devpilot/shared`; nunca se escribe a mano. Un test de la API falla si el fichero publicado no coincide con el esquema Zod. Cada exportación lo enlaza en `$schema`, así que un editor como VS Code la valida y autocompleta al abrirla.
+- **Idioma.** `language` es el del contenido: si se pide en inglés una especificación que aún no está traducida, se exporta la original y `language` lo dice.
+- **Versiones.** Hay dos, independientes. `schemaVersion` cambia si cambia la forma de la especificación, que también afecta a lo que devuelve el modelo; `exportVersion` cambia si cambia el sobre. Cualquier cambio incompatible sube la versión y publica un esquema nuevo (`…v2.schema.json`) sin borrar el anterior.
+- **Para qué sirve.** Es la salida para otros programas: crear tarjetas en Jira o issues de GitHub a partir de `tasks`, generar esqueletos de tests a partir de `testCases` o guardar la especificación junto al código y validarla en el CI. La integración directa con esas herramientas queda fuera del alcance; el JSON con esquema público permite hacerla sin tocar DevPilot.
+
 ## Respuesta del modelo: preguntas o especificación
 
 En la primera llamada el modelo decide si tiene información suficiente (RF-GEN-09). Su respuesta es una unión discriminada, validada con Zod:

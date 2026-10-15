@@ -1,4 +1,9 @@
-import { specificationSchema, type Specification } from '@devpilot/shared';
+import {
+  SPEC_EXPORT_SCHEMA_URL,
+  specificationExportSchema,
+  specificationSchema,
+  type Specification,
+} from '@devpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { DomainError } from '../../domain/errors/DomainError.js';
 import { lucia } from '../../test-support/authFixture.js';
@@ -196,15 +201,64 @@ describe('the sample project of a new account', () => {
 
 // RF-EXP-02
 describe('exporting to JSON', () => {
-  it('writes the current specification with its schema version', async () => {
-    const { exportGeneration, id } = await setUp();
+  async function exportJson(userId = LUCIA, setup?: Awaited<ReturnType<typeof setUp>>) {
+    const { exportGeneration, id } = setup ?? (await setUp());
+    const file = await exportGeneration.execute(userId, id, { format: 'json', language: 'es' });
+    return { file, parsed: specificationExportSchema.parse(JSON.parse(file.content)) };
+  }
 
-    const file = await exportGeneration.execute(LUCIA, id, { format: 'json', language: 'es' });
+  it('writes a file that passes the published schema, with the specification untouched', async () => {
+    const { file, parsed } = await exportJson();
 
     expect(file.fileName).toBe('exportar-el-historial-de-pedidos-a-csv.json');
     expect(file.contentType).toBe('application/json; charset=utf-8');
-    const parsed = specificationSchema.parse(JSON.parse(file.content));
-    expect(parsed).toEqual(sampleSpecification);
-    expect(parsed.schemaVersion).toBe(1);
+    expect(parsed.$schema).toBe(SPEC_EXPORT_SCHEMA_URL);
+    expect(parsed.exportVersion).toBe(1);
+    expect(parsed.specification).toEqual(sampleSpecification);
+    expect(parsed.specification.schemaVersion).toBe(1);
+  });
+
+  it('adds the context of the generation', async () => {
+    const setup = await setUp();
+    const { parsed } = await exportJson(LUCIA, setup);
+
+    expect(parsed).toMatchObject({
+      exportedAt: setup.clock.now().toISOString(),
+      language: 'es',
+      project: { name: portal.name },
+      generation: { id: setup.id, type: 'feature', edited: false, editedAt: null },
+    });
+  });
+
+  it('marks the edited version as such', async () => {
+    const setup = await setUp();
+    await setup.updateSpecification.execute(LUCIA, setup.id, {
+      specification: edited,
+      language: 'es',
+    });
+
+    const { parsed } = await exportJson(LUCIA, setup);
+
+    expect(parsed.specification.title).toBe(edited.title);
+    expect(parsed.generation.edited).toBe(true);
+    expect(parsed.generation.editedAt).toBe(setup.clock.now().toISOString());
+  });
+
+  it('says the language the content is in, not the one asked for, when there is no translation', async () => {
+    const { exportGeneration, id } = await setUp();
+
+    const file = await exportGeneration.execute(LUCIA, id, { format: 'json', language: 'en' });
+
+    expect(specificationExportSchema.parse(JSON.parse(file.content)).language).toBe('es');
+  });
+
+  it("answers not found for someone else's generation", async () => {
+    const { exportGeneration, id } = await setUp();
+
+    const error = await rejection(
+      exportGeneration.execute(MARCOS, id, { format: 'json', language: 'es' }),
+    );
+
+    expect(error.code).toBe('NOT_FOUND');
   });
 });
