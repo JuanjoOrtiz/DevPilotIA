@@ -15,7 +15,7 @@ describe('SpecificationView', () => {
   it('shows the six sections in order, after the assumptions', () => {
     render(<SpecificationView specification={specification} type="feature" />);
 
-    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual([
       'Supuestos',
       '01Descripción técnica',

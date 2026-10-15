@@ -20,11 +20,11 @@ describe('ProjectsChart', () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole('img', {
-        name: 'Barras horizontales: Portal de clientes 11, App de reservas 9.',
-      }),
-    ).toBeTruthy();
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('aria-label'))).toEqual([
+      'Portal de clientes: 11 generaciones',
+      'App de reservas: 9 generaciones',
+    ]);
+    expect(screen.getByRole('link', { name: 'Portal de clientes: 11 generaciones' })).toBeTruthy();
     const widths = [...container.querySelectorAll<HTMLElement>('li div[style]')].map(
       (bar) => bar.style.width,
     );

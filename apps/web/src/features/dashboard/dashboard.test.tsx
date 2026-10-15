@@ -78,12 +78,8 @@ describe('the dashboard', () => {
         name: 'Gráfica de barras por complejidad: S 5, M 9, L 6, XL 2.',
       }),
     ).toBeTruthy();
-    // RF-DAS-04
-    expect(
-      screen.getByRole('img', {
-        name: 'Barras horizontales: Portal de clientes 11, App de reservas 9.',
-      }),
-    ).toBeTruthy();
+    // RF-DAS-04: una lista de enlaces, no una imagen.
+    expect(screen.getByRole('link', { name: 'Portal de clientes: 11 generaciones' })).toBeTruthy();
   });
 
   it('invites to create the first generation when there is no data', async () => {

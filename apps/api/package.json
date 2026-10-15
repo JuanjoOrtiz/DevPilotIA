@@ -17,7 +17,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "prisma generate && tsx --env-file-if-exists=../../.env src/seed.ts"
+    "db:seed": "prisma generate && tsx --env-file-if-exists=../../.env src/seed.ts",
+    "openapi": "tsx src/openapi.ts"
   },
   "dependencies": {
     "@devpilot/shared": "^0.1.0",
