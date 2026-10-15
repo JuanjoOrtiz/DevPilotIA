@@ -77,7 +77,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
       background,
       clock,
     }),
-    exportGeneration: new ExportGeneration(generations),
+    exportGeneration: new ExportGeneration(generations, projects, clock),
     translateSpecification: new TranslateSpecification({ generations, llm, attemptMs: 20_000 }),
     updateSpecification: new UpdateSpecification(generations, clock),
     deleteGeneration: new DeleteGeneration(generations),

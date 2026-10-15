@@ -58,6 +58,7 @@ Tres consecuencias de los planes gratuitos son requisitos:
 ├── packages/
 │   └── shared/              # esquemas Zod y tipos compartidos
 ├── docs/
+│   └── schemas/             # JSON Schema publicado de la exportación
 ├── .github/workflows/       # ci.yml, deploy.yml, release.yml
 ├── docker-compose.yml
 ├── .env.example
@@ -66,7 +67,7 @@ Tres consecuencias de los planes gratuitos son requisitos:
 └── README.es.md             # español
 ```
 
-`packages/shared` contiene los esquemas Zod de peticiones, respuestas y de la especificación, además de los códigos de error. Frontend y backend los importan desde ahí; de los mismos esquemas sale la especificación OpenAPI.
+`packages/shared` contiene los esquemas Zod de peticiones, respuestas y de la especificación, además de los códigos de error. Frontend y backend los importan desde ahí; de los mismos esquemas salen la especificación OpenAPI y el JSON Schema de la exportación (`npm run schemas -w @devpilot/shared`).
 
 ## Backend: Clean Architecture
 
@@ -301,7 +302,7 @@ Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están 
 - **Cambios sin guardar (RF-EDI-04).** Salir del editor con cambios pide confirmación, tanto al navegar dentro de la aplicación (`useBlocker`, que necesita el router de datos de `main.tsx`) como al cerrar o recargar la pestaña (`beforeunload`).
 - **Regenerar (RF-GEN-06).** Crea una generación nueva con la misma entrada y en el idioma de la interfaz; la anterior se conserva. Pasa por `CreateGeneration`, así que cuenta para los límites diarios.
 - **Eliminar (RF-HIS-04).** Pide confirmación y vuelve al proyecto.
-- **Exportar y copiar (RF-EXP-02 y 03).** El JSON es la especificación vigente tal cual, con `schemaVersion`. «Copiar Markdown» pide el Markdown a la API y lo copia con `ClipboardItem`, que Safari acepta aunque el texto llegue después del clic.
+- **Exportar y copiar (RF-EXP-02 y 03).** El JSON es un sobre con el contexto de la generación (proyecto, tipo, fechas, si está editada e idioma) y la especificación vigente tal cual, validado por un JSON Schema publicado en `docs/schemas/`: ver [ai-contract.md](ai-contract.md). «Copiar Markdown» pide el Markdown a la API y lo copia con `ClipboardItem`, que Safari acepta aunque el texto llegue después del clic.
 
 ## Proyecto de ejemplo
 

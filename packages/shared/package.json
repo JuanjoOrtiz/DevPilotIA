@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "schemas": "npm run build && node scripts/write-schemas.mjs"
   },
   "dependencies": {
     "zod": "^4.6.5"

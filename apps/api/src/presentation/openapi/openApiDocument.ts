@@ -20,6 +20,7 @@ import {
   regenerateRequestSchema,
   registerRequestSchema,
   sessionResponseSchema,
+  specificationExportSchema,
   specificationSchema,
   translationQuerySchema,
   translationResponseSchema,
@@ -260,7 +261,7 @@ export const OPERATIONS: readonly OperationSpec[] = [
     response: {
       status: 200,
       description: 'The file, with its name in Content-Disposition',
-      content: { 'text/markdown': z.string(), 'application/json': specificationSchema },
+      content: { 'text/markdown': z.string(), 'application/json': specificationExportSchema },
     },
     errors: [400, 404, 409],
   },
