@@ -39,7 +39,7 @@ export function ComplexityChart({ complexity }: ComplexityChartProps) {
           />
           <Bar
             dataKey="count"
-            fill="var(--color-accent)"
+            fill="var(--color-chart)"
             radius={[4, 4, 0, 0]}
             maxBarSize={56}
             isAnimationActive={false}

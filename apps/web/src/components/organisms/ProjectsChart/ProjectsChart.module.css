@@ -45,5 +45,5 @@
   height: 12px;
   min-width: 4px;
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  background: var(--color-accent);
+  background: var(--color-chart);
 }

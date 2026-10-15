@@ -73,7 +73,7 @@ export function ActivityChart({ activity }: ActivityChartProps) {
           />
           <Bar
             dataKey="count"
-            fill="var(--color-accent)"
+            fill="var(--color-chart)"
             radius={[4, 4, 0, 0]}
             isAnimationActive={false}
           />
