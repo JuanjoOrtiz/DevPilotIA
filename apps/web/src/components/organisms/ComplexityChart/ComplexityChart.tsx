@@ -26,7 +26,11 @@ export function ComplexityChart({ complexity }: ComplexityChartProps) {
         height={HEIGHT}
         initialDimension={{ width: 320, height: HEIGHT }}
       >
-        <BarChart data={complexity} margin={{ top: 24, right: 8, bottom: 0, left: 8 }}>
+        <BarChart
+          accessibilityLayer={false}
+          data={complexity}
+          margin={{ top: 24, right: 8, bottom: 0, left: 8 }}
+        >
           <XAxis
             dataKey="size"
             tickLine={false}

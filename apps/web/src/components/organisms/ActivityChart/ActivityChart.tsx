@@ -44,7 +44,11 @@ export function ActivityChart({ activity }: ActivityChartProps) {
         height={HEIGHT}
         initialDimension={{ width: 600, height: HEIGHT }}
       >
-        <BarChart data={activity} margin={{ top: 4, right: 20, bottom: 0, left: -24 }}>
+        <BarChart
+          accessibilityLayer={false}
+          data={activity}
+          margin={{ top: 4, right: 20, bottom: 0, left: -24 }}
+        >
           <CartesianGrid vertical={false} stroke="var(--color-border-soft)" />
           <XAxis
             dataKey="date"

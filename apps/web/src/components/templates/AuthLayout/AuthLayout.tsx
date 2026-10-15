@@ -27,7 +27,7 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <div className={styles.page}>
-      <section className={styles.aside}>
+      <aside className={styles.aside} aria-label={brand}>
         <div className={styles.brand}>
           <svg aria-hidden="true" width="32" height="32" viewBox="0 0 28 28">
             <rect width="28" height="28" rx="6" fill="var(--color-accent)" />
@@ -36,7 +36,7 @@ export function AuthLayout({
           <span>{brand}</span>
         </div>
         <div className={styles.asideContent}>{aside}</div>
-      </section>
+      </aside>
 
       <main className={styles.main}>
         {actions && <div className={styles.actions}>{actions}</div>}

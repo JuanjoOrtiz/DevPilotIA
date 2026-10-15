@@ -1,4 +1,5 @@
 # Entorno local completo: `docker compose up --build` y abre http://localhost:8080
+# Entra con demo@example.com / devpilot-demo o crea una cuenta.
 # Las credenciales son de ejemplo y solo valen en local.
 name: devpilot
 
@@ -32,6 +33,20 @@ services:
       db:
         condition: service_healthy
 
+  # Carga los datos de demostración y termina: 3 proyectos y 25 generaciones para
+  # demo@example.com / devpilot-demo. Es repetible y no llama al modelo.
+  seed:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    command: npm run db:seed -w @devpilot/api
+    environment:
+      DATABASE_URL: postgresql://devpilot:devpilot@db:5432/devpilot
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   api:
     build:
       context: .
@@ -49,7 +64,7 @@ services:
     ports:
       - '3000:3000'
     depends_on:
-      migrate:
+      seed:
         condition: service_completed_successfully
 
   web:

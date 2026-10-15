@@ -10,9 +10,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# SEG-18: solo lectura. Ningún job necesita escribir en el repositorio.
 permissions:
   contents: read
 
+# SEG-03: cada action va fijada al commit de su versión, no a una etiqueta que se puede
+# mover. Dependabot propone las actualizaciones (.github/dependabot.yml).
 jobs:
   checks:
     name: Lint, tipos, tests y build
@@ -38,14 +41,17 @@ jobs:
       DATABASE_URL: postgresql://devpilot:devpilot@localhost:5432/devpilot_test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
+
+      - name: Auditoría de dependencias (falla con vulnerabilidades altas o críticas)
+        run: npm audit --audit-level=high
 
       - name: Lint y formato (incluye la regla de dependencias entre capas)
         run: npm run lint
@@ -65,11 +71,44 @@ jobs:
       - name: Build
         run: npm run build
 
+  docs:
+    name: OpenAPI y Storybook
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build -w @devpilot/shared
+
+      # RNF-17: el documento sale de los esquemas Zod; los tests comprueban que es válido
+      # y que cubre todas las rutas de app.ts.
+      - name: Generar la especificación OpenAPI
+        run: npm run openapi -w @devpilot/api -- ../../openapi.json
+
+      # RNF-18: el catálogo de componentes compila con todas sus historias.
+      - name: Build de Storybook
+        run: npm run build-storybook -w @devpilot/web
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: api-docs-and-storybook
+          path: |
+            openapi.json
+            apps/web/storybook-static
+          retention-days: 14
+
   docker:
     name: Imagen Docker de la API
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - run: docker build -f apps/api/Dockerfile -t devpilot-api:ci .
