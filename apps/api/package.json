@@ -24,7 +24,7 @@
     "@devpilot/shared": "^0.1.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "@sentry/node": "10.75.3",
+    "@sentry/node": "11.6.0",
     "@vercel/functions": "^3.9.11",
     "bcryptjs": "^3.0.3",
     "express": "^5.3.0",
