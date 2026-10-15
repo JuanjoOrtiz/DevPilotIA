@@ -27,12 +27,12 @@ function Section({
 }) {
   return (
     <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>
+      <h2 className={styles.sectionTitle}>
         <span className={styles.number} aria-hidden="true">
           {String(number).padStart(2, '0')}
         </span>
         {title}
-      </h3>
+      </h2>
       {children}
     </section>
   );
@@ -60,9 +60,9 @@ export function SpecificationView({ specification, type }: SpecificationViewProp
 
       {spec.assumptions.length > 0 && (
         <aside className={styles.assumptions} aria-labelledby="spec-assumptions">
-          <h3 id="spec-assumptions" className={styles.assumptionsTitle}>
+          <h2 id="spec-assumptions" className={styles.assumptionsTitle}>
             {t('specification.assumptions.title')}
-          </h3>
+          </h2>
           <p className={styles.assumptionsHint}>{t('specification.assumptions.description')}</p>
           <ul className={styles.list}>
             {spec.assumptions.map((assumption, index) => (

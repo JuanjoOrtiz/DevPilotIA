@@ -1,0 +1,81 @@
+name: Deploy
+
+# Producción sale siempre de `main`. Vercel compila y publica los dos proyectos al recibir
+# el merge; este workflow se ocupa de lo que Vercel no hace:
+#   1. Aplica las migraciones ANTES del merge, en cuanto se abre el pull request de
+#      `develop` a `main`. Toda migración es compatible con la versión desplegada.
+#   2. Tras el merge, vuelve a aplicarlas (no hace nada si ya están) y comprueba que
+#      producción responde con el commit nuevo y que la página de inicio carga.
+# Sin el secreto DATABASE_URL o la variable PRODUCTION_URL, el paso correspondiente se salta.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Migraciones en Supabase
+    # Solo el pull request de release, nunca uno de una rama cualquiera ni de un fork.
+    if: github.event_name == 'push' || github.head_ref == 'develop'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Aplicar las migraciones pendientes
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::Falta el secreto DATABASE_URL del entorno production: las migraciones no se han aplicado."
+            exit 0
+          fi
+          npm run db:deploy
+
+  verify:
+    name: Comprobar producción
+    if: github.event_name == 'push'
+    needs: migrate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    env:
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - name: Esperar a que /health responda con este commit
+        run: |
+          if [ -z "$PRODUCTION_URL" ]; then
+            echo "::warning::Falta la variable PRODUCTION_URL del entorno production: no se comprueba el despliegue."
+            exit 0
+          fi
+          for attempt in $(seq 1 40); do
+            body=$(curl -fsS "$PRODUCTION_URL/api/v1/health" || true)
+            echo "Intento $attempt: $body"
+            if echo "$body" | grep -q "\"version\":\"$GITHUB_SHA\"" && echo "$body" | grep -q '"database":"up"'; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Producción no responde con el commit $GITHUB_SHA tras 10 minutos."
+          exit 1
+
+      - name: Comprobar la página de inicio
+        if: env.PRODUCTION_URL != ''
+        run: curl -fsS -o /dev/null -w "%{http_code}\n" "$PRODUCTION_URL/"

@@ -2,9 +2,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: var(--radius-xs);
-  font-size: 13px;
+  box-shadow: inset 0 0 0 1px rgb(22 29 26 / 10%);
+  font-family: var(--font-mono);
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;

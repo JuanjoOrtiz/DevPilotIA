@@ -29,8 +29,14 @@ export function AppSidebar({
     <nav aria-label={navLabel} className={styles.sidebar}>
       <div className={styles.brand}>
         <svg aria-hidden="true" width="28" height="28" viewBox="0 0 28 28">
-          <rect width="28" height="28" rx="6" fill="var(--color-accent)" />
-          <path d="M7 14.5 21 7l-5.5 14-2.6-5.9z" fill="#fff" />
+          <rect width="28" height="28" rx="4" fill="var(--color-accent)" />
+          <path
+            d="M8 9.5 12.5 14 8 18.5M15 19h5.5"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2.4"
+            strokeLinecap="square"
+          />
         </svg>
         <span>{brand}</span>
       </div>

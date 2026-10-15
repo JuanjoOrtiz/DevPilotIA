@@ -73,7 +73,8 @@
     "projects": {
       "title": "Generaciones por proyecto",
       "description": "Los proyectos con más actividad",
-      "chart": "Barras horizontales: {{values}}."
+      "row_one": "{{name}}: {{count}} generación",
+      "row_other": "{{name}}: {{count}} generaciones"
     },
     "emptyFiltered": {
       "title": "No hay generaciones en este periodo",

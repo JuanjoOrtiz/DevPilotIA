@@ -182,12 +182,12 @@ GitHub Actions valida cada pull request y despliega a producción solo desde `ma
 | Workflow | Se dispara con | Qué hace |
 | --- | --- | --- |
 | `ci.yml` | Cada pull request y cada push a `develop` o a `main` | Lint y formato, incluida la regla de dependencias entre capas; comprobación de tipos; tests de la API con PostgreSQL en un contenedor de servicio; tests del frontend; build del frontend y de la imagen Docker de la API. El día 17 se añaden el build de Storybook, la validación de la especificación OpenAPI y la auditoría de dependencias |
-| `deploy.yml` | CI en verde sobre `main` | En este orden: migraciones de Prisma contra Supabase, despliegue de la API y del frontend en Vercel, registro de la versión y subida de source maps a Sentry, publicación de Storybook, y comprobación de `/health` y de la página de inicio |
+| `deploy.yml` | Pull request de `develop` a `main` y push a `main` | Migraciones de Prisma contra Supabase antes del merge; tras él, comprobación de que `/health` responde con el commit nuevo y de que la página de inicio carga. Vercel compila y publica los dos proyectos con su integración de Git, y el build del frontend sube los source maps a Sentry. Storybook se compila en `ci.yml` y queda como artefacto |
 | `release.yml` | Una etiqueta `v*` | Crea la release de GitHub con sus notas; la entrega es `v1.0.0` |
 
 Reglas del pipeline:
 
-- **Un solo camino a producción.** Cuando exista `deploy.yml`, los despliegues automáticos de Vercel sobre `main` se desactivan; despliega el workflow, con la CLI de Vercel. Hasta entonces, Vercel despliega por su cuenta desde `main`.
+- **Un solo camino a producción.** Solo `main` despliega, por la integración de Git de Vercel, y `deploy.yml` aplica antes las migraciones y verifica después el despliegue. Se descartó desplegar con la CLI de Vercel: añadía un token de Vercel en GitHub y una segunda vía de despliegue sin mejorar la seguridad.
 - **Ramas protegidas.** `develop` y `main` exigen pull request con el CI en verde y no admiten push directo. Las ramas de trabajo (`feature/…`, `fix/…`, `chore/…`) salen de `develop` y vuelven a ella; `develop` pasa a `main` con un merge commit al cerrar cada bloque.
 - **Sin llamadas al LLM.** Los tests usan `FakeLLMProvider`; la clave de Gemini no se guarda en GitHub.
 - **Secretos.** La URL de la base de datos y los tokens de Vercel y Sentry están en GitHub Actions Secrets, nunca en el repositorio.

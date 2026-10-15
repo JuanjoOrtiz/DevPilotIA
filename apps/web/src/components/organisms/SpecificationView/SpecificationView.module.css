@@ -35,8 +35,9 @@
 
 .assumptionsTitle {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .assumptionsHint {
@@ -57,15 +58,18 @@
   align-items: baseline;
   gap: 10px;
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
+/* Las seis secciones son una secuencia: su número va en verde, como un paso que pasa. */
 .number {
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-text-subtle);
+  color: var(--color-accent);
 }
 
 .prose {
@@ -81,8 +85,8 @@
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: lowercase;
   color: var(--color-text-subtle);
 }
 

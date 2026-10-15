@@ -1,0 +1,26 @@
+# SEG-03: Dependabot propone cada semana las actualizaciones de npm y de las actions.
+# Las de seguridad llegan en cuanto se publican, sin esperar a la semana.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      # Las versiones menores y los parches llegan juntos en un solo pull request.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore(ci)

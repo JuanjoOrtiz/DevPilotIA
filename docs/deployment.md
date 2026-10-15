@@ -120,15 +120,65 @@ En GitHub, en «Settings», «Rules» y «Rulesets», crea un «branch ruleset»
 
 - Impedir el borrado y el push forzado, que vienen marcados por defecto. Así `develop` no se borra al fusionarla en `main`.
 - Exigir pull request antes de fusionar, con cero aprobaciones obligatorias: con una sola persona no habría quien aprobase.
-- Exigir que pasen las comprobaciones «Lint, tipos, tests y build» e «Imagen Docker de la API». Se buscan con ese nombre, sin el prefijo «CI /».
+- Exigir que pasen las comprobaciones «Lint, tipos, tests y build», «OpenAPI y Storybook» e «Imagen Docker de la API». Se buscan con ese nombre, sin el prefijo «CI /».
 
 Si se renombra un job de `ci.yml`, hay que actualizar la regla.
 
 El pull request de `develop` a `main` se fusiona siempre con «Create a merge commit». Con «Squash and merge» las dos ramas dejan de compartir historia y el siguiente pull request muestra conflictos y commits repetidos.
 
+## 5. Seguridad del repositorio y del pipeline
+
+Lo que vive en el repositorio ya está hecho: `npm audit` en el CI, `.github/dependabot.yml`, las actions fijadas a un commit, permisos de solo lectura en los workflows y `SECURITY.md`. Lo que se activa en GitHub, en «Settings» y «Advanced Security» (o «Code security»):
+
+1. **Dependabot alerts** y **Dependabot security updates**: avisan de una vulnerabilidad nueva y abren el pull request que la corrige (SEG-03).
+2. **CodeQL analysis**, con «Default setup»: analiza el código en cada pull request (SEG-19).
+3. **Secret Protection** y **Push protection**: rechazan un push que contenga una clave reconocible (SEG-19, amenaza T-13).
+4. **Private vulnerability reporting**: el canal que indica `SECURITY.md`.
+
+### `deploy.yml`: migraciones y comprobación
+
+Vercel sigue compilando y publicando los dos proyectos con cada merge en `main`. `deploy.yml` hace lo que Vercel no hace:
+
+- Al abrir o actualizar el pull request de `develop` a `main`, aplica las migraciones pendientes en Supabase. Así la base de datos cambia **antes** que el código, como exige la regla «Migraciones primero». Toda migración tiene que ser compatible con la versión desplegada.
+- Tras el merge, vuelve a aplicarlas (si no hay ninguna pendiente no hace nada) y espera hasta 10 minutos a que `/api/v1/health` responda con el commit nuevo y la base de datos activa. Después comprueba que la página de inicio carga.
+
+Para activarlo, en «Settings» y «Environments», crea el entorno `production` con:
+
+| Tipo | Nombre | Valor |
+| --- | --- | --- |
+| Secret | `DATABASE_URL` | La cadena del rol que aplica las migraciones (`prisma`) |
+| Variable | `PRODUCTION_URL` | La URL del frontend, sin barra final: `https://dev-pilot-ia-2tpc.vercel.app` |
+
+Sin el secreto o sin la variable, el paso correspondiente se salta con un aviso y no falla. Con el workflow activo, las migraciones ya no se aplican a mano.
+
+### Mínimo privilegio en la base de datos (SEG-18)
+
+La API no necesita crear ni borrar tablas, solo leer y escribir filas. Con un rol propio para la API, un fallo en la aplicación no puede alterar el esquema, y las migraciones siguen con `prisma` desde el pipeline. Probado en local con RLS activa: el rol no puede crear tablas ni borrar la de usuarios, y el recorrido completo de la aplicación funciona.
+
+1. Genera otra contraseña con `openssl rand -hex 24` y, en el editor SQL de Supabase, ejecuta:
+
+   ```sql
+   create user "devpilot_app" with password 'CAMBIA_ESTA_CONTRASEÑA' bypassrls;
+   grant usage on schema public to devpilot_app;
+   grant select, insert, update, delete on all tables in schema public to devpilot_app;
+   grant usage, select on all sequences in schema public to devpilot_app;
+   alter default privileges for role prisma in schema public
+     grant select, insert, update, delete on tables to devpilot_app;
+   alter default privileges for role prisma in schema public
+     grant usage, select on sequences to devpilot_app;
+   revoke all on table _prisma_migrations from devpilot_app;
+   ```
+
+   `bypassrls` hace falta porque las tablas tienen RLS activa («Enable automatic RLS») y DevPilot no usa políticas: el aislamiento entre usuarios lo hace la API. Las dos últimas órdenes `alter default privileges` dan los mismos permisos sobre las tablas que creen migraciones futuras.
+
+2. En el proyecto de la API de Vercel, cambia `DATABASE_URL` por la misma cadena con `devpilot_app.abcdefghijklmnop` y la contraseña nueva, y vuelve a desplegar.
+3. Comprueba `/api/v1/health` y entra en la aplicación. Si algo falla, vuelve a poner la cadena de `prisma`: no se ha borrado nada.
+
+La cadena de `prisma` queda solo en el secreto de GitHub y en tu gestor de contraseñas.
+
 ## Cambios en la base de datos
 
-Mientras no exista `deploy.yml`, las migraciones se aplican a mano y **antes** de pasar a `main` el código que las necesita:
+Con `deploy.yml` activo, las migraciones se aplican solas al abrir el pull request de `develop` a `main`. Sin él, se aplican a mano y **antes** de pasar a `main` el código que las necesita:
 
 ```bash
 npm run db:migrate                                    # en local: crea la migración y la aplica
@@ -196,7 +246,7 @@ Si alguien queda bloqueado en una demostración, el bloqueo dura 15 minutos en e
 
 ## Pendiente de comprobar
 
-- `docker compose up --build`: los Dockerfiles se han probado paso a paso fuera de Docker y el CI construye la imagen de la API, pero el arranque conjunto no se ha ejecutado.
+- `docker compose up --build` con el servicio `seed`: el CI construye la imagen de la API, pero el arranque conjunto se comprueba en un equipo con Docker.
 - La migración inicial se escribió a mano siguiendo el formato de Prisma y se aplica bien en Supabase. Falta confirmar que `npm run db:migrate` responde que no hay cambios; si crea una migración nueva, hay una diferencia entre la migración y `schema.prisma` y esa migración nueva la corrige.
 - Los dos proyectos se han compilado en local con `vercel build`, y la función resultante responde contra un PostgreSQL local. Falta el despliegue real: la región, el reenvío de `/api` entre los dos proyectos y el cierre de conexiones sin uso.
 - Que la IP de los eventos de seguridad sea la del visitante a través del reenvío (amenaza T-27): pasos en «Límite de intentos e IP del visitante».

@@ -4,9 +4,15 @@ import styles from './ChartCard.module.css';
 interface ChartCardProps {
   title: string;
   description?: string;
-  /** Texto que describe la gráfica para quien no la ve: su resumen en una frase. */
-  summary: string;
-  /** La gráfica. Es decorativa para los lectores de pantalla, que leen `summary`. */
+  /**
+   * Texto que describe la gráfica para quien no la ve: su resumen en una frase. Sin él, el
+   * contenido se lee tal cual, para gráficas hechas con HTML accesible.
+   */
+  summary?: string;
+  /**
+   * La gráfica. Es decorativa para los lectores de pantalla, que leen `summary`: no puede
+   * tener nada enfocable dentro (en Recharts, `accessibilityLayer={false}`).
+   */
   children: ReactNode;
 }
 
@@ -18,9 +24,13 @@ export function ChartCard({ title, description, summary, children }: ChartCardPr
         <h2 className={styles.title}>{title}</h2>
         {description && <p className={styles.description}>{description}</p>}
       </div>
-      <div role="img" aria-label={summary} className={styles.chart}>
-        {children}
-      </div>
+      {summary ? (
+        <div role="img" aria-label={summary} className={styles.chart}>
+          {children}
+        </div>
+      ) : (
+        <div className={styles.chart}>{children}</div>
+      )}
     </section>
   );
 }

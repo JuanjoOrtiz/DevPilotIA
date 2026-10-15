@@ -26,7 +26,11 @@ export function ComplexityChart({ complexity }: ComplexityChartProps) {
         height={HEIGHT}
         initialDimension={{ width: 320, height: HEIGHT }}
       >
-        <BarChart data={complexity} margin={{ top: 24, right: 8, bottom: 0, left: 8 }}>
+        <BarChart
+          accessibilityLayer={false}
+          data={complexity}
+          margin={{ top: 24, right: 8, bottom: 0, left: 8 }}
+        >
           <XAxis
             dataKey="size"
             tickLine={false}
@@ -35,7 +39,7 @@ export function ComplexityChart({ complexity }: ComplexityChartProps) {
           />
           <Bar
             dataKey="count"
-            fill="var(--color-accent)"
+            fill="var(--color-chart)"
             radius={[4, 4, 0, 0]}
             maxBarSize={56}
             isAnimationActive={false}
