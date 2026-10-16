@@ -1,9 +1,9 @@
 /* Tokens de diseño. Los componentes usan estas variables, nunca colores ni tamaños escritos
    a mano.
 
-   Dirección: una herramienta de desarrollo. Base clara gris grafito con bordes definidos y
-   radios pequeños; verde para lo que está listo o pasa (como un CI en verde) y ámbar para
-   lo que pide atención. Roboto para toda la interfaz; IBM Plex Mono solo para lo técnico:
+   Dirección: una herramienta de desarrollo. Base clara gris azulado con bordes definidos y
+   radios pequeños; azul como color de acción (botones, enlaces, gráficas, foco), verde solo
+   para los estados completados y ámbar para lo que pide atención. Roboto para toda la interfaz; IBM Plex Mono solo para lo técnico:
    la ruta, los números de sección, las fechas, los contadores y las etiquetas de stack.
    La barra lateral y la marca van en una gama de azules. */
 :root {
@@ -12,38 +12,37 @@
   /* Títulos de página y cifras. */
   --font-display: var(--font-sans);
 
-  --color-ground: #eceeeb;
-  --color-surface: #fbfcfa;
+  --color-ground: #edf0f4;
+  --color-surface: #fbfcfe;
   --color-navy: #0f1e36;
   --color-navy-raised: #172a47;
   --color-navy-active: #1f3658;
   --color-navy-border: #2c4469;
-  --color-accent: #0b6e45;
-  --color-accent-hover: #084f32;
-  /* La marca (el icono >_) y la barra lateral van en azul; el verde queda para lo que está
-     listo o pasa. */
+  --color-accent: #1f5fd1;
+  --color-accent-hover: #184aa6;
+  /* La marca: el icono >_ y la pestaña del navegador. */
   --color-brand: #2f6fde;
   /* Solo sobre la barra lateral oscura: indicador de la sección activa. */
   --color-accent-bright: #6cb4ff;
   /* Barras de las gráficas: contraste de 3:1 sobre la superficie (WCAG 1.4.11). */
-  --color-chart: #138a59;
-  --color-chart-muted: #a9c9b8;
+  --color-chart: #2f6fde;
+  --color-chart-muted: #b7cbef;
 
-  --color-text: #161d1a;
-  --color-text-strong: #29322d;
-  --color-text-muted: #47524c;
-  --color-text-subtle: #56625b;
+  --color-text: #141b26;
+  --color-text-strong: #283244;
+  --color-text-muted: #465264;
+  --color-text-subtle: #556175;
   --color-text-on-navy: #f2f6fc;
   --color-text-on-navy-muted: #c3d0e3;
   --color-text-on-navy-subtle: #97a9c4;
 
-  --color-border: #c5ccc7;
-  --color-border-strong: #808a84;
-  --color-border-soft: #dde2de;
-  --color-surface-muted: #f3f5f2;
+  --color-border: #c8d0db;
+  --color-border-strong: #808b9b;
+  --color-border-soft: #dfe4eb;
+  --color-surface-muted: #f3f5f9;
 
-  --color-neutral-bg: #e4e8e5;
-  --color-neutral-text: #333d37;
+  --color-neutral-bg: #e4e9f0;
+  --color-neutral-text: #333e50;
   --color-success-bg: #d4ecdf;
   --color-success-text: #0a5434;
   --color-warning-bg: #f6e8c6;
@@ -54,14 +53,14 @@
   --color-danger-outline: #e3a9a2;
   --color-danger-solid: #b42318;
   --color-danger-solid-hover: #912018;
-  --color-info-bg: #e3ece8;
-  --color-info-border: #b9cfc5;
-  --color-info-text: #1b4a3a;
-  --color-info-title: #123d2f;
-  --color-info-body: #22302b;
+  --color-info-bg: #e3ebf9;
+  --color-info-border: #bccdee;
+  --color-info-text: #1b3d7a;
+  --color-info-title: #13306a;
+  --color-info-body: #222d40;
   --color-caution-bg: #f9e4d1;
   --color-caution-text: #833208;
-  --color-backdrop: rgb(22 29 26 / 50%);
+  --color-backdrop: rgb(15 23 38 / 50%);
 
   --radius-xs: 2px;
   --radius-sm: 3px;
@@ -69,5 +68,5 @@
   --radius-lg: 6px;
   --control-height: 44px;
   --control-height-sm: 40px;
-  --shadow-dialog: 0 16px 40px rgb(22 29 26 / 22%);
+  --shadow-dialog: 0 16px 40px rgb(15 23 38 / 22%);
 }
