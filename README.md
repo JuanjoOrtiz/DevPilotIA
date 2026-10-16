@@ -199,7 +199,15 @@ Vercel publica los dos proyectos (web y API) con cada merge en `main`. La guía 
 - **Planes gratuitos.** Supabase pausa la base de datos tras una semana sin actividad y no hace copias de seguridad. Gemini tiene una cuota diaria compartida, y en su capa gratuita el contenido puede usarse para mejorar los productos de Google: la pantalla de generación avisa de no pegar código ni datos confidenciales.
 - **Arranque en frío.** La primera petición tras un rato sin uso tarda algo más.
 - **Despliegue.** Vercel compila y publica por su cuenta; el pipeline aplica las migraciones y verifica, pero no despliega con la CLI de Vercel.
-- **Fuera del alcance.** Restaurar la versión original de la IA desde la interfaz (se conserva en la base de datos), filtros en el historial, gráfica por tipo, recuperación de contraseña, verificación de email y equipos.
+- **Fuera del alcance.** Restaurar la versión original de la IA desde la interfaz (se conserva en la base de datos), filtros en el historial, gráfica por tipo y equipos.
+
+## Mejoras previstas
+
+- **Recuperación de contraseña y verificación de email.** Necesitan enviar correo, y para que llegue a la bandeja de entrada hace falta un dominio propio con SPF, DKIM y DMARC (`*.vercel.app` no lo permite). Eso rompe el requisito de coste cero: con un dominio (unos 10 € al año) y la capa gratuita de un proveedor de correo sería viable. El diseño reutilizaría el de los refresh tokens: token aleatorio guardado como hash, de un solo uso y con caducidad corta, la misma respuesta exista o no la cuenta, límite de intentos por email e IP como en el login y revocación de todas las sesiones al cambiar la contraseña. Mientras tanto es un riesgo aceptado ([`docs/threat-model.md`](docs/threat-model.md)).
+- **Borrado de cuenta desde la interfaz** (derecho de supresión del RGPD): un `DELETE /api/v1/users/me` que pida la contraseña. El modelo de datos ya borra en cascada sesiones, proyectos y generaciones.
+- **Refinado con IA.** Regenerar a partir de una versión editada, de modo que el modelo respete los cambios del usuario y ajuste el resto. El resultado sería una generación nueva, como al regenerar, para no perder ninguna versión.
+- **Diagramas en la especificación.** El modelo devolvería el flujo o el modelo de datos en Mermaid, validado con el esquema como el resto de la salida, y se dibujaría aislado para no romper SEG-14. Entraría como versión 2 del formato de exportación, que ya está versionado.
+- **Integraciones.** Crear issues en Jira o GitHub a partir del JSON exportado.
 
 ## Licencia
 
