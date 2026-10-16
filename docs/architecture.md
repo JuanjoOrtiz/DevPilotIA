@@ -339,7 +339,7 @@ Consecuencias:
 - La cookie de refresh puede ser `SameSite=Strict`, porque nunca cruza de un sitio a otro.
 - Vercel puede guardar en caché lo que reenvía; por eso la API marca todas sus respuestas con `Cache-Control: no-store`.
 - En producción el frontend y la API son dos proyectos de Vercel. El de la API tiene además su propia URL pública, que el navegador nunca usa.
-- La API no recibe la conexión directa del visitante. Express confía en un solo salto (`trust proxy` a 1): `req.ip` es la IP que añade el último proxy (Vercel o nginx) a `X-Forwarded-For`, nunca una que escriba el cliente. Con ella se limitan intentos y se registran los eventos de seguridad (amenaza T-27). Que en producción sea la del visitante, y no la del proyecto web que reenvía, se comprueba después de desplegar: ver [deployment.md](deployment.md).
+- La API no recibe la conexión directa del visitante. Express confía en un solo salto (`trust proxy` a 1): `req.ip` es la IP que añade el último proxy (Vercel o nginx) a `X-Forwarded-For`, nunca una que escriba el cliente. Con ella se limitan intentos y se registran los eventos de seguridad (amenaza T-27). Comprobado en producción el 16 de octubre de 2026: a través del reenvío del frontend, la IP registrada es la del visitante.
 
 Decisión tomada el 10 de octubre de 2026. La alternativa descartada, dos dominios con `SameSite=None`, está en [threat-model.md](threat-model.md).
 

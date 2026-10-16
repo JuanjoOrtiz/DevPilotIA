@@ -189,6 +189,7 @@ npm run build
 | --- | --- |
 | `ci.yml` | Auditoría de dependencias, lint, tipos, tests, migraciones e integración con PostgreSQL, build, OpenAPI, Storybook e imagen Docker |
 | `deploy.yml` | Aplica las migraciones al abrir el pull request de `develop` a `main`; tras el merge, comprueba que producción responde con el commit nuevo |
+| `keepalive.yml` | Visita `/api/v1/health` cada tres días para que Supabase no pause la base de datos |
 | Dependabot | Actualizaciones semanales de npm y de las actions |
 
 Vercel publica los dos proyectos (web y API) con cada merge en `main`. La guía completa, de Supabase a Sentry, está en [docs/deployment.md](docs/deployment.md).
