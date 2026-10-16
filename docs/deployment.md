@@ -147,7 +147,7 @@ Para activarlo, en «Settings» y «Environments», crea el entorno `production`
 | Tipo | Nombre | Valor |
 | --- | --- | --- |
 | Secret | `DATABASE_URL` | La cadena del rol que aplica las migraciones (`prisma`) |
-| Variable | `PRODUCTION_URL` | La URL del frontend, sin barra final: `https://dev-pilot-ia-2tpc.vercel.app` |
+| Variable | `PRODUCTION_URL` | La URL del frontend, sin barra final: `https://dev-pilot-web.vercel.app` |
 
 Sin el secreto o sin la variable, el paso correspondiente se salta con un aviso y no falla. Con el workflow activo, las migraciones ya no se aplican a mano.
 
