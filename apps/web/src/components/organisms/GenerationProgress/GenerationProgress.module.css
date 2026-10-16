@@ -19,7 +19,7 @@
 .title {
   margin: 0;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .description {
@@ -64,7 +64,7 @@
 }
 
 .current {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-info-title);
 }
 

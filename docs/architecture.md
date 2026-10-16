@@ -63,8 +63,7 @@ Tres consecuencias de los planes gratuitos son requisitos:
 ├── docker-compose.yml
 ├── .env.example
 ├── CLAUDE.md
-├── README.md                # inglés
-└── README.es.md             # español
+└── README.md                # en español
 ```
 
 `packages/shared` contiene los esquemas Zod de peticiones, respuestas y de la especificación, además de los códigos de error. Frontend y backend los importan desde ahí; de los mismos esquemas salen la especificación OpenAPI y el JSON Schema de la exportación (`npm run schemas -w @devpilot/shared`).

@@ -6,10 +6,9 @@
 
 .heading {
   margin: 0;
-  font-family: var(--font-mono);
   font-size: 17px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* El contenedor mide su propio ancho: la tabla cambia de forma según el sitio que tiene,
@@ -43,10 +42,8 @@
 .table thead th {
   border-bottom-color: var(--color-border);
   background: var(--color-surface-muted);
-  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
-  text-transform: lowercase;
   color: var(--color-text-muted);
   white-space: nowrap;
 }
