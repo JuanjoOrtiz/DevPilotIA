@@ -6,8 +6,8 @@ Es el trabajo de fin de máster de Juanjo Ortiz (octubre de 2026): una aplicaci�
 
 | | |
 | --- | --- |
-| Aplicación | <https://dev-pilot-ia-2tpc.vercel.app>: crea una cuenta; cada cuenta nueva recibe un proyecto de ejemplo |
-| Swagger UI | <https://dev-pilot-ia-2tpc.vercel.app/api/docs>, cuando `API_DOCS_ENABLED=true` (SEG-17) |
+| Aplicación | <https://dev-pilot-web.vercel.app>: crea una cuenta; cada cuenta nueva recibe un proyecto de ejemplo |
+| Swagger UI | <https://dev-pilot-api.vercel.app/api/docs>, cuando `API_DOCS_ENABLED=true` (SEG-17) |
 | Storybook | `npm run storybook -w @devpilot/web`; el CI lo compila y lo publica como artefacto en cada cambio |
 | Documentación | [Requisitos](docs/requirements.md) · [Arquitectura](docs/architecture.md) · [Contrato de IA](docs/ai-contract.md) · [Modelo de amenazas](docs/threat-model.md) · [Despliegue](docs/deployment.md) |
 
