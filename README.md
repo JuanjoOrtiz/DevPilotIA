@@ -1,209 +1,205 @@
 # DevPilot AI
 
-**English** · [Español](README.es.md)
+DevPilot AI convierte una tarea o un bug descrito en lenguaje natural en una **especificación técnica lista para implementar**: descripción técnica, historias de usuario con criterios de aceptación, tareas de frontend y backend, riesgos y casos límite, casos de prueba y una estimación de complejidad. Si a la descripción le falta información, la IA pregunta antes de inventar. El resultado se edita, se regenera y se exporta a Markdown o JSON.
 
-DevPilot AI turns a task or a bug described in plain language into a **technical specification ready to implement**. The specification has a technical description, user stories with acceptance criteria, frontend and backend tasks, risks and edge cases, test cases and a complexity estimate. When the description is missing information, the AI asks before making things up. The result can be edited, regenerated and exported to Markdown or JSON.
-
-It is Juanjo Ortiz's master's thesis (October 2026): a complete application, deployed at zero cost, built with Clean Architecture in the backend and Atomic Design in the frontend.
+Es el trabajo de fin de máster de Juanjo Ortiz (octubre de 2026): una aplicación completa, desplegada y a coste cero, construida con Clean Architecture en el backend y Atomic Design en el frontend.
 
 | | |
 | --- | --- |
-| Application | <https://dev-pilot-ia-2tpc.vercel.app>: sign up; every new account gets a sample project |
-| Swagger UI | <https://dev-pilot-ia-2tpc.vercel.app/api/docs>, when `API_DOCS_ENABLED=true` (SEG-17) |
-| Storybook | `npm run storybook -w @devpilot/web`; CI builds it and publishes it as an artifact on every change |
-| Documentation (Spanish) | [Requirements](docs/requirements.md) · [Architecture](docs/architecture.md) · [AI contract](docs/ai-contract.md) · [Threat model](docs/threat-model.md) · [Deployment](docs/deployment.md) |
+| Aplicación | <https://dev-pilot-ia-2tpc.vercel.app>: crea una cuenta; cada cuenta nueva recibe un proyecto de ejemplo |
+| Swagger UI | <https://dev-pilot-ia-2tpc.vercel.app/api/docs>, cuando `API_DOCS_ENABLED=true` (SEG-17) |
+| Storybook | `npm run storybook -w @devpilot/web`; el CI lo compila y lo publica como artefacto en cada cambio |
+| Documentación | [Requisitos](docs/requirements.md) · [Arquitectura](docs/architecture.md) · [Contrato de IA](docs/ai-contract.md) · [Modelo de amenazas](docs/threat-model.md) · [Despliegue](docs/deployment.md) |
 
-The interface is available in English and Spanish. The screenshots below show the Spanish UI with the demo data.
+![Dashboard con indicadores, actividad por día, complejidad y proyectos](docs/images/dashboard.png)
 
-![Dashboard with indicators, daily activity, complexity and projects](docs/images/dashboard.png)
+## Qué hace
 
-## Features
-
-| Module | What it does |
+| Módulo | Funcionalidad |
 | --- | --- |
-| Authentication | Sign up, sign in and sign out. A 15-minute access token kept only in memory, and a rotating refresh token in an httpOnly cookie. Attempt limits per email and per IP |
-| Projects | Projects with a description, a tech stack and conventions, sent to the AI as context. A sample project for every new account |
-| AI generation | Feature or bug in plain language → a six-section specification validated against a schema. Clarifying questions, explicit assumptions, retries, daily limits and visible states |
-| Editing | Editor for every section, with the same validation as the AI's answer; the original version is kept. A warning before leaving with unsaved changes |
-| History | Generations per project, paginated, with status, type and complexity. Regenerate and delete |
-| Export | Markdown with checkboxes, JSON with a [public schema](docs/schemas/specification-export.v1.schema.json), and copy to clipboard |
-| Dashboard | Indicators, daily activity, complexity and the most active projects, filtered by period and project |
+| Autenticación | Registro, inicio y cierre de sesión. Access token de 15 min solo en memoria y refresh token rotatorio en cookie httpOnly. Límite de intentos por email y por IP |
+| Proyectos | Proyectos con descripción, stack y convenciones, que la IA recibe como contexto. Proyecto de ejemplo en cada cuenta nueva |
+| Generación con IA | Funcionalidad o bug en lenguaje natural → especificación de seis secciones validada contra un esquema. Preguntas aclaratorias, supuestos explícitos, reintentos, límites diarios y estados visibles |
+| Edición | Editor de todas las secciones con la misma validación que la respuesta de la IA; la versión original se conserva. Aviso al salir con cambios sin guardar |
+| Historial | Generaciones por proyecto, paginadas, con estado, tipo y complejidad. Regenerar y eliminar |
+| Exportación | Markdown con casillas, JSON con [esquema público](docs/schemas/specification-export.v1.schema.json) y copia al portapapeles |
+| Dashboard | Indicadores, actividad por día, complejidad y proyectos con más actividad, filtrables por periodo y proyecto |
 
-The specification follows the interface language too: when the language changes, it is translated once and stored.
+La interfaz está en español e inglés, y también la especificación: si cambias de idioma, se traduce una vez y se guarda.
 
-| Project and history | New generation |
+| Proyecto e historial | Nueva generación |
 | --- | --- |
-| ![Project with its generation history](docs/images/project-history.png) | ![Generation form with privacy notice](docs/images/new-generation.png) |
-| **Clarifying questions** | **Specification** |
-| ![The AI asks for details before specifying](docs/images/clarification.png) | ![Specification with assumptions and sections](docs/images/specification.png) |
-| **Editor** | **Failure and retry** |
-| ![Specification editor](docs/images/editor.png) | ![Failed generation with retry](docs/images/failed.png) |
+| ![Proyecto con su historial de generaciones](docs/images/project-history.png) | ![Formulario de generación con aviso de privacidad](docs/images/new-generation.png) |
+| **Preguntas aclaratorias** | **Especificación** |
+| ![La IA pide detalles antes de especificar](docs/images/clarification.png) | ![Especificación con supuestos y secciones](docs/images/specification.png) |
+| **Editor** | **Error y reintento** |
+| ![Editor de la especificación](docs/images/editor.png) | ![Generación fallida con su reintento](docs/images/failed.png) |
 
-## Architecture
+## Arquitectura
 
 ```mermaid
 flowchart LR
-  subgraph Browser
+  subgraph Navegador
     W[React + Vite<br/>Atomic Design]
   end
   subgraph Vercel
-    R[Static frontend<br/>proxies /api]
-    A[Express API<br/>function in Frankfurt]
+    R[Frontend estático<br/>reenvía /api]
+    A[API Express<br/>función en Fráncfort]
   end
-  W -- same origin --> R
+  W -- mismo origen --> R
   R -- /api/* --> A
   A -- Prisma, TLS --> D[(PostgreSQL<br/>Supabase)]
-  A -- JSON with schema --> G[Gemini Flash]
-  A -. errors without personal data .-> S[Sentry]
-  W -. errors without personal data .-> S
+  A -- JSON con esquema --> G[Gemini Flash]
+  A -. errores sin datos personales .-> S[Sentry]
+  W -. errores sin datos personales .-> S
 ```
 
-**Same origin.** The browser only talks to the frontend's domain, which forwards `/api` to the API. There is no CORS, and the refresh cookie can be `SameSite=Strict`.
+**Mismo origen.** El navegador solo habla con el dominio del frontend, que reenvía `/api` a la API. No hay CORS y la cookie de refresh puede ser `SameSite=Strict`.
 
-**Backend: Clean Architecture.** Four layers in `apps/api/src`, with dependencies always pointing inwards. ESLint fails the CI if a layer imports from one it must not.
+**Backend: Clean Architecture.** Cuatro capas en `apps/api/src`, con las dependencias siempre hacia dentro. ESLint hace fallar el CI si una capa importa de otra que no debe.
 
 ```mermaid
 flowchart RL
-  P[presentation<br/>routes, controllers, Zod, OpenAPI] --> AP[application<br/>one use case per file]
+  P[presentation<br/>rutas, controladores, Zod, OpenAPI] --> AP[application<br/>un caso de uso por fichero]
   I[infrastructure<br/>Prisma, Gemini, bcrypt, jose, Sentry] --> AP
-  AP --> D[domain<br/>entities, errors, interfaces]
+  AP --> D[domain<br/>entidades, errores, interfaces]
   I --> D
 ```
 
-- `domain` imports neither Express, Prisma nor the model's SDK. It defines the interfaces (`GenerationRepository`, `LLMProvider`…) that `infrastructure` implements.
-- Use cases receive their dependencies through the constructor, and `composition.ts` is the only file that knows every layer.
-- Tests use in-memory repositories and a `FakeLLMProvider`: no test calls Gemini.
+- `domain` no importa Express, Prisma ni el SDK del modelo: define las interfaces (`GenerationRepository`, `LLMProvider`…) que implementa `infrastructure`.
+- Los casos de uso reciben sus dependencias por constructor, y `composition.ts` es el único fichero que conoce todas las capas.
+- Los tests usan repositorios en memoria y `FakeLLMProvider`: ningún test llama a Gemini.
 
-**Frontend: Atomic Design.** `atoms → molecules → organisms → templates → pages`, and each level only imports from lower ones (ESLint checks this too). Atoms and molecules are presentational; data arrives through TanStack Query from `features/` and `services/`. Storybook documents atoms and molecules.
+**Frontend: Atomic Design.** `atoms → molecules → organisms → templates → pages`, y cada nivel solo importa de los inferiores (también lo comprueba ESLint). Átomos y moléculas son presentacionales; los datos llegan por TanStack Query desde `features/` y `services/`. Storybook documenta átomos y moléculas.
 
-## Project structure
+## Estructura
 
 ```
 apps/
-  api/                  Express + Prisma
-    prisma/             schema and migrations
-    src/domain/         entities, errors and interfaces
-    src/application/    use cases and services
-    src/infrastructure/ Prisma, Gemini, security, monitoring
-    src/presentation/   HTTP, controllers, validation and OpenAPI
-  web/                  React + Vite
-    src/components/     atoms, molecules, organisms, templates, pages
-    src/features/       queries and mutations per area (TanStack Query)
-    src/services/       API client
-    src/i18n/           Spanish and English
-packages/shared/        Zod schemas and types shared by web and API
-docs/                   requirements, architecture, AI contract, threats, deployment
-  schemas/              published JSON Schema of the export
-.github/                CI, deployment and Dependabot
+  api/                 Express + Prisma
+    prisma/            esquema y migraciones
+    src/domain/        entidades, errores e interfaces
+    src/application/   casos de uso y servicios
+    src/infrastructure/ Prisma, Gemini, seguridad, monitorización
+    src/presentation/  HTTP, controladores, validación y OpenAPI
+  web/                 React + Vite
+    src/components/    atoms, molecules, organisms, templates, pages
+    src/features/      consultas y mutaciones por área (TanStack Query)
+    src/services/      cliente de la API
+    src/i18n/          español e inglés
+packages/shared/       esquemas Zod y tipos compartidos por web y API
+docs/                  requisitos, arquitectura, contrato de IA, amenazas, despliegue
+  schemas/             JSON Schema publicado de la exportación
+.github/               CI, despliegue y Dependabot
 ```
 
-## Technical decisions
+## Decisiones técnicas
 
-| Decision | Why |
+| Decisión | Por qué |
 | --- | --- |
-| One Zod schema per contract, in `packages/shared` | The same schema validates the model's answer, edits and frontend forms, and generates OpenAPI and the export's JSON Schema, so they can't drift apart |
-| The model's answer is untrusted | It is validated against the schema. If it fails there is one retry; if that fails too, the generation fails with a specific error code |
-| Asynchronous generation | `POST` returns 202 and the frontend polls the status. A generation completes or fails within 45 s, with 20 s per attempt |
-| No in-memory state in the API | On Vercel each request may hit a different instance: limits and attempts are counted in PostgreSQL, and background work is registered with `waitUntil` |
-| Access token in memory, refresh token in a cookie | An XSS can't read a persistent token. The refresh token rotates on every use, and reusing one revokes every session |
-| Vercel + Supabase | No credit card, and in Frankfurt next to the database. Docker is kept for local development and CI |
-| Gemini Flash behind `LLMProvider` | Free tier. Switching providers is a new class in `infrastructure`; the use cases don't change |
+| Un solo esquema Zod por contrato, en `packages/shared` | El mismo esquema valida la respuesta del modelo, las ediciones, los formularios del frontend y genera OpenAPI y el JSON Schema de la exportación: no pueden desincronizarse |
+| La respuesta del modelo no es fiable | Se valida contra el esquema; si no lo cumple hay un reintento y, si vuelve a fallar, la generación queda fallida con un código de error concreto |
+| Generación asíncrona | `POST` responde 202 y el frontend consulta el estado. Una generación termina o falla en 45 s, con 20 s por intento |
+| API sin estado en memoria | En Vercel cada petición puede ir a una instancia distinta: límites e intentos se cuentan en PostgreSQL y el trabajo en segundo plano se registra con `waitUntil` |
+| Access token en memoria y refresh en cookie | Un XSS no puede leer un token persistente. El refresh rota en cada uso y su reutilización revoca todas las sesiones |
+| Vercel + Supabase | Sin tarjeta y en Fráncfort, junto a la base de datos. Docker se mantiene para el entorno local y el CI |
+| Gemini Flash detrás de `LLMProvider` | Capa gratuita. Cambiar de proveedor es una clase nueva en `infrastructure`, sin tocar los casos de uso |
 
-## Security
+## Seguridad
 
-The [threat model](docs/threat-model.md) lists assets, actors and 28 threats with their mitigations. Requirements SEG-01 to SEG-19 follow the OWASP Top 10:2025 and the LLM-specific risks, and each one has its test or check.
+El [modelo de amenazas](docs/threat-model.md) recoge activos, actores y 28 amenazas con su mitigación. Los requisitos SEG-01 a SEG-19 siguen el OWASP Top 10:2025 y los riesgos propios del LLM, y cada uno tiene su test o su comprobación.
 
-- **Access:** global authentication with an explicit list of public routes. Every query filters by the signed-in user, and someone else's resource answers 404.
-- **Input and output:** Zod on every input. User text and model output are always rendered as text, never as HTML.
-- **Prompt:** user text is delimited as data, and the instructions are fixed.
-- **Limits:** daily generations per user and overall, login and sign-up attempts, and size limits on everything that goes into or comes out of the model.
-- **Startup and secrets:** the API refuses to start with weak or sample secrets, or without TLS to the database. Secrets live only in environment variables.
-- **Monitoring:** structured security event log, and Sentry without personal data.
-- **Supply chain:** `npm audit` in CI, Dependabot, and actions pinned to a commit. See [SECURITY.md](SECURITY.md).
+- **Acceso:** autenticación global con lista explícita de rutas públicas. Cada consulta filtra por el usuario en sesión, y un recurso ajeno responde 404.
+- **Entradas y salidas:** Zod en todas las entradas. El texto del usuario y la salida del modelo se muestran siempre como texto, nunca como HTML.
+- **Prompt:** el texto del usuario va delimitado como dato y las instrucciones son fijas.
+- **Límites:** generaciones por usuario y globales al día, intentos de login y de registro, y tamaño de toda entrada y salida del modelo.
+- **Arranque y secretos:** la API no arranca con secretos débiles o de ejemplo, ni sin TLS hacia la base de datos. Los secretos solo viven en variables de entorno.
+- **Monitorización:** registro estructurado de eventos de seguridad y Sentry sin datos personales.
+- **Cadena de suministro:** `npm audit` en el CI, Dependabot y actions fijadas a un commit. Ver [SECURITY.md](SECURITY.md).
 
-## AI contract
+## Contrato de IA
 
-The specification has a fixed schema, `schemaVersion: 1`, described in [docs/ai-contract.md](docs/ai-contract.md). The model answers with structured JSON: either a specification or 2 to 4 clarifying questions. Each provider failure has its own code (`LLM_TIMEOUT`, `LLM_RATE_LIMITED`, `LLM_INVALID_RESPONSE`…), its own message in the interface and, when it makes sense, a retry.
+La especificación tiene un esquema fijo, `schemaVersion: 1`, descrito en [docs/ai-contract.md](docs/ai-contract.md). El modelo responde con JSON estructurado: o una especificación o entre 2 y 4 preguntas aclaratorias. Cada fallo del proveedor tiene su código (`LLM_TIMEOUT`, `LLM_RATE_LIMITED`, `LLM_INVALID_RESPONSE`…), su mensaje en la interfaz y, cuando tiene sentido, la opción de reintentar.
 
-## Running locally
+## Puesta en marcha
 
-### With Docker (recommended)
+### Con Docker (recomendado)
 
 ```bash
 docker compose up --build
 ```
 
-This starts PostgreSQL, applies the migrations, loads the demo data and starts the API and the web app. Open <http://localhost:8080> and sign in with **demo@example.com / devpilot-demo**, or create an account.
+Levanta PostgreSQL, aplica las migraciones, carga los datos de demostración y arranca la API y la web. Abre <http://localhost:8080> y entra con **demo@example.com / devpilot-demo**, o crea una cuenta.
 
-Docker uses the simulated model (`LLM_PROVIDER=fake`), so everything works without an API key. With a description shorter than 80 characters it asks questions; otherwise it returns a specification.
+Docker usa el modelo simulado (`LLM_PROVIDER=fake`): todo funciona sin clave. Con una descripción de menos de 80 caracteres el modelo simulado hace preguntas; si no, devuelve una especificación.
 
-### Without Docker
+### Sin Docker
 
-You need Node 22.18 or later and a PostgreSQL, which can be the one from Compose:
+Necesitas Node 22.18 o posterior y un PostgreSQL, que puede ser el del propio Compose:
 
 ```bash
 cp .env.example .env
 npm install
 docker compose up -d db
 npm run db:deploy
-npm run db:seed          # sample data for demo@example.com / devpilot-demo
+npm run db:seed          # datos de ejemplo para demo@example.com / devpilot-demo
 npm run dev:api          # http://localhost:3000
-npm run dev:web          # http://localhost:5173, in another terminal
+npm run dev:web          # http://localhost:5173, en otra terminal
 npm run storybook -w @devpilot/web   # http://localhost:6006
 ```
 
-To use Gemini, set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY` (from Google AI Studio) in `.env`.
+Para usar Gemini, pon `LLM_PROVIDER=gemini` y `GEMINI_API_KEY` (de Google AI Studio) en `.env`.
 
-## Environment variables
+## Variables de entorno
 
-They are all in [.env.example](.env.example), with sample values that the API rejects in production.
+Todas están en [.env.example](.env.example), con valores de ejemplo que en producción la API rechaza.
 
-| Variable | Purpose | Default |
+| Variable | Para qué | Por defecto |
 | --- | --- | --- |
-| `DATABASE_URL` | PostgreSQL. In production it requires `sslmode=require` or `verify-full` | — |
-| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Token signing: 32 bytes or more, and different | — |
-| `LLM_PROVIDER` | `gemini` or `fake` | `fake` |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini key and model | —, `gemini-3.5-flash-lite` |
-| `GENERATION_DAILY_LIMIT_PER_USER`, `GENERATION_DAILY_LIMIT_GLOBAL` | Generations per day | 20, 200 |
-| `AUTH_LOGIN_LIMIT_PER_EMAIL`, `AUTH_LOGIN_LIMIT_PER_IP`, `AUTH_REGISTER_LIMIT_PER_IP` | Authentication attempts | 5, 20, 10 |
-| `LLM_ATTEMPT_TIMEOUT_MS`, `GENERATION_TIMEOUT_MS`, `LLM_MAX_OUTPUT_TOKENS` | Model timeouts and output cap | 20000, 45000, 8192 |
-| `SENTRY_DSN` (API), `VITE_SENTRY_DSN` (web) | Error monitoring; nothing is sent without them | — |
-| `API_DOCS_ENABLED` | Swagger UI and `/api/openapi.json` | `false` |
-| `APP_VERSION` | Version reported by `/health`; on Vercel, the commit | `dev` |
+| `DATABASE_URL` | PostgreSQL. En producción exige `sslmode=require` o `verify-full` | — |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Firma de los tokens: 32 bytes o más y distintos | — |
+| `LLM_PROVIDER` | `gemini` o `fake` | `fake` |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Clave y modelo de Gemini | —, `gemini-3.5-flash-lite` |
+| `GENERATION_DAILY_LIMIT_PER_USER`, `GENERATION_DAILY_LIMIT_GLOBAL` | Generaciones al día | 20, 200 |
+| `AUTH_LOGIN_LIMIT_PER_EMAIL`, `AUTH_LOGIN_LIMIT_PER_IP`, `AUTH_REGISTER_LIMIT_PER_IP` | Intentos de autenticación | 5, 20, 10 |
+| `LLM_ATTEMPT_TIMEOUT_MS`, `GENERATION_TIMEOUT_MS`, `LLM_MAX_OUTPUT_TOKENS` | Tiempos y tope de salida del modelo | 20000, 45000, 8192 |
+| `SENTRY_DSN` (API), `VITE_SENTRY_DSN` (web) | Monitorización de errores; sin ellas no se envía nada | — |
+| `API_DOCS_ENABLED` | Swagger UI y `/api/openapi.json` | `false` |
+| `APP_VERSION` | Versión de `/health`; en Vercel, el commit | `dev` |
 
 ## Tests
 
 ```bash
-npm run lint               # ESLint (with the layer and level rules) and Prettier
+npm run lint               # ESLint (con las reglas de capas y niveles) y Prettier
 npm run typecheck
-npm test                   # API, web and shared, without a database; measures API coverage
-npm run test:integration   # API against PostgreSQL
+npm test                   # API, web y shared, sin base de datos; mide la cobertura de la API
+npm run test:integration   # API contra PostgreSQL
 npm run build
 ```
 
-- **API:** over 270 unit and HTTP-layer tests with Supertest, and 35 integration tests against PostgreSQL. Line coverage of `domain` and `application` is above 97%; the required minimum is 70%.
-- **Web:** over 270 tests with React Testing Library, including one that renders every Storybook story.
-- **Security requirements:** each one has its test. For example, isolation between users, refresh token reuse, prompt injection, and that an unexpected error doesn't leak details.
+- **API:** más de 270 tests unitarios y de la capa HTTP con Supertest, y 35 de integración contra PostgreSQL. Cobertura de `domain` y `application` por encima del 97 % de líneas; el mínimo exigido es el 70 %.
+- **Web:** más de 270 tests con React Testing Library, incluido uno que renderiza todas las historias de Storybook.
+- **Requisitos de seguridad:** cada uno tiene su test. Por ejemplo, el aislamiento entre usuarios, la reutilización del refresh token, la inyección en el prompt o que un error inesperado no filtre detalles.
 
-## Deployment
+## Despliegue
 
-`develop` integrates the work and `main` is production. Both branches are protected and only accept pull requests with a green CI.
+`develop` integra el trabajo y `main` es producción. Las dos ramas están protegidas y solo aceptan pull requests con el CI en verde.
 
-| Workflow | What it does |
+| Workflow | Qué hace |
 | --- | --- |
-| `ci.yml` | Dependency audit, lint, types, tests, migrations and integration tests on PostgreSQL, build, OpenAPI, Storybook and the Docker image |
-| `deploy.yml` | Applies the migrations when the `develop` → `main` pull request opens; after the merge, checks that production answers with the new commit |
-| Dependabot | Weekly updates for npm packages and actions |
+| `ci.yml` | Auditoría de dependencias, lint, tipos, tests, migraciones e integración con PostgreSQL, build, OpenAPI, Storybook e imagen Docker |
+| `deploy.yml` | Aplica las migraciones al abrir el pull request de `develop` a `main`; tras el merge, comprueba que producción responde con el commit nuevo |
+| Dependabot | Actualizaciones semanales de npm y de las actions |
 
-Vercel publishes both projects (web and API) on every merge to `main`. The full guide, from Supabase to Sentry, is in [docs/deployment.md](docs/deployment.md) (Spanish).
+Vercel publica los dos proyectos (web y API) con cada merge en `main`. La guía completa, de Supabase a Sentry, está en [docs/deployment.md](docs/deployment.md).
 
-## Known limitations
+## Limitaciones conocidas
 
-- **Free tiers.** Supabase pauses the database after a week without activity and makes no backups. Gemini has a shared daily quota, and on its free tier the content may be used to improve Google's products: the generation screen warns not to paste code or confidential data.
-- **Cold starts.** The first request after a while without use takes a bit longer.
-- **Deployment.** Vercel builds and publishes on its own; the pipeline applies migrations and verifies, but doesn't deploy through the Vercel CLI.
-- **Out of scope.** Restoring the AI's original version from the interface (it is kept in the database), history filters, a chart by type, password recovery, email verification and teams.
+- **Planes gratuitos.** Supabase pausa la base de datos tras una semana sin actividad y no hace copias de seguridad. Gemini tiene una cuota diaria compartida, y en su capa gratuita el contenido puede usarse para mejorar los productos de Google: la pantalla de generación avisa de no pegar código ni datos confidenciales.
+- **Arranque en frío.** La primera petición tras un rato sin uso tarda algo más.
+- **Despliegue.** Vercel compila y publica por su cuenta; el pipeline aplica las migraciones y verifica, pero no despliega con la CLI de Vercel.
+- **Fuera del alcance.** Restaurar la versión original de la IA desde la interfaz (se conserva en la base de datos), filtros en el historial, gráfica por tipo, recuperación de contraseña, verificación de email y equipos.
 
-## License
+## Licencia
 
 [MIT](LICENSE) © 2026 Juanjo Ortiz
