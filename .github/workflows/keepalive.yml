@@ -1,0 +1,39 @@
+name: Keepalive
+
+# Supabase pausa la base de datos tras una semana sin actividad, y reactivarla es manual.
+# Cada tres días este workflow visita /api/v1/health, que consulta la base de datos, para
+# que la aplicación siga disponible entre la entrega y la evaluación. También se puede
+# lanzar a mano desde Actions.
+on:
+  schedule:
+    - cron: '17 7 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Visitar /health
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production
+    env:
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - name: Comprobar que la API y la base de datos responden
+        run: |
+          if [ -z "$PRODUCTION_URL" ]; then
+            echo "::warning::Falta la variable PRODUCTION_URL del entorno production."
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            body=$(curl -fsS "$PRODUCTION_URL/api/v1/health" || true)
+            echo "Intento $attempt: $body"
+            if echo "$body" | grep -q '"database":"up"'; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::La base de datos no responde. Revisa si Supabase ha pausado el proyecto."
+          exit 1

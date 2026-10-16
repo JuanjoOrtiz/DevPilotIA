@@ -74,7 +74,7 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 | T-24 | Un script inyectado roba el access token del almacenamiento del navegador | El access token vive solo en memoria y el refresh token en una cookie httpOnly | RF-AUT-03, SEG-05 |
 | T-25 | La API de datos automática de Supabase expone las tablas sin pasar por la API de DevPilot | La API de datos se desactiva en el proyecto de Supabase; solo se usa su PostgreSQL | SEG-02 |
 | T-26 | Una caché intermedia guarda y sirve a otro usuario una respuesta de la API | Todas las respuestas de la API llevan `Cache-Control: no-store` | SEG-02 |
-| T-27 | Alguien llama a la URL propia de la API, sin pasar por el frontend, para falsear su IP | Express confía en un solo salto (`trust proxy` a 1): la IP es la que añade la plataforma, nunca la que envía el cliente. Falta comprobar en producción que es la del visitante y no la del proyecto web ([deployment.md](deployment.md)); si no lo fuera, el límite por email sigue protegiendo cada cuenta | SEG-07, SEG-09 |
+| T-27 | Alguien llama a la URL propia de la API, sin pasar por el frontend, para falsear su IP | Express confía en un solo salto (`trust proxy` a 1): la IP es la que añade la plataforma, nunca la que envía el cliente. Comprobado en producción: a través del reenvío del frontend, la IP registrada es la del visitante. Además, el límite por email protege cada cuenta con independencia de la IP | SEG-07, SEG-09 |
 | T-28 | Un despliegue de vista previa ejecuta código sin revisar contra la base de datos de producción | `DATABASE_URL` y los secretos JWT existen solo en el entorno de producción de Vercel; las vistas previas de la API no llegan a arrancar | SEG-02, RNF-05 |
 | T-29 | Un usuario con cuenta lanza peticiones masivas a los endpoints sin IA (listar, leer, editar) | Todas exigen sesión y filtran por usuario con índice; lo costoso ya está limitado en PostgreSQL: intentos de login y registro por email y por IP, y generaciones por usuario y en total al día. Sin límite general por usuario: riesgo aceptado (ver «Riesgos aceptados») | SEG-07, SEG-13 |
 
@@ -82,8 +82,8 @@ Nada de lo que llega del navegador ni de lo que devuelve el modelo se considera 
 
 - **Contenido enviado a Gemini.** En la capa gratuita, Google puede usar el contenido para mejorar sus productos. Se acepta y se avisa junto al formulario de que no se pegue código ni datos confidenciales (RF-GEN-08).
 - **Registro abierto, sin verificación de email ni recuperación de contraseña.** Quedan fuera del MVP; se pueden crear cuentas con emails ajenos o inventados y una contraseña olvidada no se recupera. El tope global diario acota el daño sobre la cuota del LLM.
-- **Disponibilidad limitada.** Supabase pausa la base de datos tras una semana sin actividad y reactivarla es manual; Vercel puede pausar un proyecto que supere los límites del plan Hobby. No hay protección frente a ataques de denegación de servicio más allá de los límites de uso.
-- **Certificado de la base de datos sin verificar, por ahora.** La conexión con Supabase va cifrada (`sslmode=require`), pero no comprueba el certificado del servidor. Pasar a `sslmode=verify-full` con el certificado raíz de Supabase queda para el cierre de seguridad del día 18.
+- **Disponibilidad limitada.** Supabase pausa la base de datos tras una semana sin actividad y reactivarla es manual (el workflow `keepalive.yml` la visita cada tres días para evitarlo); Vercel puede pausar un proyecto que supere los límites del plan Hobby. No hay protección frente a ataques de denegación de servicio más allá de los límites de uso.
+- **Certificado de la base de datos sin verificar, por ahora.** La conexión con Supabase va cifrada (`sslmode=require`), pero no comprueba el certificado del servidor. Pasar a `sslmode=verify-full` con el certificado raíz de Supabase queda como mejora: cambia la conexión de producción y no compensa el riesgo justo antes de la entrega.
 - **Sin copias de seguridad.** El plan gratuito de Supabase no las incluye.
 - **Sin límite general de peticiones por usuario (T-29).** CodeQL marca las rutas de `app.ts` con «Missing rate limiting» porque no reconoce los límites que se cuentan en PostgreSQL. Las alertas se descartan como «Won't fix» con esta justificación. Un limitador en memoria como `express-rate-limit` no serviría en Vercel, porque cada petición puede ir a una instancia distinta. La mejora sería un límite por usuario en la base de datos o una regla de rate limiting en el firewall de Vercel.
 - **Sin análisis dinámico ni escaneo de la imagen Docker.** Son de nivel prescindible.
@@ -96,7 +96,7 @@ Se elige servir la API bajo el mismo origen que el frontend: el proyecto del fro
 
 La alternativa descartada era mantener dos dominios con `SameSite=None; Secure` y una defensa adicional frente a CSRF en `/auth/refresh` y `/auth/logout`.
 
-Queda por comprobar en el primer despliegue que el reenvío entre los dos proyectos conserva la cookie y deja a la API conocer la IP del visitante.
+Comprobado en producción: el reenvío entre los dos proyectos conserva la cookie de refresh y deja a la API conocer la IP del visitante.
 
 ## Revisión
 

@@ -239,19 +239,22 @@ Si alguien queda bloqueado en una demostración, el bloqueo dura 15 minutos en e
 
 ## Límites del plan gratuito que afectan a la entrega
 
-- **Supabase pausa el proyecto tras una semana sin actividad**, y reactivarlo es manual, desde su panel. Si entre la entrega y la evaluación pasan más de siete días sin visitas, la aplicación aparecerá con «Base de datos no disponible». Conviene entrar al menos una vez por semana o programar una visita automática a `/api/v1/health`.
+- **Supabase pausa el proyecto tras una semana sin actividad**, y reactivarlo es manual, desde su panel. Si entre la entrega y la evaluación pasan más de siete días sin visitas, la aplicación aparecerá con «Base de datos no disponible». Para evitarlo, el workflow `keepalive.yml` visita `/api/v1/health` cada tres días; usa la variable `PRODUCTION_URL` del entorno `production`. Si aun así se pausa, se reactiva desde el panel de Supabase.
 - **Supabase no hace copias de seguridad en el plan gratuito.**
 - **El plan Hobby de Vercel es solo para uso no comercial** y corta cada petición a los 300 segundos. Una generación tarda 45 como mucho.
 - **La API se suspende entre peticiones.** La primera tras un rato sin uso tarda algo más; el frontend reintenta solo durante unos segundos antes de mostrar un error.
 
+## Comprobado en producción
+
+- `docker compose up --build` arranca la base de datos, aplica las migraciones, carga los datos de demostración y levanta la API y la web (15 de octubre de 2026).
+- El despliegue real en Vercel: el reenvío de `/api` entre los dos proyectos con la cookie de refresh, y las migraciones y la comprobación de `/health` desde `deploy.yml`.
+- La IP de los eventos de seguridad es la del visitante a través del reenvío (amenaza T-27), comprobada con un login fallido el 16 de octubre de 2026.
+
 ## Pendiente de comprobar
 
-- `docker compose up --build` con el servicio `seed`: el CI construye la imagen de la API, pero el arranque conjunto se comprueba en un equipo con Docker.
 - La migración inicial se escribió a mano siguiendo el formato de Prisma y se aplica bien en Supabase. Falta confirmar que `npm run db:migrate` responde que no hay cambios; si crea una migración nueva, hay una diferencia entre la migración y `schema.prisma` y esa migración nueva la corrige.
-- Los dos proyectos se han compilado en local con `vercel build`, y la función resultante responde contra un PostgreSQL local. Falta el despliegue real: la región, el reenvío de `/api` entre los dos proyectos y el cierre de conexiones sin uso.
-- Que la IP de los eventos de seguridad sea la del visitante a través del reenvío (amenaza T-27): pasos en «Límite de intentos e IP del visitante».
 - El primer evento real en Sentry y sus alertas, cuando estén los DSN.
-- Verificar el certificado de Supabase con `sslmode=verify-full` y su certificado raíz, previsto para el día 18.
+- Verificar el certificado de Supabase con `sslmode=verify-full` y su certificado raíz: queda como mejora (ver «Riesgos aceptados» en [threat-model.md](threat-model.md)).
 
 ## Fuentes
 
