@@ -35,7 +35,6 @@
 
 .assumptionsTitle {
   margin: 0;
-  font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 500;
 }
@@ -58,10 +57,9 @@
   align-items: baseline;
   gap: 10px;
   margin: 0;
-  font-family: var(--font-mono);
   font-size: 16px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* Las seis secciones son una secuencia: su número va en verde, como un paso que pasa. */
@@ -82,11 +80,9 @@
 
 .label {
   margin: 4px 0 0;
-  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0;
-  text-transform: lowercase;
   color: var(--color-text-subtle);
 }
 
@@ -158,7 +154,7 @@
 .taskTitle {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
@@ -215,7 +211,7 @@
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .missing {

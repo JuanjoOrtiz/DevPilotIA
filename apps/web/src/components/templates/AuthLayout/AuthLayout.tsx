@@ -30,7 +30,7 @@ export function AuthLayout({
       <aside className={styles.aside} aria-label={brand}>
         <div className={styles.brand}>
           <svg aria-hidden="true" width="32" height="32" viewBox="0 0 28 28">
-            <rect width="28" height="28" rx="4" fill="var(--color-accent)" />
+            <rect width="28" height="28" rx="4" fill="var(--color-brand)" />
             <path
               d="M8 9.5 12.5 14 8 18.5M15 19h5.5"
               fill="none"

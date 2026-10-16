@@ -3,25 +3,28 @@
 
    Dirección: una herramienta de desarrollo. Base clara gris grafito con bordes definidos y
    radios pequeños; verde para lo que está listo o pasa (como un CI en verde) y ámbar para
-   lo que pide atención. IBM Plex Mono para títulos, cifras, rutas y estados; Plex Sans para
-   leer. Los nombres `navy` se mantienen por compatibilidad: hoy son el grafito de la barra
-   lateral. */
+   lo que pide atención. Roboto para toda la interfaz; IBM Plex Mono solo para lo técnico:
+   la ruta, los números de sección, las fechas, los contadores y las etiquetas de stack.
+   La barra lateral y la marca van en una gama de azules. */
 :root {
-  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Roboto', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  /* Títulos de página y cifras: la voz de la herramienta. */
-  --font-display: var(--font-mono);
+  /* Títulos de página y cifras. */
+  --font-display: var(--font-sans);
 
   --color-ground: #eceeeb;
   --color-surface: #fbfcfa;
-  --color-navy: #1e2622;
-  --color-navy-raised: #27312c;
-  --color-navy-active: #2f3b35;
-  --color-navy-border: #3b4842;
+  --color-navy: #0f1e36;
+  --color-navy-raised: #172a47;
+  --color-navy-active: #1f3658;
+  --color-navy-border: #2c4469;
   --color-accent: #0b6e45;
   --color-accent-hover: #084f32;
+  /* La marca (el icono >_) y la barra lateral van en azul; el verde queda para lo que está
+     listo o pasa. */
+  --color-brand: #2f6fde;
   /* Solo sobre la barra lateral oscura: indicador de la sección activa. */
-  --color-accent-bright: #5ad19a;
+  --color-accent-bright: #6cb4ff;
   /* Barras de las gráficas: contraste de 3:1 sobre la superficie (WCAG 1.4.11). */
   --color-chart: #138a59;
   --color-chart-muted: #a9c9b8;
@@ -30,9 +33,9 @@
   --color-text-strong: #29322d;
   --color-text-muted: #47524c;
   --color-text-subtle: #56625b;
-  --color-text-on-navy: #f3f6f4;
-  --color-text-on-navy-muted: #c4cec8;
-  --color-text-on-navy-subtle: #9eaca4;
+  --color-text-on-navy: #f2f6fc;
+  --color-text-on-navy-muted: #c3d0e3;
+  --color-text-on-navy-subtle: #97a9c4;
 
   --color-border: #c5ccc7;
   --color-border-strong: #808a84;
