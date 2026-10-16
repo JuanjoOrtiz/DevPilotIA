@@ -39,6 +39,14 @@ describe('SpecificationView', () => {
     expect(screen.getByText('Uno o dos días')).toBeTruthy();
   });
 
+  it('keeps the browser translator away from the complexity size', () => {
+    render(<SpecificationView specification={specification} type="feature" />);
+
+    const sizes = screen.getAllByText(specification.complexity.size);
+    expect(sizes).toHaveLength(2);
+    for (const size of sizes) expect(size.getAttribute('translate')).toBe('no');
+  });
+
   it('leaves out the assumptions block when there are none', () => {
     render(
       <SpecificationView specification={{ ...specification, assumptions: [] }} type="feature" />,
