@@ -5,7 +5,10 @@ name: Deploy
 #   1. Aplica las migraciones ANTES del merge, en cuanto se abre el pull request de
 #      `develop` a `main`. Toda migración es compatible con la versión desplegada.
 #   2. Tras el merge, vuelve a aplicarlas (no hace nada si ya están) y comprueba que
-#      producción responde con el commit nuevo y que la página de inicio carga.
+#      la API de producción ejecuta el código de este commit y que la página de inicio carga.
+#      Vercel no vuelve a desplegar la API si el merge solo cambia la web: entonces /health
+#      sigue dando un commit anterior, y vale si la API y `packages/shared` no cambian entre
+#      ese commit y este.
 # Sin el secreto DATABASE_URL o la variable PRODUCTION_URL, el paso correspondiente se salta.
 on:
   pull_request:
@@ -59,7 +62,13 @@ jobs:
     env:
       PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
     steps:
-      - name: Esperar a que /health responda con este commit
+      # Todo el historial: hace falta el commit que esté sirviendo producción para compararlo.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Esperar a que la API de producción ejecute el código de este commit
         run: |
           if [ -z "$PRODUCTION_URL" ]; then
             echo "::warning::Falta la variable PRODUCTION_URL del entorno production: no se comprueba el despliegue."
@@ -68,12 +77,20 @@ jobs:
           for attempt in $(seq 1 40); do
             body=$(curl -fsS "$PRODUCTION_URL/api/v1/health" || true)
             echo "Intento $attempt: $body"
-            if echo "$body" | grep -q "\"version\":\"$GITHUB_SHA\"" && echo "$body" | grep -q '"database":"up"'; then
-              exit 0
+            version=$(echo "$body" | sed -n 's/.*"version":"\([0-9a-f]\{40\}\)".*/\1/p')
+            if [ -n "$version" ] && echo "$body" | grep -q '"database":"up"'; then
+              if [ "$version" = "$GITHUB_SHA" ]; then
+                exit 0
+              fi
+              if git cat-file -e "$version^{commit}" 2>/dev/null \
+                && git diff --quiet "$version" "$GITHUB_SHA" -- apps/api packages/shared; then
+                echo "La API sigue en $version: este commit no cambia apps/api ni packages/shared."
+                exit 0
+              fi
             fi
             sleep 15
           done
-          echo "::error::Producción no responde con el commit $GITHUB_SHA tras 10 minutos."
+          echo "::error::La API de producción no ejecuta el código del commit $GITHUB_SHA tras 10 minutos."
           exit 1
 
       - name: Comprobar la página de inicio
