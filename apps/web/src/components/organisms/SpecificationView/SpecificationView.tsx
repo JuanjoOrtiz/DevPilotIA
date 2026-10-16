@@ -177,7 +177,9 @@ export function SpecificationView({ specification, type }: SpecificationViewProp
 
       <Section number={6} title={t('specification.sections.complexity')}>
         <div className={styles.complexity}>
-          <span className={styles.size}>{spec.complexity.size}</span>
+          <span className={styles.size} translate="no">
+            {spec.complexity.size}
+          </span>
           <div>
             <p className={styles.taskTitle}>
               {t(`specification.complexity.${spec.complexity.size}`)}
