@@ -88,6 +88,13 @@ export interface GenerationRepository {
     at: Date,
   ): Promise<boolean>;
 
+  /**
+   * Vuelve a la versión de la IA (RF-EDI-03): descarta la editada, su idioma y las
+   * traducciones guardadas. Devuelve `false` si no existe, no es del usuario, no está
+   * completada o no tiene ninguna edición.
+   */
+  restoreOriginal(userId: string, generationId: string): Promise<boolean>;
+
   /** Elimina una generación (RF-HIS-04). Devuelve `false` si no existe o no es del usuario. */
   deleteForUser(userId: string, generationId: string): Promise<boolean>;
 

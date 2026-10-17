@@ -111,6 +111,15 @@ export async function regenerateGeneration(generationId: string): Promise<Genera
   return generation;
 }
 
+/** RF-EDI-03: descarta la edición y vuelve a la versión de la IA. */
+export async function restoreOriginal(generationId: string): Promise<GenerationDetail> {
+  const { generation } = await apiRequest(
+    `/generations/${encodeURIComponent(generationId)}/restore`,
+    { method: 'POST', body: {}, schema: generationResponseSchema },
+  );
+  return generation;
+}
+
 /** RF-HIS-04. */
 export async function deleteGeneration(generationId: string): Promise<void> {
   await apiRequest(`/generations/${encodeURIComponent(generationId)}`, { method: 'DELETE' });

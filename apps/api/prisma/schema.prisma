@@ -92,6 +92,9 @@ model Generation {
   editedSpec           Json?            @map("edited_spec")
   // Idioma en que escribió el modelo: el de la interfaz al pedir la generación (o al responder).
   language             String           @default("es")
+  // Idioma de la versión de la IA cuando la vigente es una edición en otro idioma: al
+  // restaurar el original (RF-EDI-03) vuelve a ser `language`. Nulo si no hay edición.
+  aiLanguage           String?          @map("ai_language")
   // Traducciones de la especificación vigente por idioma: { "en": { source, specification } }.
   translations         Json?
   // title y complexity se copian fuera del JSON para listar y agregar sin leerlo.

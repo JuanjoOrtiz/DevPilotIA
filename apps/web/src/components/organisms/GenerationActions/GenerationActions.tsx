@@ -10,7 +10,9 @@ interface GenerationActionsProps {
   hasSpecification: boolean;
   /** Ruta del editor. */
   editTo: string;
-  busy: 'regenerate' | 'export' | 'copy' | null;
+  busy: 'regenerate' | 'restore' | 'export' | 'copy' | null;
+  /** Solo en una generación editada: vuelve a la versión de la IA (RF-EDI-03). */
+  onRestore?: (() => void) | undefined;
   onRegenerate: () => void;
   onExport: (format: ExportFormat) => void;
   onCopy: () => void;
@@ -18,13 +20,15 @@ interface GenerationActionsProps {
 }
 
 /**
- * Lo que se puede hacer con una generación: editarla (RF-EDI-01), regenerarla
- * (RF-GEN-06), exportarla o copiarla (RF-EXP-01 a 03) y eliminarla (RF-HIS-04).
+ * Lo que se puede hacer con una generación: editarla (RF-EDI-01), restaurar el original
+ * si está editada (RF-EDI-03), regenerarla (RF-GEN-06), exportarla o copiarla
+ * (RF-EXP-01 a 03) y eliminarla (RF-HIS-04).
  */
 export function GenerationActions({
   hasSpecification,
   editTo,
   busy,
+  onRestore,
   onRegenerate,
   onExport,
   onCopy,
@@ -40,6 +44,14 @@ export function GenerationActions({
             <Icon name="pencil" />
             {t('generation.actions.edit')}
           </LinkButton>
+          {onRestore && (
+            <Button variant="secondary" disabled={busy !== null} onClick={onRestore}>
+              <Icon name="undo" />
+              {busy === 'restore'
+                ? t('generation.actions.restoring')
+                : t('generation.actions.restore')}
+            </Button>
+          )}
           <Button variant="secondary" disabled={busy !== null} onClick={onRegenerate}>
             <Icon name="sparkle" />
             {busy === 'regenerate'

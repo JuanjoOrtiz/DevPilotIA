@@ -219,6 +219,18 @@ export const OPERATIONS: readonly OperationSpec[] = [
     errors: [400, 404, 409],
   },
   {
+    method: 'post',
+    path: '/generations/:id/restore',
+    tag: 'Generations',
+    summary: 'Go back to the AI version and discard the edited one; no-op if not edited',
+    response: {
+      status: 200,
+      description: 'The generation with the AI specification',
+      schema: generationResponseSchema,
+    },
+    errors: [404, 409],
+  },
+  {
     method: 'delete',
     path: '/generations/:id',
     tag: 'Generations',

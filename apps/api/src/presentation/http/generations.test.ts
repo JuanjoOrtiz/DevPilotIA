@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   apiErrorSchema,
   generationResponseSchema,
@@ -334,6 +335,27 @@ describe('editing, regenerating and deleting a generation', () => {
     });
     expect(invalid.status).toBe(400);
     expect(errorCode(invalid)).toBe('VALIDATION_ERROR');
+  });
+
+  // RF-EDI-03
+  it('restores the AI version of an edited generation', async () => {
+    const { session, id } = await completed();
+    await session.patch(`/api/v1/generations/${id}`, {
+      specification: { ...sampleSpecification, title: 'Título editado' },
+      language: 'es',
+    });
+
+    const restored = await session.post(`/api/v1/generations/${id}/restore`, {});
+
+    expect(restored.status).toBe(200);
+    expect(generationOf(restored)).toMatchObject({
+      title: sampleSpecification.title,
+      isEdited: false,
+      specification: { title: sampleSpecification.title },
+    });
+    expect((await session.post(`/api/v1/generations/${randomUUID()}/restore`, {})).status).toBe(
+      404,
+    );
   });
 
   // RF-GEN-06

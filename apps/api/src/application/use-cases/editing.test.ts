@@ -103,6 +103,55 @@ describe('UpdateSpecification', () => {
   });
 });
 
+// RF-EDI-03
+describe('RestoreOriginalSpecification', () => {
+  it('goes back to the AI version, its language, and drops the edition', async () => {
+    const { updateSpecification, restoreOriginalSpecification, generations, id } = await setUp();
+    await updateSpecification.execute(LUCIA, id, { specification: edited, language: 'en' });
+
+    const result = await restoreOriginalSpecification.execute(LUCIA, id);
+
+    expect(result).toMatchObject({
+      specification: sampleSpecification,
+      title: sampleSpecification.title,
+      complexity: sampleSpecification.complexity.size,
+      language: 'es',
+      isEdited: false,
+    });
+    const stored = generations.generations.find((g) => g.id === id);
+    expect(stored?.editedSpec).toBeNull();
+    expect(stored?.aiSpec).toEqual(sampleSpecification);
+  });
+
+  it('keeps the language of the AI version across several editions', async () => {
+    const { updateSpecification, restoreOriginalSpecification, id } = await setUp();
+    await updateSpecification.execute(LUCIA, id, { specification: edited, language: 'en' });
+    await updateSpecification.execute(LUCIA, id, { specification: edited, language: 'en' });
+
+    expect((await restoreOriginalSpecification.execute(LUCIA, id)).language).toBe('es');
+  });
+
+  it('does nothing on a generation that was never edited', async () => {
+    const { restoreOriginalSpecification, id } = await setUp();
+
+    const result = await restoreOriginalSpecification.execute(LUCIA, id);
+
+    expect(result).toMatchObject({ specification: sampleSpecification, isEdited: false });
+  });
+
+  it('refuses a generation without specification and hides the ones of others', async () => {
+    const { restoreOriginalSpecification, generations, project, id } = await setUp();
+    const failed = generations.add(project, { status: 'failed', errorCode: 'LLM_TIMEOUT' });
+
+    expect((await rejection(restoreOriginalSpecification.execute(LUCIA, failed.id))).code).toBe(
+      'SPECIFICATION_NOT_READY',
+    );
+    expect((await rejection(restoreOriginalSpecification.execute(MARCOS, id))).code).toBe(
+      'NOT_FOUND',
+    );
+  });
+});
+
 // RF-HIS-04
 describe('DeleteGeneration', () => {
   it("deletes the user's generation and answers not found for the rest", async () => {

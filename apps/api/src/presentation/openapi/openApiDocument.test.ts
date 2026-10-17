@@ -33,7 +33,7 @@ describe('OpenAPI document', () => {
     const documented = OPERATIONS.map((operation) => `${operation.method} ${operation.path}`);
 
     expect(documented.toSorted()).toEqual(declaredRoutes().toSorted());
-    expect(declaredRoutes()).toHaveLength(21);
+    expect(declaredRoutes()).toHaveLength(22);
   });
 
   it('marks as public exactly the public routes', () => {

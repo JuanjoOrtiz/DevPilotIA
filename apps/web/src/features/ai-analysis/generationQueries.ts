@@ -135,6 +135,23 @@ export function useUpdateSpecification(generation: GenerationDetail) {
   });
 }
 
+/**
+ * RF-EDI-03: vuelve a la versión de la IA. Las traducciones de la edición ya no valen y
+ * la API las ha borrado: se olvidan también aquí.
+ */
+export function useRestoreOriginal(generation: GenerationDetail) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => generationService.restoreOriginal(generation.id),
+    onSuccess: (restored) => {
+      queryClient.removeQueries({ queryKey: ['generations', 'translation', restored.id] });
+      queryClient.setQueryData(generationKeys.detail(restored.id), restored);
+      return refreshLists(queryClient, restored.projectId);
+    },
+  });
+}
+
 /** RF-GEN-06: una generación nueva con la misma entrada; la original se conserva. */
 export function useRegenerateGeneration(generation: GenerationDetail) {
   const queryClient = useQueryClient();

@@ -26,6 +26,7 @@ import { RegenerateGeneration } from './application/use-cases/RegenerateGenerati
 import { RegisterUser } from './application/use-cases/RegisterUser.js';
 import { TranslateSpecification } from './application/use-cases/TranslateSpecification.js';
 import { UpdateProject } from './application/use-cases/UpdateProject.js';
+import { RestoreOriginalSpecification } from './application/use-cases/RestoreOriginalSpecification.js';
 import { UpdateSpecification } from './application/use-cases/UpdateSpecification.js';
 import type { BackgroundTasks } from './domain/providers/BackgroundTasks.js';
 import type { LLMProvider } from './domain/providers/LLMProvider.js';
@@ -187,6 +188,7 @@ export function compose(env: Env, options: CompositionOptions = {}): Composition
       }),
       exportGeneration: new ExportGeneration(generations, projects, clock),
       updateSpecification: new UpdateSpecification(generations, clock),
+      restoreOriginalSpecification: new RestoreOriginalSpecification(generations),
       deleteGeneration: new DeleteGeneration(generations),
       regenerateGeneration: new RegenerateGeneration(generations, createGeneration),
       translateSpecification: new TranslateSpecification({

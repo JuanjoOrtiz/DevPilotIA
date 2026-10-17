@@ -66,6 +66,11 @@ const SHAPES = {
     strokeWidth: 1.5,
     paths: <path d="M8 2.5 9.3 6.7 13.5 8 9.3 9.3 8 13.5 6.7 9.3 2.5 8 6.7 6.7z" />,
   },
+  undo: {
+    viewBox: '0 0 16 16',
+    strokeWidth: 1.5,
+    paths: <path d="M5.5 3.5 2.5 6.5l3 3M2.5 6.5h7a3.5 3.5 0 0 1 0 7H7" />,
+  },
   progress: {
     viewBox: '0 0 12 12',
     strokeWidth: 1.8,
