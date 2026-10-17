@@ -9,6 +9,7 @@ import { GenerationPage } from './components/pages/GenerationPage/GenerationPage
 import { LoginPage } from './components/pages/LoginPage/LoginPage';
 import { NewGenerationPage } from './components/pages/NewGenerationPage/NewGenerationPage';
 import { NewProjectPage } from './components/pages/NewProjectPage/NewProjectPage';
+import { NotFoundPage } from './components/pages/NotFoundPage/NotFoundPage';
 import { ProjectDetailPage } from './components/pages/ProjectDetailPage/ProjectDetailPage';
 import { ProjectsPage } from './components/pages/ProjectsPage/ProjectsPage';
 import { RegisterPage } from './components/pages/RegisterPage/RegisterPage';
@@ -51,9 +52,11 @@ export function App() {
           <Route path={ROUTE_PATTERNS.newGeneration} element={<NewGenerationPage />} />
           <Route path={ROUTE_PATTERNS.generation} element={<GenerationPage />} />
           <Route path={ROUTE_PATTERNS.editGeneration} element={<EditGenerationPage />} />
+          {/* Una dirección que no existe se dice, con la navegación a mano para salir. */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-        {/* La página de entrada, y cualquier dirección que no exista, llevan al dashboard. */}
-        <Route path="*" element={<Navigate to={ROUTES.dashboard} replace />} />
+        {/* La página de entrada lleva al dashboard. */}
+        <Route path={ROUTES.home} element={<Navigate to={ROUTES.dashboard} replace />} />
       </Route>
     </Routes>
   );

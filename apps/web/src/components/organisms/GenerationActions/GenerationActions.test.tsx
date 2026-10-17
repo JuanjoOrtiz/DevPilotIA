@@ -50,6 +50,28 @@ describe('GenerationActions', () => {
     expect(handlers.onDelete).toHaveBeenCalledOnce();
   });
 
+  it('offers to restore the original only when asked to', async () => {
+    const onRestore = vi.fn();
+    render(
+      <MemoryRouter>
+        <GenerationActions
+          hasSpecification
+          editTo="/generations/1/edit"
+          busy={null}
+          onRestore={onRestore}
+          onRegenerate={vi.fn()}
+          onExport={vi.fn()}
+          onCopy={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Restaurar original' }));
+
+    expect(onRestore).toHaveBeenCalledOnce();
+  });
+
   it('only offers to delete a generation without specification', () => {
     renderActions(false);
 

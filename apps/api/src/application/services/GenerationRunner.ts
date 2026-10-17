@@ -22,6 +22,12 @@ export interface GenerationTimeouts {
 /** Espera entre reintentos tras un 429 del proveedor: hasta dos, cada vez más largos. */
 export const RATE_LIMIT_BACKOFF_MS = [1_000, 3_000] as const;
 
+/**
+ * Espera antes del único reintento cuando el proveedor está caído o sobrecargado (503).
+ * Reintentar en el acto casi siempre vuelve a fallar: Gemini suele recuperarse en segundos.
+ */
+export const UNAVAILABLE_BACKOFF_MS = 2_000;
+
 /** Cuántos errores de validación se devuelven al modelo para que los corrija. */
 const MAX_FEEDBACK_ISSUES = 10;
 
@@ -50,8 +56,8 @@ type Outcome =
 /**
  * Ejecuta una fase de una generación: llama al modelo, valida su respuesta y guarda el
  * resultado. Aplica la tabla de errores de docs/ai-contract.md: un reintento si la
- * respuesta no cumple el esquema o el proveedor está caído, dos con espera creciente si
- * responde 429, ninguno si hay timeout o contenido bloqueado. Nunca lanza: cualquier
+ * respuesta no cumple el esquema, uno tras una espera si el proveedor está caído, dos con
+ * espera creciente si responde 429, ninguno si hay timeout o contenido bloqueado. Nunca lanza: cualquier
  * fallo acaba en una generación `failed`.
  */
 export class GenerationRunner {
@@ -132,6 +138,8 @@ export class GenerationRunner {
         }
         if (error.code === 'LLM_UNAVAILABLE' && unavailable === 0) {
           unavailable += 1;
+          if (UNAVAILABLE_BACKOFF_MS >= remaining()) return { ok: false, code: 'LLM_UNAVAILABLE' };
+          await wait(UNAVAILABLE_BACKOFF_MS);
           continue;
         }
         return { ok: false, code: error.code };

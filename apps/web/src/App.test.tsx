@@ -182,10 +182,20 @@ describe('routes with a session', () => {
     expect(container.querySelector('img')).toBeNull();
   });
 
-  it('sends an address that does not exist to the dashboard', async () => {
-    renderApp('/dashboard/unknown');
+  it('sends the entry page to the dashboard', async () => {
+    renderApp('/');
 
     expect(await homeHeading()).toBeTruthy();
+  });
+
+  it('says that an address does not exist instead of hiding it', async () => {
+    renderApp('/dashboard/unknown');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Página no encontrada', level: 1 }),
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Ir al dashboard' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Proyectos' })).toBeTruthy();
   });
 
   it('marks the current section in the navigation', async () => {

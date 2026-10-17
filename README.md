@@ -20,7 +20,7 @@ Es el trabajo de fin de máster de Juanjo Ortiz (octubre de 2026): una aplicaci�
 | Autenticación | Registro, inicio y cierre de sesión. Access token de 15 min solo en memoria y refresh token rotatorio en cookie httpOnly. Límite de intentos por email y por IP |
 | Proyectos | Proyectos con descripción, stack y convenciones, que la IA recibe como contexto. Proyecto de ejemplo en cada cuenta nueva |
 | Generación con IA | Funcionalidad o bug en lenguaje natural → especificación de seis secciones validada contra un esquema. Preguntas aclaratorias, supuestos explícitos, reintentos, límites diarios y estados visibles |
-| Edición | Editor de todas las secciones con la misma validación que la respuesta de la IA; la versión original se conserva. Aviso al salir con cambios sin guardar |
+| Edición | Editor de todas las secciones con la misma validación que la respuesta de la IA; la versión original se conserva y se puede restaurar. Aviso al salir con cambios sin guardar |
 | Historial | Generaciones por proyecto, paginadas, con estado, tipo y complejidad. Regenerar y eliminar |
 | Exportación | Markdown con casillas, JSON con [esquema público](docs/schemas/specification-export.v1.schema.json) y copia al portapapeles |
 | Dashboard | Indicadores, actividad por día, complejidad y proyectos con más actividad, filtrables por periodo y proyecto |
@@ -199,7 +199,7 @@ Vercel publica los dos proyectos (web y API) con cada merge en `main`. La guía 
 - **Planes gratuitos.** Supabase pausa la base de datos tras una semana sin actividad y no hace copias de seguridad. Gemini tiene una cuota diaria compartida, y en su capa gratuita el contenido puede usarse para mejorar los productos de Google: la pantalla de generación avisa de no pegar código ni datos confidenciales.
 - **Arranque en frío.** La primera petición tras un rato sin uso tarda algo más.
 - **Despliegue.** Vercel compila y publica por su cuenta; el pipeline aplica las migraciones y verifica, pero no despliega con la CLI de Vercel.
-- **Fuera del alcance.** Restaurar la versión original de la IA desde la interfaz (se conserva en la base de datos), filtros en el historial, gráfica por tipo y equipos.
+- **Fuera del alcance.** Filtros en el historial, gráfica por tipo y equipos.
 
 ## Mejoras previstas
 

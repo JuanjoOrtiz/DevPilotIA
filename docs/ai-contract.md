@@ -177,7 +177,7 @@ Al alcanzar un límite se explica cuándo se reinicia (RF-GEN-07).
 | Un intento supera los 20 s o la generación agota sus 45 s | Generación fallida, sin más reintentos | `LLM_TIMEOUT` |
 | Respuesta que no cumple el esquema | Un reintento; después, generación fallida | `LLM_INVALID_RESPONSE` |
 | Contenido bloqueado por los filtros del proveedor | Generación fallida, sin reintento | `LLM_CONTENT_BLOCKED` |
-| Proveedor caído o error 5xx | Un reintento; después, generación fallida | `LLM_UNAVAILABLE` |
+| Proveedor caído, sobrecargado o error 5xx | Un reintento tras 2 s de espera; después, generación fallida | `LLM_UNAVAILABLE` |
 | Exportar una generación que todavía no tiene especificación | Respuesta 409 | `SPECIFICATION_NOT_READY` |
 | Generación en `generating` durante más de 2 minutos | Se marca como fallida al consultarla y al arrancar la API (cubre reinicios e instancias interrumpidas a mitad) | `LLM_TIMEOUT` |
 

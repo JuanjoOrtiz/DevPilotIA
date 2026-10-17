@@ -214,6 +214,21 @@ describe('generations against PostgreSQL', () => {
       specification: { title: 'Título editado' },
     });
 
+    // RF-EDI-03: la edición se descarta y vuelve la versión de la IA, en su idioma.
+    const reEdited = await request(app)
+      .patch(`/api/v1/generations/${id}`)
+      .set('Authorization', session.authorization)
+      .send({ specification: { ...original, title: 'Edited title' }, language: 'en' });
+    expect(generationResponseSchema.parse(reEdited.body).generation.language).toBe('en');
+    const restored = await session.post(`/api/v1/generations/${id}/restore`, {});
+    expect(generationResponseSchema.parse(restored.body).generation).toMatchObject({
+      title: original.title,
+      language: 'es',
+      isEdited: false,
+    });
+    const restoredRow = await prisma.generation.findUniqueOrThrow({ where: { id } });
+    expect(restoredRow).toMatchObject({ editedSpec: null, editedAt: null, aiLanguage: null });
+
     const regenerated = await session.post(`/api/v1/generations/${id}/regenerate`, {});
     expect(regenerated.status).toBe(202);
     await background.settle();

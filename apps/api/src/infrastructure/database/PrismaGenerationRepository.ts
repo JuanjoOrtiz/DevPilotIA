@@ -160,19 +160,60 @@ export class PrismaGenerationRepository implements GenerationRepository {
     language: SpecLanguage,
     at: Date,
   ): Promise<boolean> {
-    // La versión de la IA (ai_spec) no se toca: RF-EDI-03 podrá restaurarla.
-    const { count } = await this.prisma.generation.updateMany({
-      where: { id: generationId, project: { userId }, status: 'completed' },
-      data: {
-        editedSpec: specification,
-        editedAt: at,
-        title: specification.title,
-        complexity: specification.complexity.size,
-        language,
-        translations: Prisma.DbNull,
-      },
+    // La versión de la IA (ai_spec) no se toca, y su idioma se guarda la primera vez que se
+    // edita: RF-EDI-03 puede restaurar las dos cosas.
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.generation.findFirst({
+        where: { id: generationId, project: { userId }, status: 'completed' },
+        select: { language: true, aiLanguage: true },
+      });
+      if (!current) return false;
+
+      const { count } = await tx.generation.updateMany({
+        where: { id: generationId, status: 'completed' },
+        data: {
+          editedSpec: specification,
+          editedAt: at,
+          title: specification.title,
+          complexity: specification.complexity.size,
+          language,
+          aiLanguage: current.aiLanguage ?? current.language,
+          translations: Prisma.DbNull,
+        },
+      });
+      return count === 1;
     });
-    return count === 1;
+  }
+
+  async restoreOriginal(userId: string, generationId: string): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.generation.findFirst({
+        where: {
+          id: generationId,
+          project: { userId },
+          status: 'completed',
+          editedAt: { not: null },
+        },
+        select: { aiSpec: true, language: true, aiLanguage: true },
+      });
+      const original = current ? readJson(specificationSchema, current.aiSpec) : null;
+      if (!current || !original) return false;
+
+      const { count } = await tx.generation.updateMany({
+        where: { id: generationId, status: 'completed' },
+        data: {
+          editedSpec: Prisma.DbNull,
+          editedAt: null,
+          title: original.title,
+          complexity: original.complexity.size,
+          // Una edición anterior a guardar el idioma de la IA conserva el suyo.
+          language: current.aiLanguage ?? current.language,
+          aiLanguage: null,
+          translations: Prisma.DbNull,
+        },
+      });
+      return count === 1;
+    });
   }
 
   async deleteForUser(userId: string, generationId: string): Promise<boolean> {

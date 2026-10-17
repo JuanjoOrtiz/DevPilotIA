@@ -11,7 +11,7 @@ import {
   type ScriptedReply,
 } from '../../test-support/llm.js';
 import { portal } from '../../test-support/projectFixture.js';
-import { RATE_LIMIT_BACKOFF_MS } from '../services/GenerationRunner.js';
+import { RATE_LIMIT_BACKOFF_MS, UNAVAILABLE_BACKOFF_MS } from '../services/GenerationRunner.js';
 
 const LUCIA = 'user-lucia';
 const MARCOS = 'user-marcos';
@@ -308,12 +308,14 @@ describe('GenerationRunner', () => {
     expect(result).toMatchObject({ status: 'failed', errorCode: 'LLM_RATE_LIMITED' });
   });
 
-  it('retries once when the provider is down', async () => {
+  it('waits and retries once when the provider is down', async () => {
     const recovered = await generateWith({ error: 'LLM_UNAVAILABLE' }, specificationReply());
     const down = await generateWith({ error: 'LLM_UNAVAILABLE' }, { error: 'LLM_UNAVAILABLE' });
 
     expect(recovered.result.status).toBe('completed');
+    expect(recovered.waits).toEqual([UNAVAILABLE_BACKOFF_MS]);
     expect(down.result).toMatchObject({ status: 'failed', errorCode: 'LLM_UNAVAILABLE' });
+    expect(down.llm.requests).toHaveLength(2);
   });
 
   it('does not retry a timeout nor blocked content', async () => {

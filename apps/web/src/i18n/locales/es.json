@@ -6,6 +6,12 @@
     "crashed": "Algo ha fallado en la aplicación. Ya nos ha llegado el aviso; recarga la página para seguir.",
     "reload": "Recargar la página"
   },
+  "notFound": {
+    "title": "Página no encontrada",
+    "heading": "Esta dirección no existe",
+    "description": "Puede que el enlace esté mal escrito o que la página ya no exista.",
+    "action": "Ir al dashboard"
+  },
   "language": {
     "label": "Idioma"
   },
@@ -263,6 +269,8 @@
     "actions": {
       "label": "Acciones de la generación",
       "edit": "Editar",
+      "restore": "Restaurar original",
+      "restoring": "Restaurando…",
       "regenerate": "Regenerar",
       "regenerating": "Regenerando…",
       "regenerateFailed": "No se pudo regenerar: {{reason}}",
@@ -274,6 +282,13 @@
       "confirm": "Eliminar generación",
       "deleting": "Eliminando…"
     },
+    "restoreDialog": {
+      "title": "¿Restaurar la versión de la IA?",
+      "body": "Se descartarán tus cambios y volverá la especificación tal como la generó la IA. Esta acción no se puede deshacer.",
+      "confirm": "Restaurar original",
+      "restoring": "Restaurando…"
+    },
+    "restored": "Se ha restaurado la versión de la IA.",
     "translation": {
       "translating": "Traduciendo la especificación al español…",
       "failed": "No se pudo traducir la especificación: {{reason}} Se muestra en el idioma en que se generó."
