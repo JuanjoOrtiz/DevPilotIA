@@ -4,6 +4,7 @@ import { CreateGeneration, type DailyLimits } from '../application/use-cases/Cre
 import { DeleteGeneration } from '../application/use-cases/DeleteGeneration.js';
 import { ExportGeneration } from '../application/use-cases/ExportGeneration.js';
 import { RegenerateGeneration } from '../application/use-cases/RegenerateGeneration.js';
+import { RestoreOriginalSpecification } from '../application/use-cases/RestoreOriginalSpecification.js';
 import { UpdateSpecification } from '../application/use-cases/UpdateSpecification.js';
 import { GetGeneration } from '../application/use-cases/GetGeneration.js';
 import { TranslateSpecification } from '../application/use-cases/TranslateSpecification.js';
@@ -80,6 +81,7 @@ export function createGenerationFixture(options: GenerationFixtureOptions = {}) 
     exportGeneration: new ExportGeneration(generations, projects, clock),
     translateSpecification: new TranslateSpecification({ generations, llm, attemptMs: 20_000 }),
     updateSpecification: new UpdateSpecification(generations, clock),
+    restoreOriginalSpecification: new RestoreOriginalSpecification(generations),
     deleteGeneration: new DeleteGeneration(generations),
     regenerateGeneration: new RegenerateGeneration(generations, createGeneration),
   };

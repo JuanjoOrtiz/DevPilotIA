@@ -13,6 +13,7 @@ import type { AnswerClarification } from '../../application/use-cases/AnswerClar
 import type { CreateGeneration } from '../../application/use-cases/CreateGeneration.js';
 import type { DeleteGeneration } from '../../application/use-cases/DeleteGeneration.js';
 import type { RegenerateGeneration } from '../../application/use-cases/RegenerateGeneration.js';
+import type { RestoreOriginalSpecification } from '../../application/use-cases/RestoreOriginalSpecification.js';
 import type { UpdateSpecification } from '../../application/use-cases/UpdateSpecification.js';
 import type { ExportGeneration } from '../../application/use-cases/ExportGeneration.js';
 import type { GetGeneration } from '../../application/use-cases/GetGeneration.js';
@@ -28,6 +29,7 @@ export interface GenerationUseCases {
   exportGeneration: ExportGeneration;
   translateSpecification: TranslateSpecification;
   updateSpecification: UpdateSpecification;
+  restoreOriginalSpecification: RestoreOriginalSpecification;
   deleteGeneration: DeleteGeneration;
   regenerateGeneration: RegenerateGeneration;
 }
@@ -39,6 +41,7 @@ export interface GenerationController {
   export: RequestHandler;
   translation: RequestHandler;
   update: RequestHandler;
+  restore: RequestHandler;
   remove: RequestHandler;
   regenerate: RequestHandler;
 }
@@ -91,6 +94,17 @@ export function createGenerationController(useCases: GenerationUseCases): Genera
           authenticatedUserId(res),
           generationId,
           input,
+        ),
+      };
+      res.json(body);
+    },
+
+    restore: async (req, res) => {
+      const generationId = parseResourceId(req.params.id);
+      const body: GenerationResponse = {
+        generation: await useCases.restoreOriginalSpecification.execute(
+          authenticatedUserId(res),
+          generationId,
         ),
       };
       res.json(body);

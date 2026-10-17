@@ -8,6 +8,7 @@ import {
   useDeleteGeneration,
   useExportGeneration,
   useRegenerateGeneration,
+  useRestoreOriginal,
   useGeneration,
   useRetryGeneration,
   useSpecificationTranslation,
@@ -83,7 +84,9 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
   const copy = useCopyMarkdown(generation.id);
   const regenerate = useRegenerateGeneration(generation);
   const remove = useDeleteGeneration(generation);
+  const restore = useRestoreOriginal(generation);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingRestore, setConfirmingRestore] = useState(false);
   const language = useSpecLanguage();
   const translation = useSpecificationTranslation(generation, language);
 
@@ -175,6 +178,12 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
     copy.mutate();
   }
 
+  function confirmRestore() {
+    exportFile.reset();
+    copy.reset();
+    restore.mutate(undefined, { onSuccess: () => setConfirmingRestore(false) });
+  }
+
   function confirmDeletion() {
     remove.mutate(undefined, {
       onSuccess: () => void navigate(ROUTES.project(generation.projectId), { replace: true }),
@@ -193,12 +202,15 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
               busy={
                 regenerate.isPending
                   ? 'regenerate'
-                  : exportFile.isPending
-                    ? 'export'
-                    : copy.isPending
-                      ? 'copy'
-                      : null
+                  : restore.isPending
+                    ? 'restore'
+                    : exportFile.isPending
+                      ? 'export'
+                      : copy.isPending
+                        ? 'copy'
+                        : null
               }
+              onRestore={generation.isEdited ? () => setConfirmingRestore(true) : undefined}
               onRegenerate={() =>
                 regenerate.mutate(undefined, {
                   onSuccess: (created) => void navigate(ROUTES.generation(created.id)),
@@ -225,9 +237,31 @@ function GenerationContent({ generation }: { generation: GenerationDetail }) {
       />
       {failure && <Alert>{failure}</Alert>}
       {copy.isSuccess && <StatusMessage>{t('generation.export.copied')}</StatusMessage>}
+      {restore.isSuccess && !generation.isEdited && (
+        <StatusMessage>{t('generation.restored')}</StatusMessage>
+      )}
       <FormPageLayout aside={<GenerationRequest generation={generation} />}>
         {main()}
       </FormPageLayout>
+      <ConfirmDialog
+        open={confirmingRestore}
+        title={t('generation.restoreDialog.title')}
+        confirmLabel={
+          restore.isPending
+            ? t('generation.restoreDialog.restoring')
+            : t('generation.restoreDialog.confirm')
+        }
+        cancelLabel={t('common.cancel')}
+        busy={restore.isPending}
+        error={restore.isError ? reason(restore.error) : undefined}
+        onConfirm={confirmRestore}
+        onCancel={() => {
+          restore.reset();
+          setConfirmingRestore(false);
+        }}
+      >
+        {t('generation.restoreDialog.body')}
+      </ConfirmDialog>
       <ConfirmDialog
         open={confirmingDelete}
         title={t('generation.deleteDialog.title', { title })}

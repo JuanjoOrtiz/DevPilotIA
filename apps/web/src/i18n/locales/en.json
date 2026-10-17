@@ -6,6 +6,12 @@
     "crashed": "Something went wrong in the app. We have been notified; reload the page to carry on.",
     "reload": "Reload the page"
   },
+  "notFound": {
+    "title": "Page not found",
+    "heading": "This address does not exist",
+    "description": "The link may be mistyped, or the page may no longer exist.",
+    "action": "Go to the dashboard"
+  },
   "language": {
     "label": "Language"
   },
@@ -263,6 +269,8 @@
     "actions": {
       "label": "Generation actions",
       "edit": "Edit",
+      "restore": "Restore original",
+      "restoring": "Restoring…",
       "regenerate": "Regenerate",
       "regenerating": "Regenerating…",
       "regenerateFailed": "Could not regenerate: {{reason}}",
@@ -274,6 +282,13 @@
       "confirm": "Delete generation",
       "deleting": "Deleting…"
     },
+    "restoreDialog": {
+      "title": "Restore the AI version?",
+      "body": "Your changes will be discarded and the specification will go back to what the AI generated. This cannot be undone.",
+      "confirm": "Restore original",
+      "restoring": "Restoring…"
+    },
+    "restored": "The AI version has been restored.",
     "translation": {
       "translating": "Translating the specification into English…",
       "failed": "The specification could not be translated: {{reason}} It is shown in the language it was generated in."

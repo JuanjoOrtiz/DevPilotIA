@@ -138,6 +138,8 @@ interface StoredGeneration extends Generation {
   /** Dueño del proyecto: en la base de datos sale de la relación con `projects`. */
   userId: string;
   usage: GenerationUsage;
+  /** Idioma de la versión de la IA mientras la vigente es una edición (`ai_language`). */
+  aiLanguage?: SpecLanguage | null;
 }
 
 const NO_USAGE: GenerationUsage = {
@@ -148,7 +150,12 @@ const NO_USAGE: GenerationUsage = {
   outputTokens: 0,
 };
 
-function withoutOwner({ userId: _userId, usage: _usage, ...generation }: StoredGeneration) {
+function withoutOwner({
+  userId: _userId,
+  usage: _usage,
+  aiLanguage: _aiLanguage,
+  ...generation
+}: StoredGeneration) {
   return structuredClone(generation);
 }
 
@@ -224,6 +231,25 @@ export class InMemoryGenerationRepository implements GenerationRepository {
       title: specification.title,
       complexity: specification.complexity.size,
       language,
+      aiLanguage: generation.aiLanguage ?? generation.language,
+      translations: {},
+    });
+    return Promise.resolve(true);
+  }
+
+  restoreOriginal(userId: string, generationId: string): Promise<boolean> {
+    const generation = this.owned(userId, generationId);
+    const original = generation?.aiSpec;
+    if (generation?.status !== 'completed' || !generation.editedAt || !original) {
+      return Promise.resolve(false);
+    }
+    Object.assign(generation, {
+      editedSpec: null,
+      editedAt: null,
+      title: original.title,
+      complexity: original.complexity.size,
+      language: generation.aiLanguage ?? generation.language,
+      aiLanguage: null,
       translations: {},
     });
     return Promise.resolve(true);

@@ -348,6 +348,40 @@ describe('regenerating and deleting a generation', () => {
   });
 });
 
+// RF-EDI-03
+describe('restoring the AI version', () => {
+  it('is only offered on an edited generation', async () => {
+    api.getGeneration.mockResolvedValue(GENERATION);
+    renderApp(PAGE_PATH);
+
+    await screen.findByRole('button', { name: 'Regenerar' });
+    expect(screen.queryByRole('button', { name: 'Restaurar original' })).toBeNull();
+  });
+
+  it('asks for confirmation and then shows the AI version again', async () => {
+    const editedVersion = generationDetail({
+      title: 'Título editado',
+      specification: { ...specification, title: 'Título editado' },
+      isEdited: true,
+    });
+    api.getGeneration.mockResolvedValue(editedVersion);
+    api.restoreOriginal.mockResolvedValue(GENERATION);
+    const { user } = renderApp(PAGE_PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Restaurar original' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(api.restoreOriginal).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Restaurar original' }));
+
+    expect(api.restoreOriginal).toHaveBeenCalledWith(GENERATION.id);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: specification.title }),
+    ).toBeTruthy();
+    expect(screen.getByText('Se ha restaurado la versión de la IA.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Restaurar original' })).toBeNull();
+  });
+});
+
 // RF-EDI-01, 02 y 04
 describe('editing a generation', () => {
   const EDIT_PATH = `/generations/${GENERATION.id}/edit`;

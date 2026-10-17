@@ -176,7 +176,7 @@ Un usuario tiene muchos proyectos y un proyecto tiene muchas generaciones. Borra
 | RefreshToken | id, userId, tokenHash, expiresAt, revokedAt | Se guarda el hash, nunca el token |
 | AuthAttempt | id, scope, keyHash, createdAt | `scope` es `login` o `register`; `keyHash` es el SHA-256 del email o de la IP, nunca el valor. Las filas de más de 24 h se borran al registrar una nueva |
 | Project | id, userId, name, description, techStack, conventions, createdAt, updatedAt | techStack es una lista de etiquetas |
-| Generation | id, projectId, type, inputText, additionalContext, status, errorCode, clarifyingQuestions, clarificationAnswers, aiSpec, editedSpec, title, complexity, model, attempts, durationMs, inputTokens, outputTokens, isSample, createdAt, completedAt, editedAt | aiSpec, editedSpec, clarifyingQuestions y clarificationAnswers son JSONB; title y complexity se copian fuera del JSON para listar y agregar sin leerlo; isSample marca la generación de ejemplo, que no cuenta para los límites de uso |
+| Generation | id, projectId, type, inputText, additionalContext, status, errorCode, clarifyingQuestions, clarificationAnswers, aiSpec, editedSpec, language, aiLanguage, translations, title, complexity, model, attempts, durationMs, inputTokens, outputTokens, isSample, createdAt, completedAt, editedAt | aiSpec, editedSpec, clarifyingQuestions y clarificationAnswers son JSONB; title y complexity se copian fuera del JSON para listar y agregar sin leerlo; isSample marca la generación de ejemplo, que no cuenta para los límites de uso |
 
 Valores cerrados: `type` es `feature` o `bug`; `status` es `generating`, `needs_clarification`, `completed` o `failed`. La especificación vigente es `editedSpec` si existe y `aiSpec` en caso contrario.
 
@@ -184,7 +184,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 
 ## API REST
 
-21 endpoints bajo `/api/v1`. Todos salvo registro, login, refresh y health exigen un access token válido.
+22 endpoints bajo `/api/v1`. Todos salvo registro, login, refresh y health exigen un access token válido.
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -202,7 +202,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | POST | /projects/:id/generations | Lanza una generación; responde 202 |
 | GET | /generations/:id | Estado y especificación de una generación |
 | PATCH | /generations/:id | Guarda la versión editada con su idioma; la de la IA se conserva |
-| POST | /generations/:id/restore | Descarta la edición y vuelve al original (RF-EDI-03, prescindible: aún no existe) |
+| POST | /generations/:id/restore | Descarta la edición y vuelve a la versión de la IA, en su idioma (RF-EDI-03); sin edición no hace nada |
 | POST | /generations/:id/answers | Envía las respuestas a las preguntas aclaratorias, o `skip: true` para generar sin responder; solo en `needs_clarification`; responde 202 |
 | POST | /generations/:id/regenerate | Crea una generación nueva con la misma entrada, en `language`; cuenta para los límites; responde 202 |
 | DELETE | /generations/:id | Elimina una generación |
@@ -211,7 +211,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | GET | /dashboard/summary | Indicadores, actividad por día y reparto por complejidad del periodo `days` (7, 30 o 90; por defecto, 30) y, con `projectId`, de un solo proyecto |
 | GET | /health | Comprobación de vida de la API y de la base de datos |
 
-La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, solo existen con `API_DOCS_ENABLED=true` (SEG-17) y no cuentan entre los 21 endpoints.
+La especificación OpenAPI se sirve en `/api/openapi.json` y Swagger UI en `/api/docs`. Las dos rutas son públicas, solo existen con `API_DOCS_ENABLED=true` (SEG-17) y no cuentan entre los 22 endpoints.
 
 **OpenAPI (RNF-17).** `presentation/openapi/openApiDocument.ts` lista cada operación con los esquemas Zod de `packages/shared` y genera un documento OpenAPI 3.1 con `z.toJSONSchema`: nada se escribe a mano. Un test lee las rutas de `app.ts` y falla si alguna no está documentada, si se documenta una que no existe o si una ruta pública no coincide con `PUBLIC_ROUTES`; otro comprueba que el documento es válido (respuestas, parámetros, referencias). Swagger UI se carga de jsDelivr con versión fija y comprobación de integridad (SRI), con una CSP propia solo para esa página.
 
@@ -297,7 +297,8 @@ Los filtros del historial (RF-HIS-02) son de nivel «prescindible» y no están 
 ## Edición, regeneración y borrado
 
 - **Editar (RF-EDI-01 y 02).** La página `/generations/:id/edit` edita todas las secciones: se pueden cambiar, añadir y quitar supuestos, historias con sus criterios, tareas, riesgos, casos límite y casos de prueba con sus pasos. El formulario valida con `specificationSchema`, el mismo que la respuesta de la IA, y la API vuelve a validar. Los motivos de error son códigos de `FIELD_ERRORS` (`TEXT_REQUIRED`, `TEXT_TOO_LONG`, `LIST_REQUIRED`, `TOO_MANY_ITEMS`).
-- **Qué se guarda.** La versión editada va a `edited_spec` y la de la IA (`ai_spec`) no se toca. `title` y `complexity` se copian de la editada para el historial y el dashboard. Se edita lo que se ve: si la interfaz está en otro idioma, la traducción; la generación guarda el idioma de la versión editada y descarta las traducciones anteriores.
+- **Qué se guarda.** La versión editada va a `edited_spec` y la de la IA (`ai_spec`) no se toca. `title` y `complexity` se copian de la editada para el historial y el dashboard. Se edita lo que se ve: si la interfaz está en otro idioma, la traducción; la generación guarda el idioma de la versión editada y descarta las traducciones anteriores. La primera edición guarda en `ai_language` el idioma en que escribió la IA.
+- **Restaurar el original (RF-EDI-03).** En una generación editada, «Restaurar original» pide confirmación y llama a `POST /generations/:id/restore`: se borran la versión editada y las traducciones, y vuelven el título, la complejidad y el idioma de la IA. Sobre una generación sin editar no hace nada.
 - **Cambios sin guardar (RF-EDI-04).** Salir del editor con cambios pide confirmación, tanto al navegar dentro de la aplicación (`useBlocker`, que necesita el router de datos de `main.tsx`) como al cerrar o recargar la pestaña (`beforeunload`).
 - **Regenerar (RF-GEN-06).** Crea una generación nueva con la misma entrada y en el idioma de la interfaz; la anterior se conserva. Pasa por `CreateGeneration`, así que cuenta para los límites diarios.
 - **Eliminar (RF-HIS-04).** Pide confirmación y vuelve al proyecto.
