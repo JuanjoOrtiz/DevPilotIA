@@ -190,7 +190,7 @@ Al registrarse, cada cuenta recibe un proyecto de ejemplo con una generación ma
 | --- | --- | --- |
 | POST | /auth/register | Crea la cuenta e inicia sesión |
 | POST | /auth/login | Inicia sesión |
-| POST | /auth/refresh | Renueva el access token con la cookie de refresh |
+| POST | /auth/refresh | Renueva el access token con la cookie de refresh (204 sin cuerpo si no hay cookie) |
 | POST | /auth/logout | Revoca el refresh token |
 | GET | /auth/me | Datos del usuario en sesión |
 | GET | /projects | Lista los proyectos del usuario |

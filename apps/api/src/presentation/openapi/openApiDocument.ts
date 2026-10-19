@@ -109,7 +109,8 @@ export const OPERATIONS: readonly OperationSpec[] = [
     method: 'post',
     path: '/auth/refresh',
     tag: 'Auth',
-    summary: 'Exchange the refresh cookie for a new session (the cookie rotates)',
+    summary:
+      'Exchange the refresh cookie for a new session (the cookie rotates). Answers 204 with no body when there is no cookie',
     public: true,
     refreshCookie: true,
     response: { status: 200, description: 'New session', schema: sessionResponseSchema },

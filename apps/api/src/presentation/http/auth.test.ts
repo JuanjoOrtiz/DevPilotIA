@@ -227,15 +227,22 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(afterTheft.status).toBe(401);
   });
 
-  it('answers 401 and removes the cookie when it is missing or not valid', async () => {
+  it('answers 204 without a body when there is no cookie', async () => {
     const { app } = createTestApp();
 
     const missing = await request(app).post('/api/v1/auth/refresh');
+
+    expect(missing.status).toBe(204);
+    expect(missing.text).toBe('');
+  });
+
+  it('answers 401 and removes the cookie when it is not valid', async () => {
+    const { app } = createTestApp();
+
     const invalid = await request(app)
       .post('/api/v1/auth/refresh')
       .set('Cookie', 'devpilot_refresh=made-up');
 
-    expect(missing.status).toBe(401);
     expect(invalid.status).toBe(401);
     expect(refreshCookie(invalid)).toMatch(/^devpilot_refresh=;/);
     expect(refreshCookie(invalid)).toContain('Expires=Thu, 01 Jan 1970');
