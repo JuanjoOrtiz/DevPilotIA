@@ -7,7 +7,7 @@ Es el trabajo de fin de máster de Juanjo Ortiz (octubre de 2026): una aplicaci�
 | | |
 | --- | --- |
 | Aplicación | <https://dev-pilot-web.vercel.app>: entra con la cuenta de prueba o crea una; cada cuenta nueva recibe un proyecto de ejemplo |
-| Cuenta de prueba | `admin@admin.com` / `admin12345` (compartida: no guardes en ella nada real) |
+| Cuenta de prueba | `demo@devpilot.dev` / `Devpilot2026` (compartida: no guardes en ella nada real) |
 | Swagger UI | <https://dev-pilot-api.vercel.app/api/docs>, cuando `API_DOCS_ENABLED=true` (SEG-17) |
 | Storybook | `npm run storybook -w @devpilot/web`; el CI lo compila y lo publica como artefacto en cada cambio |
 | Documentación | [Requisitos](docs/requirements.md) · [Arquitectura](docs/architecture.md) · [Contrato de IA](docs/ai-contract.md) · [Modelo de amenazas](docs/threat-model.md) · [Despliegue](docs/deployment.md) |
@@ -21,12 +21,12 @@ Es el trabajo de fin de máster de Juanjo Ortiz (octubre de 2026): una aplicaci�
 | Código fuente | <https://github.com/JuanjoOrtiz/DevPilotIA> (repositorio público) |
 | Aplicación desplegada | <https://dev-pilot-web.vercel.app> |
 | API | <https://dev-pilot-api.vercel.app/api/v1/health> · Swagger UI en <https://dev-pilot-api.vercel.app/api/docs> |
-| Usuario y contraseña de prueba | `admin@admin.com` / `admin12345`, con datos de demostración en el dashboard |
-| Slides | [`docs/slides.pdf`](docs/slides.pdf) · [pendiente: enlace público a la presentación] |
+| Usuario y contraseña de prueba | `demo@devpilot.dev` / `Devpilot2026`, con datos de demostración en el dashboard |
+| Slides | [Google Slides](https://docs.google.com/presentation/d/1tSU2JlwZKtk0oEn_-IEynkr6Mx8N-BFTNQPkU-tPwU4/view) |
 | Vídeo | [pendiente: URL pública del vídeo] |
 | Información del despliegue | Sección [Despliegue](#despliegue) y [`docs/deployment.md`](docs/deployment.md) |
 
-La cuenta de prueba es compartida y tiene el mismo límite diario de generaciones que cualquier otra. Si sus datos se han modificado, se restauran con el seed (`SEED_EMAIL=admin@admin.com npm run db:seed`).
+La cuenta de prueba es compartida y tiene el mismo límite diario de generaciones que cualquier otra. Si sus datos se han modificado, se restauran con el seed (`SEED_EMAIL=demo@devpilot.dev npm run db:seed`).
 
 ## Qué hace
 

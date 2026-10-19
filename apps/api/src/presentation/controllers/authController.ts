@@ -66,6 +66,11 @@ export function createAuthController(
 
     refresh: async (req, res) => {
       const refreshToken = readCookie(req.headers.cookie, REFRESH_COOKIE);
+      // Sin cookie no hay sesión que renovar: no es un error, así que no sale un 401.
+      if (!refreshToken) {
+        res.status(204).end();
+        return;
+      }
       try {
         sendSession(res, 200, await useCases.refreshSession.execute(refreshToken, req.ip ?? null));
       } catch (error) {

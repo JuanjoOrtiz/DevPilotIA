@@ -73,7 +73,8 @@ async function send(path: string, init: RequestInit): Promise<Response> {
 
 async function requestNewSession(): Promise<SessionResponse | null> {
   const response = await send('/auth/refresh', { method: 'POST' });
-  if (response.status === 401) {
+  // 204: no había cookie. 401: la cookie ya no vale. En los dos casos no hay sesión.
+  if (response.status === 204 || response.status === 401) {
     accessToken = null;
     return null;
   }
