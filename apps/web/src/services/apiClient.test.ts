@@ -202,6 +202,12 @@ describe('renewSession', () => {
     expect(await renewSession()).toBeNull();
   });
 
+  it('returns null when the API answers 204 because there is no cookie', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    expect(await renewSession()).toBeNull();
+  });
+
   // Cada refresh token vale una sola vez: dos renovaciones a la vez cerrarían la sesión.
   it('shares one request among simultaneous renewals', async () => {
     fetchMock.mockResolvedValue(json(200, session));
